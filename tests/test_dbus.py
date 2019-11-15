@@ -143,7 +143,7 @@ class DBusTestCase(unittest.TestCase):
         self.message_bus.disconnect()
         self.bus.down()
 
-    def message_bus_test(self):
+    def test_message_bus(self):
         """Test the message bus."""
         self.assertTrue(self.message_bus.check_connection())
         self.assertEqual(self.message_bus.address, self.bus.get_bus_address())
@@ -185,7 +185,7 @@ class DBusTestCase(unittest.TestCase):
     def _run_service(self):
         return True
 
-    def knock_test(self):
+    def test_knock(self):
         """Call a simple DBus method."""
         self._set_service(ExampleInterface())
         self.assertEqual(self.service._knocked, False)
@@ -199,7 +199,7 @@ class DBusTestCase(unittest.TestCase):
 
         self.assertEqual(self.service._knocked, True)
 
-    def hello_test(self):
+    def test_hello(self):
         """Call a DBus method."""
         self._set_service(ExampleInterface())
         self.assertEqual(self.service._names, [])
@@ -218,7 +218,7 @@ class DBusTestCase(unittest.TestCase):
 
         self.assertEqual(sorted(self.service._names), ["Bar", "Foo"])
 
-    def name_test(self):
+    def test_name(self):
         """Use a DBus read-only property."""
         self._set_service(ExampleInterface())
 
@@ -242,7 +242,7 @@ class DBusTestCase(unittest.TestCase):
         self._add_client(test3)
         self._run_test()
 
-    def secret_test(self):
+    def test_secret(self):
         """Use a DBus write-only property."""
         self._set_service(ExampleInterface())
         self.assertEqual(self.service._secrets, [])
@@ -267,7 +267,7 @@ class DBusTestCase(unittest.TestCase):
 
         self.assertEqual(sorted(self.service._secrets), ["Secret 1", "Secret 2"])
 
-    def value_test(self):
+    def test_value(self):
         """Use a DBus read-write property."""
         self._set_service(ExampleInterface())
         self.assertEqual(self.service._values, [0])
@@ -297,7 +297,7 @@ class DBusTestCase(unittest.TestCase):
         self.assertLess(self.service._values.index(1), self.service._values.index(2))
         self.assertLess(self.service._values.index(3), self.service._values.index(4))
 
-    def knocked_test(self):
+    def test_knocked(self):
         """Use a simple DBus signal."""
         self._set_service(ExampleInterface())
         event = Event()
@@ -328,7 +328,7 @@ class DBusTestCase(unittest.TestCase):
             mock.call("Knocked!")
         ])
 
-    def visited_test(self):
+    def test_visited(self):
         """Use a DBus signal."""
         self._set_service(ExampleInterface())
         event = Event()
@@ -357,7 +357,7 @@ class DBusTestCase(unittest.TestCase):
             mock.call("Visited by Bar.")
         ])
 
-    def unsubscribed_test(self):
+    def test_unsubscribed(self):
         """Use an unsubscribed DBus signal."""
         self._set_service(ExampleInterface())
         event = Event()
@@ -385,7 +385,7 @@ class DBusTestCase(unittest.TestCase):
 
         knocked.assert_not_called()
 
-    def asynchronous_test(self):
+    def test_asynchronous(self):
         """Call a DBus method asynchronously."""
         self._set_service(ExampleInterface())
         self.assertEqual(self.service._names, [])
@@ -409,7 +409,7 @@ class DBusTestCase(unittest.TestCase):
             mock.call(3, "Hello, Bar!"),
         ])
 
-    def error_test(self):
+    def test_error(self):
         """Handle a DBus error."""
         self._set_service(ExampleInterface())
         self.assertEqual(self.service._names, [])
@@ -447,7 +447,7 @@ class DBusTestCase(unittest.TestCase):
             mock.call(3, "Bar failed!"),
         ])
 
-    def properties_changed_test(self):
+    def test_properties_changed(self):
         self._set_service(ExampleInterface())
         event = Event()
         callback = Mock()

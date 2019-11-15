@@ -22,7 +22,7 @@ from dasbus.namespace import get_dbus_name, get_dbus_path, get_namespace_from_na
 
 class DBusNamespaceTestCase(unittest.TestCase):
 
-    def dbus_name_test(self):
+    def test_dbus_name(self):
         """Test DBus path."""
         self.assertEqual(get_dbus_name(), "")
         self.assertEqual(get_dbus_name("a"), "a")
@@ -30,7 +30,7 @@ class DBusNamespaceTestCase(unittest.TestCase):
         self.assertEqual(get_dbus_name("a", "b", "c"), "a.b.c")
         self.assertEqual(get_dbus_name("org", "freedesktop", "DBus"), "org.freedesktop.DBus")
 
-    def dbus_path_test(self):
+    def test_dbus_path(self):
         """Test DBus path."""
         self.assertEqual(get_dbus_path(), "/")
         self.assertEqual(get_dbus_path("a"), "/a")
@@ -38,7 +38,7 @@ class DBusNamespaceTestCase(unittest.TestCase):
         self.assertEqual(get_dbus_path("a", "b", "c"), "/a/b/c")
         self.assertEqual(get_dbus_path("org", "freedesktop", "DBus"), "/org/freedesktop/DBus")
 
-    def namespace_test(self):
+    def test_namespace(self):
         """Test namespaces."""
         self.assertEqual(get_namespace_from_name("a"), ("a",))
         self.assertEqual(get_namespace_from_name("a.b"), ("a", "b"))

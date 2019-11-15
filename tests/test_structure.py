@@ -26,7 +26,7 @@ from dasbus.structure import DBusData, DBusStructureError, generate_string_from_
 class DBusStructureTestCase(unittest.TestCase):
     """Test the DBus structure support."""
 
-    def empty_structure_test(self):
+    def test_empty_structure(self):
         with self.assertRaises(DBusStructureError) as cm:
             class NoData(DBusData):
                 pass
@@ -35,7 +35,7 @@ class DBusStructureTestCase(unittest.TestCase):
 
         self.assertEqual(str(cm.exception), "No fields found.")
 
-    def readonly_structure_test(self):
+    def test_readonly_structure(self):
         with self.assertRaises(DBusStructureError) as cm:
             class ReadOnlyData(DBusData):
                 @property
@@ -46,7 +46,7 @@ class DBusStructureTestCase(unittest.TestCase):
 
         self.assertEqual(str(cm.exception), "Field 'x' cannot be set.")
 
-    def writeonly_structure_test(self):
+    def test_writeonly_structure(self):
         with self.assertRaises(DBusStructureError) as cm:
             class WriteOnlyData(DBusData):
                 def __init__(self):
@@ -61,7 +61,7 @@ class DBusStructureTestCase(unittest.TestCase):
 
         self.assertEqual(str(cm.exception), "Field 'x' cannot be get.")
 
-    def no_type_structure_test(self):
+    def test_no_type_structure(self):
         with self.assertRaises(DBusStructureError) as cm:
             class NoTypeData(DBusData):
                 def __init__(self):
@@ -102,7 +102,7 @@ class DBusStructureTestCase(unittest.TestCase):
         def method(self):
             pass
 
-    def skip_members_test(self):
+    def test_skip_members(self):
         data = self.SkipData()
         structure = self.SkipData.to_structure(data)
         self.assertEqual(structure, {'x': get_variant(Int, 0)})
@@ -123,7 +123,7 @@ class DBusStructureTestCase(unittest.TestCase):
         def x(self, x):
             self._x = x
 
-    def get_simple_structure_test(self):
+    def test_get_simple_structure(self):
         data = self.SimpleData()
         self.assertEqual(data.x, 0)
 
@@ -136,7 +136,7 @@ class DBusStructureTestCase(unittest.TestCase):
         structure = self.SimpleData.to_structure(data)
         self.assertEqual(structure, {'x': get_variant(Int, 10)})
 
-    def get_simple_structure_list_test(self):
+    def test_get_simple_structure_list(self):
         d1 = self.SimpleData()
         d1.x = 1
 
@@ -154,7 +154,7 @@ class DBusStructureTestCase(unittest.TestCase):
             {'x': get_variant(Int, 3)}
         ])
 
-    def apply_simple_structure_test(self):
+    def test_apply_simple_structure(self):
         data = self.SimpleData()
         self.assertEqual(data.x, 0)
 
@@ -163,13 +163,13 @@ class DBusStructureTestCase(unittest.TestCase):
 
         self.assertEqual(data.x, 10)
 
-    def apply_simple_invalid_structure_test(self):
+    def test_apply_simple_invalid_structure(self):
         with self.assertRaises(DBusStructureError) as cm:
             self.SimpleData.from_structure({'y': 10})
 
         self.assertEqual(str(cm.exception), "Field 'y' doesn't exist.")
 
-    def apply_simple_structure_list_test(self):
+    def test_apply_simple_structure_list(self):
         s1 = {'x': 1}
         s2 = {'x': 2}
         s3 = {'x': 3}
@@ -181,7 +181,7 @@ class DBusStructureTestCase(unittest.TestCase):
         self.assertEqual(data[1].x, 2)
         self.assertEqual(data[2].x, 3)
 
-    def compare_simple_structure_test(self):
+    def test_compare_simple_structure(self):
         data = self.SimpleData()
 
         self.assertTrue(compare_data(data, data))
@@ -213,7 +213,7 @@ class DBusStructureTestCase(unittest.TestCase):
         def x(self, x):
             self._x = x
 
-    def get_structure_from_invalid_type_test(self):
+    def test_get_structure_from_invalid_type(self):
         data = self.OtherData()
 
         with self.assertRaises(TypeError) as cm:
@@ -221,7 +221,7 @@ class DBusStructureTestCase(unittest.TestCase):
 
         self.assertEqual(str(cm.exception), "Invalid type 'OtherData'.")
 
-    def apply_structure_with_invalid_type_test(self):
+    def test_apply_structure_with_invalid_type(self):
         structure = ["x"]
 
         with self.assertRaises(TypeError) as cm:
@@ -260,7 +260,7 @@ class DBusStructureTestCase(unittest.TestCase):
         def very_long_property_name(self, value):
             self._very_long_property_name = value
 
-    def get_complicated_structure_test(self):
+    def test_get_complicated_structure(self):
         data = self.ComplicatedData()
         data.dictionary = {1: "1", 2: "2"}
         data.bool_list = [True, False, False]
@@ -275,7 +275,7 @@ class DBusStructureTestCase(unittest.TestCase):
             self.ComplicatedData.to_structure(data)
         )
 
-    def apply_complicated_structure_test(self):
+    def test_apply_complicated_structure(self):
         data = self.ComplicatedData.from_structure(
             {
                 'dictionary': {1: "1", 2: "2"},
@@ -288,7 +288,7 @@ class DBusStructureTestCase(unittest.TestCase):
         self.assertEqual(data.bool_list, [True, False, False])
         self.assertEqual(data.very_long_property_name, "My String Value")
 
-    def compare_complicated_structure_test(self):
+    def test_compare_complicated_structure(self):
         self.assertTrue(compare_data(
             self.ComplicatedData(),
             self.ComplicatedData(),
@@ -338,7 +338,7 @@ class DBusStructureTestCase(unittest.TestCase):
             )
         ))
 
-    def get_native_complicated_structure_test(self):
+    def test_get_native_complicated_structure(self):
         dictionary = {
             'dictionary': {1: "1", 2: "2"},
             'bool-list': [True, False, False],
@@ -382,7 +382,7 @@ class DBusStructureTestCase(unittest.TestCase):
         def c(self, value):
             self._c = value
 
-    def string_representation_test(self):
+    def test_string_representation(self):
         data = self.StringData()
 
         expected = "StringData(a=1, b='', c=[])"
@@ -435,7 +435,7 @@ class DBusStructureTestCase(unittest.TestCase):
                 add={"b_is_set": bool(self.b)}
             )
 
-    def advanced_string_representation_test(self):
+    def test_advanced_string_representation(self):
         data = self.AdvancedStringData()
 
         expected = "AdvancedStringData(a='', b_is_set=False, c='')"
@@ -450,13 +450,13 @@ class DBusStructureTestCase(unittest.TestCase):
         self.assertEqual(expected, repr(data))
         self.assertEqual(expected, str(data))
 
-    def generate_string_from_invalid_type_test(self):
+    def test_generate_string_from_invalid_type(self):
         with self.assertRaises(DBusStructureError) as cm:
             generate_string_from_data({"x": 1})
 
         self.assertEqual(str(cm.exception), "Fields are not defined at '__dbus_fields__'.")
 
-    def nested_structure_test(self):
+    def test_nested_structure(self):
         class SimpleData(DBusData):
 
             def __init__(self):

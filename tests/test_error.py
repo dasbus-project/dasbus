@@ -46,7 +46,7 @@ class ExceptionC(Exception):
 class DBusErrorTestCase(unittest.TestCase):
     """Test the DBus error register and handler."""
 
-    def error_mapping_test(self):
+    def test_error_mapping(self):
         """Test the error mapping."""
         r = ErrorRegister()
         r.set_default_exception(None)
@@ -61,7 +61,7 @@ class DBusErrorTestCase(unittest.TestCase):
         self.assertEqual(r.get_exception_class("org.test.ErrorB"), ExceptionB)
         self.assertEqual(r.get_exception_class("org.test.ErrorC"), None)
 
-    def default_mapping_test(self):
+    def test_default_mapping(self):
         """Test the default error mapping."""
         r = ErrorRegister()
         r.set_default_exception(ExceptionA)
@@ -70,7 +70,7 @@ class DBusErrorTestCase(unittest.TestCase):
         self.assertEqual(r.get_exception_class("org.test.ErrorB"), ExceptionA)
         self.assertEqual(r.get_exception_class("org.test.ErrorC"), ExceptionA)
 
-    def default_namespace_test(self):
+    def test_default_namespace(self):
         """Test the default namespace."""
         r = ErrorRegister()
         self.assertEqual(r.get_error_name(ExceptionA), "not.known.Error.ExceptionA")
@@ -81,7 +81,7 @@ class DBusErrorTestCase(unittest.TestCase):
         r.set_default_namespace(None)
         self.assertEqual(r.get_error_name(ExceptionA), "ExceptionA")
 
-    def get_message_test(self):
+    def test_get_message(self):
         """Test the DBus error messages."""
         h = GLibErrorHandler()
 
@@ -99,7 +99,7 @@ class DBusErrorTestCase(unittest.TestCase):
         )
 
     @patch("dasbus.error.GLibErrorHandler.register", new_callable=ErrorRegister)
-    def create_exception_test(self, register):
+    def test_create_exception(self, register):
         """Test the exception."""
         domain = Gio.DBusError.quark()
 
@@ -114,7 +114,7 @@ class DBusErrorTestCase(unittest.TestCase):
         self.assertEqual(getattr(e, "dbus_code"), 666)
 
     @patch("dasbus.error.GLibErrorHandler.register", new_callable=ErrorRegister)
-    def is_name_registered_test(self, register):
+    def test_is_name_registered(self, register):
         """Test the registered name."""
         h = GLibErrorHandler()
         h.register.map_exception_to_name(ExceptionA, "org.test.ErrorA")
@@ -123,7 +123,7 @@ class DBusErrorTestCase(unittest.TestCase):
         self.assertEqual(h._is_name_registered("org.test.ErrorB"), False)
 
     @patch("dasbus.error.GLibErrorHandler.register", new_callable=ErrorRegister)
-    def handle_server_error_test(self, register):
+    def test_handle_server_error(self, register):
         """Test the server error handler."""
         h = GLibErrorHandler()
         h.register.map_exception_to_name(ExceptionA, "org.test.ErrorA")
@@ -133,7 +133,7 @@ class DBusErrorTestCase(unittest.TestCase):
         invocation.return_dbus_error.assert_called_once_with("org.test.ErrorA", "My message")
 
     @patch("dasbus.error.GLibErrorHandler.register", new_callable=ErrorRegister)
-    def handle_client_error_test(self, register):
+    def test_handle_client_error(self, register):
         """Test the client error handler."""
         h = GLibErrorHandler()
         h.register.set_default_exception(ExceptionA)

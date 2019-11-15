@@ -22,7 +22,7 @@ from dasbus.xml import XMLParser, XMLGenerator
 
 class XMLParserTestCase(unittest.TestCase):
 
-    def is_member_test(self):
+    def test_is_member(self):
         """Test if the element is a member of an interface."""
         element = XMLParser.xml_to_element('<method name="MethodName" />')
         self.assertEqual(XMLParser.is_member(element), True)
@@ -38,22 +38,22 @@ class XMLParserTestCase(unittest.TestCase):
         )
         self.assertEqual(XMLParser.is_member(element), True)
 
-    def is_interface_test(self):
+    def test_is_interface(self):
         """Test if the element is an interface."""
         element = XMLParser.xml_to_element('<interface name="InterfaceName" />')
         self.assertEqual(XMLParser.is_interface(element), True)
 
-    def is_signal_test(self):
+    def test_is_signal(self):
         """Test if the element is a signal."""
         element = XMLParser.xml_to_element('<signal name="SignalName" />')
         self.assertEqual(XMLParser.is_signal(element), True)
 
-    def is_method_test(self):
+    def test_is_method(self):
         """Test if the element is a method."""
         element = XMLParser.xml_to_element('<method name="MethodName" />')
         self.assertEqual(XMLParser.is_method(element), True)
 
-    def is_property_test(self):
+    def test_is_property(self):
         """Test if the element is a property."""
         element = XMLParser.xml_to_element(
             '<property '
@@ -63,7 +63,7 @@ class XMLParserTestCase(unittest.TestCase):
         )
         self.assertEqual(XMLParser.is_property(element), True)
 
-    def is_parameter_test(self):
+    def test_is_parameter(self):
         """Test if the element is a parameter."""
         element = XMLParser.xml_to_element(
             '<arg '
@@ -73,18 +73,18 @@ class XMLParserTestCase(unittest.TestCase):
         )
         self.assertEqual(XMLParser.is_parameter(element), True)
 
-    def has_name_test(self):
+    def test_has_name(self):
         """Test if the element has the specified name."""
         element = XMLParser.xml_to_element('<method name="MethodName" />')
         self.assertEqual(XMLParser.has_name(element, "MethodName"), True)
         self.assertEqual(XMLParser.has_name(element, "AnotherName"), False)
 
-    def get_name_test(self):
+    def test_get_name(self):
         """Get the name attribute."""
         element = XMLParser.xml_to_element('<method name="MethodName" />')
         self.assertEqual(XMLParser.get_name(element), "MethodName")
 
-    def get_type_test(self):
+    def test_get_type(self):
         """Get the type attribute."""
         element = XMLParser.xml_to_element(
             '<arg '
@@ -94,7 +94,7 @@ class XMLParserTestCase(unittest.TestCase):
         )
         self.assertEqual(XMLParser.get_type(element), "ParameterType")
 
-    def get_access_test(self):
+    def test_get_access(self):
         """Get the access attribute."""
         element = XMLParser.xml_to_element(
             '<property '
@@ -104,7 +104,7 @@ class XMLParserTestCase(unittest.TestCase):
         )
         self.assertEqual(XMLParser.get_access(element), "PropertyAccess")
 
-    def get_direction_test(self):
+    def test_get_direction(self):
         """Get the direction attribute."""
         element = XMLParser.xml_to_element(
             '<arg '
@@ -114,7 +114,7 @@ class XMLParserTestCase(unittest.TestCase):
         )
         self.assertEqual(XMLParser.get_direction(element), "ParameterDirection")
 
-    def get_interfaces_from_node_test(self):
+    def test_get_interfaces_from_node(self):
         """Get interfaces from the node."""
         element = XMLParser.xml_to_element('''
         <node>
@@ -135,18 +135,18 @@ class XMLGeneratorTestCase(unittest.TestCase):
             XMLGenerator.prettify_xml(xml)
         )
 
-    def node_test(self):
+    def test_node(self):
         """Test the node element."""
         self._compare(XMLGenerator.create_node(), '<node />')
 
-    def interface_test(self):
+    def test_interface(self):
         """Test the interface element."""
         self._compare(
             XMLGenerator.create_interface("InterfaceName"),
             '<interface name="InterfaceName" />'
         )
 
-    def parameter_test(self):
+    def test_parameter(self):
         """Test the parameter element."""
         self._compare(
             XMLGenerator.create_parameter("ParameterName",
@@ -157,7 +157,7 @@ class XMLGeneratorTestCase(unittest.TestCase):
             'name="ParameterName" '
             'type="ParameterType" />')
 
-    def property_test(self):
+    def test_property(self):
         """Test the property element."""
         self._compare(
             XMLGenerator.create_property("PropertyName",
@@ -169,13 +169,13 @@ class XMLGeneratorTestCase(unittest.TestCase):
             'type="PropertyType" />'
         )
 
-    def method_test(self):
+    def test_method(self):
         """Test the method element."""
         element = XMLGenerator.create_method("MethodName")
         xml = '<method name="MethodName" />'
         self._compare(element, xml)
 
-    def signal_test(self):
+    def test_signal(self):
         """Test the signal element."""
         element = XMLGenerator.create_signal("SignalName")
         xml = '<signal name="SignalName" />'

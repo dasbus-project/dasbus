@@ -75,7 +75,7 @@ class DBusServerTestCase(unittest.TestCase):
         invocation.return_dbus_error(error_name, error_message)
         invocation.return_value.assert_not_called()
 
-    def register_test(self):
+    def test_register(self):
         """Test the object registration."""
         with self.assertRaises(DBusSpecificationError):
             self._publish_object("<node />")
@@ -91,7 +91,7 @@ class DBusServerTestCase(unittest.TestCase):
         self.message_bus.connection.unregister_object.assert_called()
 
     @patch("dasbus.error.GLibErrorHandler.register", new_callable=ErrorRegister)
-    def method_test(self, register):
+    def test_method(self, register):
         """Test the method publishing."""
         self._publish_object("""
         <node>
@@ -139,7 +139,7 @@ class DBusServerTestCase(unittest.TestCase):
             error_message="Unknown member MethodInvalid of the interface Interface."
         )
 
-    def property_test(self):
+    def test_property(self):
         """Test the property publishing."""
         self._publish_object("""
         <node>
@@ -217,7 +217,7 @@ class DBusServerTestCase(unittest.TestCase):
             ))
         )
 
-    def signal_test(self):
+    def test_signal(self):
         """Test the signal publishing."""
         self._publish_object("""
         <node>

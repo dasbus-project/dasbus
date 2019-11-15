@@ -56,13 +56,13 @@ class DBusConnectionTestCase(unittest.TestCase):
         self.proxy_factory = self.message_bus._proxy_factory
         self.server_factory = self.message_bus._server_factory
 
-    def connection_test(self):
+    def test_connection(self):
         """Test the bus connection."""
         self.assertIsNotNone(self.message_bus.connection)
         self.assertEqual(self.message_bus.connection, self.message_bus.connection)
         self.assertTrue(self.message_bus.check_connection())
 
-    def failing_connection_test(self):
+    def test_failing_connection(self):
         """Test the failing connection."""
         self.message_bus._get_connection = Mock(side_effect=IOError())
         self.assertFalse(self.message_bus.check_connection())
@@ -70,7 +70,7 @@ class DBusConnectionTestCase(unittest.TestCase):
         self.message_bus._get_connection = Mock(return_value=None)
         self.assertFalse(self.message_bus.check_connection())
 
-    def proxy_test(self):
+    def test_proxy(self):
         """Test the object proxy."""
         proxy = self.message_bus.get_proxy(
             "service.name",
@@ -85,7 +85,7 @@ class DBusConnectionTestCase(unittest.TestCase):
 
         self.assertEqual(proxy, self.proxy_factory.return_value)
 
-    def bus_proxy_test(self):
+    def test_bus_proxy(self):
         """Test the bus proxy."""
         proxy = self.message_bus.proxy
 
@@ -99,7 +99,7 @@ class DBusConnectionTestCase(unittest.TestCase):
         self.assertEqual(proxy, self.proxy_factory.return_value)
         self.assertEqual(self.message_bus.proxy, self.message_bus.proxy)
 
-    def register_service_test(self):
+    def test_register_service(self):
         """Test the service registration."""
         self.message_bus.proxy.RequestName.return_value = DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER
         self.message_bus.register_service(
@@ -121,7 +121,7 @@ class DBusConnectionTestCase(unittest.TestCase):
             "my.service"
         )
 
-    def failed_register_service_test(self):
+    def test_failed_register_service(self):
         """Test the failing service registration."""
         self.message_bus.proxy.RequestName.return_value = DBUS_REQUEST_NAME_REPLY_ALREADY_OWNER
 
@@ -135,7 +135,7 @@ class DBusConnectionTestCase(unittest.TestCase):
 
         self.assertNotIn("my.service", self.message_bus._requested_names)
 
-    def check_service_access_test(self):
+    def test_check_service_access(self):
         """Check the service access."""
         # The service can be accessed.
         self.message_bus.get_proxy("my.service", "/my/object")
@@ -147,7 +147,7 @@ class DBusConnectionTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             self.message_bus.get_proxy("my.service", "/my/object")
 
-    def publish_object_test(self):
+    def test_publish_object(self):
         """Test the object publishing."""
         obj = Mock()
         self.message_bus.publish_object("/my/object", obj)
@@ -164,7 +164,7 @@ class DBusConnectionTestCase(unittest.TestCase):
         self.message_bus.disconnect()
         callback.assert_called_once_with()
 
-    def disconnect_test(self):
+    def test_disconnect(self):
         """Test the disconnection."""
         # Set up the connection.
         self.assertIsNotNone(self.message_bus.connection)
@@ -197,7 +197,7 @@ class DBusConnectionTestCase(unittest.TestCase):
         self.message_bus.disconnect()
 
     @patch("dasbus.connection.Gio.bus_get_sync")
-    def system_bus_test(self, getter):
+    def test_system_bus(self, getter):
         """Test the system bus."""
         message_bus = SystemMessageBus()
         self.assertIsNotNone(message_bus.connection)
@@ -207,7 +207,7 @@ class DBusConnectionTestCase(unittest.TestCase):
         )
 
     @patch("dasbus.connection.Gio.bus_get_sync")
-    def session_bus_test(self, getter):
+    def test_session_bus(self, getter):
         """Test the session bus."""
         message_bus = SessionMessageBus()
         self.assertIsNotNone(message_bus.connection)
@@ -230,7 +230,7 @@ class DBusConnectionTestCase(unittest.TestCase):
         )
 
     @patch("dasbus.connection.Gio.DBusConnection.new_for_address_sync")
-    def addressed_bus_test(self, getter):
+    def test_addressed_bus(self, getter):
         """Test the addressed bus."""
         message_bus = AddressedMessageBus("ADDRESS")
         self._check_addressed_connection(message_bus, getter, "ADDRESS")

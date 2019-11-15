@@ -25,7 +25,7 @@ from dasbus.client.proxy import ObjectProxy, get_object_path
 class DBusProxyTestCase(unittest.TestCase):
     """Test support for object proxies."""
 
-    def get_object_path_test(self):
+    def test_get_object_path(self):
         """Test get_object_path."""
         proxy = ObjectProxy(Mock(), "my.service", "/my/path")
         self.assertEqual(get_object_path(proxy), "/my/path")

@@ -34,7 +34,7 @@ class DBusIdentifierTestCase(unittest.TestCase):
         """Check the DBus interface object."""
         self.assertEqual(obj.interface_name, interface_name)
 
-    def identifier_test(self):
+    def test_identifier(self):
         """Test the DBus identifier object."""
         identifier = DBusBaseIdentifier(
             namespace=("a", "b", "c")
@@ -47,7 +47,7 @@ class DBusIdentifierTestCase(unittest.TestCase):
         )
         self.assert_namespace(identifier, ("a", "b", "c", "d"))
 
-    def interface_test(self):
+    def test_interface(self):
         """Test the DBus interface object."""
         interface = DBusInterfaceIdentifier(
             namespace=("a", "b", "c")
@@ -74,7 +74,7 @@ class DBusIdentifierTestCase(unittest.TestCase):
         """Check the DBus object."""
         self.assertEqual(obj.object_path, object_path)
 
-    def object_test(self):
+    def test_object(self):
         """Test the DBus object."""
         obj = DBusObjectIdentifier(
             namespace=("a", "b", "c")
@@ -106,7 +106,7 @@ class DBusIdentifierTestCase(unittest.TestCase):
         """Check the DBus service object."""
         self.assertEqual(obj.service_name, service_name)
 
-    def service_test(self):
+    def test_service(self):
         """Test the DBus service object."""
         bus = Mock()
         service = DBusServiceIdentifier(
@@ -147,7 +147,7 @@ class DBusIdentifierTestCase(unittest.TestCase):
 class DBusServiceIdentifierTestCase(unittest.TestCase):
     """Test DBus service identifiers."""
 
-    def get_proxy_test(self):
+    def test_get_proxy(self):
         """Test getting a proxy."""
         bus = Mock()
         namespace = ("a", "b", "c")

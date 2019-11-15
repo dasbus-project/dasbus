@@ -26,7 +26,7 @@ from dasbus.signal import Signal
 class DBusSignalTestCase(unittest.TestCase):
     """Test DBus signals."""
 
-    def create_signal_test(self):
+    def test_create_signal(self):
         """Create a signal."""
         class Interface(object):
 
@@ -40,7 +40,7 @@ class DBusSignalTestCase(unittest.TestCase):
         self.assertTrue(hasattr(interface, "__dbus_signal_signal"))
         self.assertEqual(getattr(interface, "__dbus_signal_signal"), signal)
 
-    def emit_signal_test(self):
+    def test_emit_signal(self):
         """Emit a signal."""
         class Interface(object):
 
@@ -62,7 +62,7 @@ class DBusSignalTestCase(unittest.TestCase):
         callback.assert_called_once_with(4, 5, 6)
         callback.reset_mock()
 
-    def disconnect_signal_test(self):
+    def test_disconnect_signal(self):
         """Disconnect a signal."""
         class Interface(object):
 
@@ -87,7 +87,7 @@ class DBusSignalTestCase(unittest.TestCase):
         interface.Signal()
         callback.assert_not_called()
 
-    def signals_test(self):
+    def test_signals(self):
         """Test a class with two signals."""
         class Interface(object):
 
@@ -120,7 +120,7 @@ class DBusSignalTestCase(unittest.TestCase):
         callback1.assert_not_called()
         callback2.assert_called_once_with()
 
-    def instances_test(self):
+    def test_instances(self):
         """Test two instances of the class with a signal."""
         class Interface(object):
 

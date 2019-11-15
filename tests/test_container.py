@@ -57,7 +57,7 @@ class DBusContainerTestCase(unittest.TestCase):
             message_bus=self.message_bus
         )
 
-    def set_namespace_test(self):
+    def test_set_namespace(self):
         """Test set_namespace."""
         self.container.set_namespace(("org", "Another", "Project"))
 
@@ -67,7 +67,7 @@ class DBusContainerTestCase(unittest.TestCase):
         path = self.container.to_object_path(MyObject())
         self.assertEqual(path, "/org/Another/Project/Object/2")
 
-    def to_object_path_failed_test(self):
+    def test_to_object_path_failed(self):
         """Test failed to_object_path."""
         with self.assertRaises(TypeError):
             self.container.to_object_path(MyUnpublishable())
@@ -75,7 +75,7 @@ class DBusContainerTestCase(unittest.TestCase):
         with self.assertRaises(DBusContainerError):
             self.container._find_object_path(MyObject())
 
-    def to_object_path_test(self):
+    def test_to_object_path(self):
         """Test to_object_path."""
         obj = MyObject()
         path = self.container.to_object_path(obj)
@@ -96,7 +96,7 @@ class DBusContainerTestCase(unittest.TestCase):
         self.assertEqual(self.container.to_object_path(obj), path)
         self.message_bus.publish_object.assert_not_called()
 
-    def to_object_path_list_test(self):
+    def test_to_object_path_list(self):
         """Test to_object_path_list."""
         objects = [MyObject(), MyObject(), MyObject()]
         paths = self.container.to_object_path_list(objects)
@@ -117,12 +117,12 @@ class DBusContainerTestCase(unittest.TestCase):
         self.assertEqual(paths, self.container.to_object_path_list(objects))
         self.message_bus.publish_object.assert_not_called()
 
-    def from_object_path_failed_test(self):
+    def test_from_object_path_failed(self):
         """Test failures."""
         with self.assertRaises(DBusContainerError):
             self.container.from_object_path(ObjPath("/org/Project/Object/1"))
 
-    def from_object_path_test(self):
+    def test_from_object_path(self):
         """Test from_object_path."""
         obj = MyObject()
         path = self.container.to_object_path(obj)
@@ -133,7 +133,7 @@ class DBusContainerTestCase(unittest.TestCase):
         self.assertEqual(obj, self.container.from_object_path(path))
         self.assertEqual(path, self.container.to_object_path(obj))
 
-    def from_object_path_list_test(self):
+    def test_from_object_path_list(self):
         """Test from_object_path_list."""
         objects = [MyObject(), MyObject(), MyObject()]
         paths = self.container.to_object_path_list(objects)
@@ -144,7 +144,7 @@ class DBusContainerTestCase(unittest.TestCase):
         self.assertEqual(objects, self.container.from_object_path_list(paths))
         self.assertEqual(paths, self.container.to_object_path_list(objects))
 
-    def multiple_objects_test(self):
+    def test_multiple_objects(self):
         """Test multiple objects."""
         obj = MyObject()
         path = self.container.to_object_path(obj)
