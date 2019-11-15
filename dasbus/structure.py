@@ -22,8 +22,8 @@ import inspect
 from abc import ABC
 from typing import get_type_hints
 
-from dasbus.typing import get_variant, get_type_arguments, is_base_type, \
-    Structure, Dict, List
+from dasbus.typing import get_variant, get_type_arguments, unwrap_variant, \
+    is_base_type, Structure, List
 
 __all__ = [
     "DBusStructureError",
@@ -95,6 +95,14 @@ class DBusField(object):
         :param value: a value
         """
         setattr(obj, self.data_name, value)
+
+    def set_data_variant(self, obj, variant):
+        """Set the data attribute from a variant.
+
+        :param obj: a data object
+        :param variant: a variant
+        """
+        self.set_data(obj, unwrap_variant(variant))
 
     def get_data(self, obj):
         """Get the data attribute.
@@ -203,7 +211,7 @@ class DBusData(ABC):
         )
 
     @classmethod
-    def from_structure(cls, structure: Dict):
+    def from_structure(cls, structure: Structure):
         """Convert a DBus structure to a data object.
 
         :param structure: a DBus structure
@@ -217,7 +225,7 @@ class DBusData(ABC):
         data = cls()
         fields = get_fields(cls)
 
-        for name, value in structure.items():
+        for name, variant in structure.items():
             field = fields.get(name, None)
 
             if not field:
@@ -225,7 +233,7 @@ class DBusData(ABC):
                     "Field '{}' doesn't exist.".format(name)
                 )
 
-            field.set_data(data, value)
+            field.set_data_variant(data, variant)
 
         return data
 
@@ -249,7 +257,7 @@ class DBusData(ABC):
         return structure
 
     @classmethod
-    def from_structure_list(cls, structures: List[Dict]):
+    def from_structure_list(cls, structures: List[Structure]):
         """Convert DBus structures to data objects.
 
         :param structures: a list of DBus structures

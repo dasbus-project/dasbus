@@ -19,7 +19,7 @@
 import unittest
 
 from dasbus.typing import get_variant, get_native, Int, Str, List, Bool, \
-    Dict, Structure
+    Dict, Structure, Variant
 from dasbus.structure import DBusData, DBusStructureError, compare_data, \
     generate_string_from_data
 
@@ -105,10 +105,16 @@ class DBusStructureTestCase(unittest.TestCase):
 
     def test_skip_members(self):
         data = self.SkipData()
-        structure = self.SkipData.to_structure(data)
-        self.assertEqual(structure, {'x': get_variant(Int, 0)})
 
-        data = self.SkipData.from_structure({'x': 10})
+        structure = self.SkipData.to_structure(data)
+        self.assertEqual(structure, {
+            'x': get_variant(Int, 0)
+        })
+
+        data = self.SkipData.from_structure({
+            'x': get_variant(Int, 10)
+        })
+
         self.assertEqual(data.x, 10)
 
     class SimpleData(DBusData):
@@ -159,21 +165,21 @@ class DBusStructureTestCase(unittest.TestCase):
         data = self.SimpleData()
         self.assertEqual(data.x, 0)
 
-        structure = {'x': 10}
+        structure = {'x': get_variant(Int, 10)}
         data = self.SimpleData.from_structure(structure)
 
         self.assertEqual(data.x, 10)
 
     def test_apply_simple_invalid_structure(self):
         with self.assertRaises(DBusStructureError) as cm:
-            self.SimpleData.from_structure({'y': 10})
+            self.SimpleData.from_structure({'y': get_variant(Int, 10)})
 
         self.assertEqual(str(cm.exception), "Field 'y' doesn't exist.")
 
     def test_apply_simple_structure_list(self):
-        s1 = {'x': 1}
-        s2 = {'x': 2}
-        s3 = {'x': 3}
+        s1 = {'x': get_variant(Int, 1)}
+        s2 = {'x': get_variant(Int, 2)}
+        s3 = {'x': get_variant(Int, 3)}
 
         data = self.SimpleData.from_structure_list([s1, s2, s3])
 
@@ -192,13 +198,13 @@ class DBusStructureTestCase(unittest.TestCase):
         self.assertFalse(compare_data(None, data))
 
         self.assertTrue(compare_data(
-            self.SimpleData.from_structure({'x': 10}),
-            self.SimpleData.from_structure({'x': 10})
+            self.SimpleData.from_structure({'x': get_variant(Int, 10)}),
+            self.SimpleData.from_structure({'x': get_variant(Int, 10)})
         ))
 
         self.assertFalse(compare_data(
-            self.SimpleData.from_structure({'x': 10}),
-            self.SimpleData.from_structure({'x': 9})
+            self.SimpleData.from_structure({'x': get_variant(Int, 10)}),
+            self.SimpleData.from_structure({'x': get_variant(Int, 9)})
         ))
 
     class OtherData(DBusData):
@@ -269,9 +275,15 @@ class DBusStructureTestCase(unittest.TestCase):
 
         self.assertEqual(
             {
-                'dictionary': get_variant(Dict[Int, Str], {1: "1", 2: "2"}),
-                'bool-list': get_variant(List[Bool], [True, False, False]),
-                'very-long-property-name': get_variant(Str, "My String Value")
+                'dictionary': get_variant(
+                    Dict[Int, Str], {1: "1", 2: "2"}
+                ),
+                'bool-list': get_variant(
+                    List[Bool], [True, False, False]
+                ),
+                'very-long-property-name': get_variant(
+                    Str, "My String Value"
+                )
             },
             self.ComplicatedData.to_structure(data)
         )
@@ -279,9 +291,15 @@ class DBusStructureTestCase(unittest.TestCase):
     def test_apply_complicated_structure(self):
         data = self.ComplicatedData.from_structure(
             {
-                'dictionary': {1: "1", 2: "2"},
-                'bool-list': [True, False, False],
-                'very-long-property-name': "My String Value"
+                'dictionary': get_variant(
+                    Dict[Int, Str], {1: "1", 2: "2"}
+                ),
+                'bool-list': get_variant(
+                    List[Bool], [True, False, False]
+                ),
+                'very-long-property-name': get_variant(
+                    Str, "My String Value"
+                )
             }
         )
 
@@ -308,16 +326,28 @@ class DBusStructureTestCase(unittest.TestCase):
         self.assertTrue(compare_data(
             self.ComplicatedData.from_structure(
                 {
-                    'dictionary': {1: "1", 2: "2"},
-                    'bool-list': [True, False, False],
-                    'very-long-property-name': "My String Value"
+                    'dictionary': get_variant(
+                        Dict[Int, Str], {1: "1", 2: "2"}
+                    ),
+                    'bool-list': get_variant(
+                        List[Bool], [True, False, False]
+                    ),
+                    'very-long-property-name': get_variant(
+                        Str, "My String Value"
+                    )
                 }
             ),
             self.ComplicatedData.from_structure(
                 {
-                    'dictionary': {1: "1", 2: "2"},
-                    'bool-list': [True, False, False],
-                    'very-long-property-name': "My String Value"
+                    'dictionary': get_variant(
+                        Dict[Int, Str], {1: "1", 2: "2"}
+                    ),
+                    'bool-list': get_variant(
+                        List[Bool], [True, False, False]
+                    ),
+                    'very-long-property-name': get_variant(
+                        Str, "My String Value"
+                    )
                 }
             )
         ))
@@ -325,28 +355,54 @@ class DBusStructureTestCase(unittest.TestCase):
         self.assertFalse(compare_data(
             self.ComplicatedData.from_structure(
                 {
-                    'dictionary': {1: "1", 2: "2"},
-                    'bool-list': [True, False, False],
-                    'very-long-property-name': "My String Value"
+                    'dictionary': get_variant(
+                        Dict[Int, Str], {1: "1", 2: "2"}
+                    ),
+                    'bool-list': get_variant(
+                        List[Bool], [True, False, False]
+                    ),
+                    'very-long-property-name': get_variant(
+                        Str, "My String Value"
+                    )
                 }
             ),
             self.ComplicatedData.from_structure(
                 {
-                    'dictionary': {1: "1", 2: "2"},
-                    'bool-list': [True, False, True],
-                    'very-long-property-name': "My String Value"
+                    'dictionary': get_variant(
+                        Dict[Int, Str], {1: "1", 2: "2"}
+                    ),
+                    'bool-list': get_variant(
+                        List[Bool], [True, False, True]
+                    ),
+                    'very-long-property-name': get_variant(
+                        Str, "My String Value"
+                    )
                 }
             )
         ))
 
     def test_get_native_complicated_structure(self):
+        data = self.ComplicatedData.from_structure({
+            'dictionary': get_variant(
+                Dict[Int, Str], {1: "1", 2: "2"}
+            ),
+            'bool-list': get_variant(
+                List[Bool], [True, False, False]
+            ),
+            'very-long-property-name': get_variant(
+                Str, "My String Value"
+            )
+        })
+
+        structure = self.ComplicatedData.to_structure(
+            data
+        )
+
         dictionary = {
             'dictionary': {1: "1", 2: "2"},
             'bool-list': [True, False, False],
             'very-long-property-name': "My String Value"
         }
-        data = self.ComplicatedData.from_structure(dictionary)
-        structure = self.ComplicatedData.to_structure(data)
 
         self.assertEqual(get_native(structure), dictionary)
         self.assertEqual(get_native(dictionary), dictionary)
@@ -527,7 +583,17 @@ class DBusStructureTestCase(unittest.TestCase):
             'list': [{'x': 200}, {'x': 300}]
         }
 
-        data = NestedData.from_structure(dictionary)
+        structure = {
+            'attr': get_variant(Dict[Str, Variant], {
+                'x': get_variant(Int, 10)
+            }),
+            'list': get_variant(List[Dict[Str, Variant]], [
+                {'x': get_variant(Int, 200)},
+                {'x': get_variant(Int, 300)}
+            ])
+        }
+
+        data = NestedData.from_structure(structure)
         self.assertEqual(data.attr.x, 10)
         self.assertEqual(len(data.list), 2)
         self.assertEqual(data.list[0].x, 200)

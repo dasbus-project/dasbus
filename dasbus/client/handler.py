@@ -26,7 +26,7 @@ from dasbus.error import register
 from dasbus.signal import Signal
 from dasbus.constants import DBUS_FLAG_NONE
 from dasbus.specification import DBusSpecification
-from dasbus.typing import get_variant, get_variant_type
+from dasbus.typing import get_variant, get_variant_type, unwrap_variant
 
 import gi
 gi.require_version("Gio", "2.0")
@@ -96,27 +96,6 @@ class GLibClient(object):
             lambda: source_object.call_finish(result_object),
             *callback_args
         )
-
-    @staticmethod
-    def unpack_call_result(variant):
-        """Unpack a result of a DBus call.
-
-        :param variant: a variant tuple with return values
-        :return: a result
-        """
-        # Unpack a variant.
-        values = variant.unpack()
-
-        # Return None if there are no values.
-        if not values:
-            return None
-
-        # Return one value.
-        if len(values) == 1:
-            return values[0]
-
-        # Return multiple values.
-        return values
 
     @classmethod
     def subscribe_signal(cls, connection, service_name, object_path,
@@ -375,7 +354,7 @@ class ClientObjectHandler(AbstractClientObjectHandler):
 
     def _signal_callback(self, parameters, callback):
         """A callback that is called when a DBus signal is emitted."""
-        callback(*parameters.unpack())
+        callback(*unwrap_variant(parameters))
 
     def _get_property(self, property_spec):
         """Get a proxy of the DBus property."""
@@ -392,7 +371,7 @@ class ClientObjectHandler(AbstractClientObjectHandler):
 
     def _get_property_value(self, property_spec):
         """Get a value of the DBus property."""
-        return self._call_method(
+        variant = self._call_method(
             "org.freedesktop.DBus.Properties",
             "Get",
             "(ss)",
@@ -400,6 +379,7 @@ class ClientObjectHandler(AbstractClientObjectHandler):
             property_spec.interface_name,
             property_spec.name
         )
+        return unwrap_variant(variant)
 
     def _set_property_value(self, property_spec, property_value):
         """Set a value of the DBus property."""
@@ -518,9 +498,21 @@ class ClientObjectHandler(AbstractClientObjectHandler):
     def _handle_method_result(self, result):
         """Handle a result of a DBus call.
 
-        :param result: a value returned by the call
+        :param result: a variant tuple
         """
-        return self._client.unpack_call_result(result)
+        # Unwrap a variant tuple.
+        values = unwrap_variant(result)
+
+        # Return None if there are no values.
+        if not values:
+            return None
+
+        # Return one value.
+        if len(values) == 1:
+            return values[0]
+
+        # Return multiple values.
+        return values
 
     def disconnect_members(self):
         """Disconnect members of the DBus object."""

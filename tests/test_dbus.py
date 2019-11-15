@@ -476,6 +476,6 @@ class DBusTestCase(unittest.TestCase):
 
         callback.assert_called_once_with(
             "my.testing.Example",
-            {"Value": 10},
+            {"Value": get_variant(Int, 10)},
             ["Name"]
         )
