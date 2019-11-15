@@ -51,6 +51,7 @@ __all__ = [
     "get_native",
     "get_variant",
     "get_variant_type",
+    "unwrap_variant",
     "is_base_type",
     "get_type_arguments",
     "get_dbus_type",
@@ -153,6 +154,54 @@ def get_native(value):
         return {k: get_native(v) for k, v in value.items()}
 
     return value
+
+
+def unwrap_variant(variant):
+    """Unwrap a variant data type.
+
+    Unlike the unpack method of the Variant class, this function
+    doesn't recursively unpacks all variants in the data structure.
+    It will unpack only the topmost variant.
+
+    The implementation is inspired by the unpack method.
+
+    :param variant: a variant
+    :return: a value
+    """
+    type_string = variant.get_type_string()
+
+    # tuple - unwrap items
+    if type_string.startswith('('):
+        return tuple(
+            unwrap_variant(variant.get_child_value(i))
+            for i in range(variant.n_children())
+        )
+
+    # dictionary - unpack keys and unwrap values.
+    if type_string.startswith('a{'):
+        result = {}
+
+        for i in range(variant.n_children()):
+            entry = variant.get_child_value(i)
+            key = entry.get_child_value(0)
+            value = entry.get_child_value(1)
+            result[key.unpack()] = unwrap_variant(value)
+
+        return result
+
+    # array - unwrap values
+    if type_string.startswith('a'):
+        return list(
+            unwrap_variant(variant.get_child_value(i))
+            for i in range(variant.n_children())
+        )
+
+    # variant - unbox a variant
+    if type_string.startswith('v'):
+        return variant.get_variant()
+
+    # basic - unpack a value
+    return variant.unpack()
 
 
 def is_base_type(type_hint, base_type):
