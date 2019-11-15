@@ -65,7 +65,8 @@ class DBusConnectionTestCase(unittest.TestCase):
     def test_failing_connection(self):
         """Test the failing connection."""
         self.message_bus._get_connection = Mock(side_effect=IOError())
-        self.assertFalse(self.message_bus.check_connection())
+        with self.assertLogs(level='WARN'):
+            self.assertFalse(self.message_bus.check_connection())
 
         self.message_bus._get_connection = Mock(return_value=None)
         self.assertFalse(self.message_bus.check_connection())

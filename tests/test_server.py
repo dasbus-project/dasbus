@@ -71,7 +71,10 @@ class DBusServerTestCase(unittest.TestCase):
     def _call_method_with_error(self, interface, method, parameters=NO_PARAMETERS,
                                 error_name="", error_message=""):
         invocation = Mock()
-        self.handler._method_callback(invocation, interface, method, parameters)
+
+        with self.assertLogs(level='WARN'):
+            self.handler._method_callback(invocation, interface, method, parameters)
+
         invocation.return_dbus_error(error_name, error_message)
         invocation.return_value.assert_not_called()
 

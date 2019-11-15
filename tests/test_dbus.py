@@ -439,7 +439,9 @@ class DBusTestCase(unittest.TestCase):
 
         self._add_client(test1)
         self._add_client(test2)
-        self._run_test()
+
+        with self.assertLogs(level='WARN'):
+            self._run_test()
 
         raised.assert_has_calls([
             mock.call(1, "Foo failed!"),
