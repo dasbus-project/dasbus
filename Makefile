@@ -21,12 +21,18 @@ VERSION=$(shell awk '/Version:/ { print $$2 }' python-$(PKGNAME).spec)
 PREFIX=/usr
 
 PYTHON?=python3
+COVERAGE?=coverage3
 
 build:
 	$(PYTHON) setup.py build
 
 clean:
 	$(PYTHON) setup.py -q clean --all
+
+coverage:
+	@echo "*** Running unittests with $(COVERAGE) ***"
+	PYTHONPATH=. $(COVERAGE) run --branch -m unittest discover -v -s tests/
+	$(COVERAGE) report -m --include="dasbus/*" | tee coverage-report.log
 
 install:
 	$(PYTHON) setup.py install --root=$(DESTDIR) --skip-build
