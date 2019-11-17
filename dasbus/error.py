@@ -135,7 +135,7 @@ class GLibErrorHandler(object):
         return exception
 
 
-def dbus_error(error_name, namespace):
+def dbus_error(error_name, namespace=()):
     """Define decorated class as a DBus error.
 
     The decorated exception class will be mapped to a DBus error.
