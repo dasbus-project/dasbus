@@ -22,15 +22,16 @@ from abc import ABC, abstractmethod
 from functools import partial
 
 from dasbus.client.property import PropertyProxy
+from dasbus.error import register
 from dasbus.signal import Signal
 from dasbus.constants import DBUS_FLAG_NONE
-from dasbus.error import GLibErrorHandler
 from dasbus.specification import DBusSpecification
 from dasbus.typing import get_variant, get_variant_type
 
 import gi
+gi.require_version("Gio", "2.0")
 gi.require_version("GLib", "2.0")
-from gi.repository import GLib
+from gi.repository import Gio, GLib
 
 __all__ = [
     "GLibClient",
@@ -156,6 +157,29 @@ class GLibClient(object):
     def _unsubscribe_signal(cls, connection, subscription_id):
         """Unsubscribe from a signal."""
         connection.signal_unsubscribe(subscription_id)
+
+    @classmethod
+    def is_remote_error(cls, error):
+        """Is it a remote DBus error?"""
+        return isinstance(error, GLib.Error) \
+            and Gio.DBusError.is_remote_error(error)
+
+    @classmethod
+    def get_remote_error_name(cls, error):
+        """Get a DBus name of the remote DBus error."""
+        return Gio.DBusError.get_remote_error(error)
+
+    @classmethod
+    def get_remote_error_message(cls, error):
+        """Get a message of the remote DBus error."""
+        name = cls.get_remote_error_name(error)
+        message = error.message
+        prefix = "{}:{}: ".format("GDBus.Error", name)
+
+        if message.startswith(prefix):
+            return message[len(prefix):]
+
+        return message
 
 
 class AbstractClientObjectHandler(ABC):
@@ -296,13 +320,13 @@ class ClientObjectHandler(AbstractClientObjectHandler):
     __slots__ = [
         "_client",
         "_signal_factory",
-        "_error_handler",
+        "_error_register",
         "_subscriptions"
     ]
 
     def __init__(self, message_bus, service_name, object_path,
                  client=GLibClient, signal_factory=Signal,
-                 error_handler=GLibErrorHandler):
+                 error_register=register):
         """Create a new handler.
 
         :param message_bus: a message bus
@@ -313,7 +337,7 @@ class ClientObjectHandler(AbstractClientObjectHandler):
         super().__init__(message_bus, service_name, object_path)
         self._client = client
         self._signal_factory = signal_factory
-        self._error_handler = error_handler
+        self._error_register = error_register
         self._subscriptions = []
 
     def _get_specification(self):
@@ -466,12 +490,40 @@ class ClientObjectHandler(AbstractClientObjectHandler):
         """
         try:
             result = call(*args, **kwargs)
-        except Exception as e:  # pylint: disable=broad-except
-            error = e
+        except Exception as error:  # pylint: disable=broad-except
+            return self._handle_method_error(error)
         else:
-            return self._client.unpack_call_result(result)
+            return self._handle_method_result(result)
 
-        return self._error_handler.handle_client_error(self._client, error)
+    def _handle_method_error(self, error):
+        """Handle an error of a DBus call.
+
+        :param error: an exception raised during the call
+        """
+        # Re-raise if it is not a remote DBus error.
+        if not self._client.is_remote_error(error):
+            raise error
+
+        name = self._client.get_remote_error_name(error)
+        cls = self._error_register.get_exception_class(name)
+        message = self._client.get_remote_error_message(error)
+
+        # Re-raise if we cannot match it to an exception class.
+        if not cls:
+            raise error from None
+
+        exception = cls(message)
+        exception.dbus_name = name
+
+        # Raise a new instance of the exception class.
+        raise exception from None
+
+    def _handle_method_result(self, result):
+        """Handle a result of a DBus call.
+
+        :param result: a value returned by the call
+        """
+        return self._client.unpack_call_result(result)
 
     def disconnect_members(self):
         """Disconnect members of the DBus object."""

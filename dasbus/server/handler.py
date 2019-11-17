@@ -23,7 +23,7 @@ from abc import ABC, abstractmethod
 from functools import partial
 
 from dasbus.signal import Signal
-from dasbus.error import GLibErrorHandler
+from dasbus.error import register
 from dasbus.server.interface import get_xml
 from dasbus.specification import DBusSpecification, DBusSpecificationError
 from dasbus.typing import get_variant
@@ -291,16 +291,16 @@ class ServerObjectHandler(AbstractServerObjectHandler):
     __slots__ = [
         "_server",
         "_signal_factory",
-        "_error_handler",
+        "_error_register",
         "_registrations"
     ]
 
     def __init__(self, message_bus, object_path, obj, server=GLibServer,
-                 signal_factory=Signal, error_handler=GLibErrorHandler):
+                 signal_factory=Signal, error_register=register):
         super().__init__(message_bus, object_path, obj)
         self._server = server
         self._signal_factory = signal_factory
-        self._error_handler = error_handler
+        self._error_register = error_register
         self._registrations = []
 
     def _get_xml_specification(self):
@@ -402,7 +402,6 @@ class ServerObjectHandler(AbstractServerObjectHandler):
         :param parameters: a variant of DBus arguments
         """
         try:
-            # Handle the method call.
             member = self._find_member_spec(
                 interface_name,
                 method_name
@@ -413,25 +412,53 @@ class ServerObjectHandler(AbstractServerObjectHandler):
                 *parameters.unpack()
             )
         except Exception as error:  # pylint: disable=broad-except
-            # Log the error.
-            log.warning(
-                "The call %s.%s has failed with an exception:",
-                interface_name, method_name, exc_info=True
-            )
-
-            # Process the error.
-            self._error_handler.handle_server_error(
-                self._server,
+            self._handle_method_error(
                 invocation,
+                interface_name,
+                method_name,
                 error
             )
         else:
-            # Process the result.
-            self._server.set_call_reply(
+            self._handle_method_result(
                 invocation,
-                member.out_type,
+                member,
                 result
             )
+
+    def _handle_method_error(self, invocation, interface_name, method_name,
+                             error):
+        """Handle an error of a DBus call.
+
+        :param invocation: an invocation of the DBus call
+        :param interface_name: a DBus interface name
+        :param method_name: a DBus method name
+        :param error: an exception raised during the call
+        """
+        log.warning(
+            "The call %s.%s has failed with an exception:",
+            interface_name, method_name, exc_info=True
+        )
+        error_name = self._error_register.get_error_name(
+            type(error)
+        )
+        self._server.set_call_error(
+            invocation,
+            error_name,
+            str(error)
+        )
+
+    def _handle_method_result(self, invocation, method_spec, method_reply):
+        """Handle a result of a DBus call.
+
+        :param invocation: an invocation of a DBus call
+        :param method_spec: a method specification
+        :param method_reply: a method reply
+        """
+        self._server.set_call_reply(
+            invocation,
+            method_spec.out_type,
+            method_reply
+        )
 
     def _find_default_handler(self, interface_name, member_name):
         """Find a default handler of a DBus call.

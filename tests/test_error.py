@@ -17,15 +17,9 @@
 # USA
 #
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
-from dasbus.error import ErrorRegister, GLibErrorHandler
-from dasbus.client.handler import GLibClient
-from dasbus.server.handler import GLibServer
-
-import gi
-gi.require_version("Gio", "2.0")
-from gi.repository import Gio
+from dasbus.error import ErrorRegister, dbus_error, dbus_error_by_default
 
 
 class ExceptionA(Exception):
@@ -45,6 +39,30 @@ class ExceptionC(Exception):
 
 class DBusErrorTestCase(unittest.TestCase):
     """Test the DBus error register and handler."""
+
+    @patch("dasbus.error.register", new_callable=ErrorRegister)
+    def test_decorators(self, register):
+        """Test the error decorators."""
+        r = register
+
+        @dbus_error("org.test.ErrorA")
+        class DecoratedA(Exception):
+            pass
+
+        @dbus_error("ErrorB", namespace=("org", "test"))
+        class DecoratedB(Exception):
+            pass
+
+        @dbus_error_by_default
+        class DecoratedC(Exception):
+            pass
+
+        self.assertEqual(r.get_error_name(DecoratedA), "org.test.ErrorA")
+        self.assertEqual(r.get_error_name(DecoratedB), "org.test.ErrorB")
+
+        self.assertEqual(r.get_exception_class("org.test.ErrorA"), DecoratedA)
+        self.assertEqual(r.get_exception_class("org.test.ErrorB"), DecoratedB)
+        self.assertEqual(r.get_exception_class("org.test.ErrorC"), DecoratedC)
 
     def test_error_mapping(self):
         """Test the error mapping."""
@@ -114,121 +132,4 @@ class DBusErrorTestCase(unittest.TestCase):
         )
 
         r.set_default_namespace(None)
-        self.assertEqual(
-            r.get_error_name(ExceptionA),
-            "ExceptionA"
-        )
-
-    def test_get_message(self):
-        """Test the DBus error messages."""
-        h = GLibErrorHandler()
-
-        message = h._get_exception_message(
-            "org.test.Error",
-            "My error message"
-        )
-        self.assertEqual(
-            message,
-            "My error message"
-        )
-
-        message = h._get_exception_message(
-            "org.test.Error",
-            "GDBus.Error:org.test.Error: My error message"
-        )
-        self.assertEqual(
-            message,
-            "My error message"
-        )
-
-        message = h._get_exception_message(
-            "org.test.Error",
-            "GDBus.Error:org.test.ErrorX: My error message"
-        )
-        self.assertEqual(
-            message,
-            "GDBus.Error:org.test.ErrorX: My error message"
-        )
-
-    @patch("dasbus.error.GLibErrorHandler.register",
-           new_callable=ErrorRegister)
-    def test_create_exception(self, register):
-        """Test the exception."""
-        domain = Gio.DBusError.quark()
-
-        h = GLibErrorHandler()
-        h.register.map_exception_to_name(ExceptionA, "org.test.ErrorA")
-
-        e = h._create_exception(
-            "org.test.ErrorA",
-            "My error message.",
-            domain,
-            666
-        )
-        self.assertIsInstance(e, ExceptionA)
-        self.assertEqual(str(e), "My error message.")
-        self.assertEqual(getattr(e, "dbus_name"), "org.test.ErrorA")
-        self.assertEqual(getattr(e, "dbus_domain"), domain)
-        self.assertEqual(getattr(e, "dbus_code"), 666)
-
-    @patch("dasbus.error.GLibErrorHandler.register",
-           new_callable=ErrorRegister)
-    def test_is_name_registered(self, register):
-        """Test the registered name."""
-        h = GLibErrorHandler()
-        h.register.map_exception_to_name(ExceptionA, "org.test.ErrorA")
-
-        self.assertEqual(h._is_name_registered("org.test.ErrorA"), True)
-        self.assertEqual(h._is_name_registered("org.test.ErrorB"), False)
-
-    @patch("dasbus.error.GLibErrorHandler.register",
-           new_callable=ErrorRegister)
-    def test_handle_server_error(self, register):
-        """Test the server error handler."""
-        h = GLibErrorHandler()
-        h.register.map_exception_to_name(
-            ExceptionA,
-            "org.test.ErrorA"
-        )
-
-        invocation = Mock()
-        h.handle_server_error(
-            GLibServer,
-            invocation,
-            ExceptionA("My message")
-        )
-        invocation.return_dbus_error.assert_called_once_with(
-            "org.test.ErrorA",
-            "My message"
-        )
-
-    @patch("dasbus.error.GLibErrorHandler.register",
-           new_callable=ErrorRegister)
-    def test_handle_client_error(self, register):
-        """Test the client error handler."""
-        h = GLibErrorHandler()
-        h.register.set_default_exception(ExceptionA)
-        h.register.map_exception_to_name(ExceptionB, "org.test.ErrorB")
-
-        remote_error = Gio.DBusError.new_for_dbus_error(
-            "org.test.Unknown",
-            "My message."
-        )
-        with self.assertRaises(ExceptionA) as cm:
-            h.handle_client_error(GLibClient, remote_error)
-
-        self.assertEqual(str(cm.exception), "My message.")
-
-        remote_error = Gio.DBusError.new_for_dbus_error(
-            "org.test.ErrorB",
-            "My message."
-        )
-        with self.assertRaises(ExceptionB) as cm:
-            h.handle_client_error(GLibClient, remote_error)
-
-        self.assertEqual(str(cm.exception), "My message.")
-
-        with self.assertRaises(ExceptionC) as cm:
-            h.handle_client_error(GLibClient, ExceptionC("My message."))
-
-        self.assertEqual(str(cm.exception), "My message.")
+        self.assertEqual(r.get_error_name(ExceptionA), "ExceptionA")
