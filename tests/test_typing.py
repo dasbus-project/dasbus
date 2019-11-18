@@ -51,7 +51,7 @@ class DBusTypingTests(unittest.TestCase):
         self.assertIsInstance(variant_type, GLib.VariantType)
         self.assertTrue(expected_type.equal(variant_type))
 
-    def unknown_test(self):
+    def test_unknown(self):
         """Test the unknown type."""
 
         class UnknownType:
@@ -69,7 +69,7 @@ class DBusTypingTests(unittest.TestCase):
         with self.assertRaises(TypeError):
             get_dbus_type(Dict[Int, UnknownType])
 
-    def invalid_test(self):
+    def test_invalid(self):
         """Test the invalid types."""
         with self.assertRaises(TypeError):
             get_dbus_type(Dict[List[Bool], Bool])
@@ -83,14 +83,14 @@ class DBusTypingTests(unittest.TestCase):
         with self.assertRaises(TypeError):
             get_dbus_type(Set[Int])
 
-    def simple_test(self):
+    def test_simple(self):
         """Test simple types."""
         self._compare(int, "i")
         self._compare(bool, "b")
         self._compare(float, "d")
         self._compare(str, "s")
 
-    def basic_test(self):
+    def test_basic(self):
         """Test basic types."""
         self._compare(Int, "i")
         self._compare(Bool, "b")
@@ -100,7 +100,7 @@ class DBusTypingTests(unittest.TestCase):
         self._compare(File, "h")
         self._compare(Variant, "v")
 
-    def int_test(self):
+    def test_int(self):
         """Test integer types."""
         self._compare(Byte, "y")
         self._compare(Int16, "n")
@@ -110,7 +110,7 @@ class DBusTypingTests(unittest.TestCase):
         self._compare(Int64, "x")
         self._compare(UInt64, "t")
 
-    def container_test(self):
+    def test_container(self):
         """Test container types."""
         self._compare(Tuple[Bool], "(b)")
         self._compare(Tuple[Int, Str], "(is)")
@@ -124,12 +124,12 @@ class DBusTypingTests(unittest.TestCase):
         self._compare(Dict[Str, Int], "a{si}")
         self._compare(Dict[Int, Bool], "a{ib}")
 
-    def alias_test(self):
+    def test_alias(self):
         """Test type aliases."""
         AliasType = List[Double]
         self._compare(Dict[Str, AliasType], "a{sad}")
 
-    def depth_test(self):
+    def test_depth(self):
         """Test difficult type structures."""
         self._compare(Tuple[Int, Tuple[Str, Str]], "(i(ss))")
         self._compare(Tuple[Tuple[Tuple[Int]]], "(((i)))")
@@ -143,7 +143,7 @@ class DBusTypingTests(unittest.TestCase):
         self._compare(Dict[Str, Tuple[Int, Int, Double]], "a{s(iid)}")
         self._compare(Dict[Str, Tuple[Int, Int, Dict[Int, Str]]], "a{s(iia{is})}")
 
-    def base_type_test(self):
+    def test_base_type(self):
         """Test the base type checks."""
         self.assertEqual(is_base_type(Int, Int), True)
         self.assertEqual(is_base_type(UInt16, UInt16), True)
@@ -171,7 +171,7 @@ class DBusTypingTests(unittest.TestCase):
         self.assertEqual(is_base_type(Tuple[Bool], Dict), False)
         self.assertEqual(is_base_type(Dict[Str, Variant], List), False)
 
-    def base_class_test(self):
+    def test_base_class(self):
         """Test the base class checks."""
         class Data(object):
             pass
@@ -218,7 +218,7 @@ class DBusTypingVariantTests(unittest.TestCase):
         self.assertTrue(isinstance(v3, Variant))
         self.assertTrue(v2.equal(v3))
 
-    def variant_invalid_test(self):
+    def test_variant_invalid(self):
         """Test invalid variants."""
 
         class UnknownType:
@@ -230,7 +230,7 @@ class DBusTypingVariantTests(unittest.TestCase):
         with self.assertRaises(TypeError):
             get_variant(List[Int], True)
 
-    def variant_basic_test(self):
+    def test_variant_basic(self):
         """Test variants with basic types."""
         self._test_variant(Int, "i", 1)
         self._test_variant(Bool, "b", True)
@@ -238,7 +238,7 @@ class DBusTypingVariantTests(unittest.TestCase):
         self._test_variant(Str, "s", "Hi!")
         self._test_variant(ObjPath, "o", "/org/something")
 
-    def variant_int_test(self):
+    def test_variant_int(self):
         """Test variants with integer types."""
         self._test_variant(Int16, "n", 2)
         self._test_variant(UInt16, "q", 3)
@@ -247,7 +247,7 @@ class DBusTypingVariantTests(unittest.TestCase):
         self._test_variant(Int64, "x", 6)
         self._test_variant(UInt64, "t", 7)
 
-    def variant_container_test(self):
+    def test_variant_container(self):
         """Test variants with container types."""
         self._test_variant(Tuple[Bool], "(b)", (False,))
         self._test_variant(Tuple[Int, Str], "(is)", (0, "zero"))
@@ -258,7 +258,7 @@ class DBusTypingVariantTests(unittest.TestCase):
         self._test_variant(Dict[Str, Int], "a{si}", {"a": 1, "b": 2})
         self._test_variant(Dict[Int, Bool], "a{ib}", {1: True, 2: False})
 
-    def variant_alias_test(self):
+    def test_variant_alias(self):
         """Test variants with type aliases."""
         AliasType = List[Double]
         self._test_variant(Dict[Str, AliasType], "a{sad}", {"test": [1.1, 2.2]})
@@ -272,7 +272,7 @@ class DBusTypingVariantTests(unittest.TestCase):
         self.assertEqual(get_native(list(variants)), list(values))
         self.assertEqual(get_native(dict(enumerate(variants))), dict(enumerate(values)))
 
-    def basic_native_test(self):
+    def test_basic_native(self):
         """Test get_native with basic variants."""
         self._test_native(
             [
@@ -289,7 +289,7 @@ class DBusTypingVariantTests(unittest.TestCase):
             ]
         )
 
-    def complex_native_test(self):
+    def test_complex_native(self):
         """Test get_native with complex variants."""
         self._test_native(
             [

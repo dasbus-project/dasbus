@@ -24,7 +24,7 @@ from dasbus.specification import DBusSpecificationParser, DBusSpecification, \
 
 class SpecificationTestCase(unittest.TestCase):
 
-    def from_members_test(self):
+    def test_from_members(self):
         """Test a specification created from members."""
         method = DBusSpecification.Method(
             name="Method",
@@ -64,7 +64,7 @@ class SpecificationTestCase(unittest.TestCase):
         self.assertEqual(specification.get_member("B", "Signal"), signal)
         self.assertEqual(specification.get_member("B", "Property"), prop)
 
-    def from_xml_test(self):
+    def test_from_xml(self):
         """Test a specification created from XML."""
         xml = '''
         <node>
@@ -194,7 +194,7 @@ class SpecificationParserTestCase(unittest.TestCase):
         DBusSpecificationParser._parse_xml(specification, xml)
         self.assertEqual(specification.members, expected_members)
 
-    def method_test(self):
+    def test_method(self):
         """Test XML with methods."""
         xml = '''
         <node>
@@ -241,7 +241,7 @@ class SpecificationParserTestCase(unittest.TestCase):
             )
         ])
 
-    def property_test(self):
+    def test_property(self):
         """Test XML with a property."""
         xml = '''
         <node>
@@ -260,7 +260,7 @@ class SpecificationParserTestCase(unittest.TestCase):
             )
         ])
 
-    def property_readonly_test(self):
+    def test_property_readonly(self):
         """Test readonly property."""
         xml = '''
         <node>
@@ -279,7 +279,7 @@ class SpecificationParserTestCase(unittest.TestCase):
             )
         ])
 
-    def property_writeonly_test(self):
+    def test_property_writeonly(self):
         """Test writeonly property."""
         xml = '''
         <node>
@@ -298,7 +298,7 @@ class SpecificationParserTestCase(unittest.TestCase):
             )
         ])
 
-    def simple_signal_test(self):
+    def test_simple_signal(self):
         """Test interface with a simple signal."""
         xml = '''
         <node>
@@ -315,7 +315,7 @@ class SpecificationParserTestCase(unittest.TestCase):
             )
         ])
 
-    def signal_test(self):
+    def test_signal(self):
         """Test interface with signals."""
         xml = '''
         <node>
@@ -341,7 +341,7 @@ class SpecificationParserTestCase(unittest.TestCase):
             )
         ])
 
-    def ignore_test(self):
+    def test_ignore(self):
         """Ignore invalid XML elements.."""
         xml = '''
         <node>
@@ -382,7 +382,7 @@ class SpecificationParserTestCase(unittest.TestCase):
 
         self._compare("<ignored />", [])
 
-    def standard_interfaces_test(self):
+    def test_standard_interfaces(self):
         """Test with the standard interfaces."""
         specification = DBusSpecificationParser.parse_specification('<node />')
         self.assertEqual(specification.members, [

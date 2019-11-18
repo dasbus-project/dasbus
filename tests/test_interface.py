@@ -39,7 +39,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
             XMLGenerator.prettify_xml(expected_xml)
         )
 
-    def exportable_test(self):
+    def test_exportable(self):
         """Test if the given name should be exported."""
         self.assertTrue(self.generator._is_exportable("Name"))
         self.assertTrue(self.generator._is_exportable("ValidName"))
@@ -58,7 +58,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
         self.assertFalse(self.generator._is_exportable("invalidName"))
         self.assertFalse(self.generator._is_exportable("123InvalidName"))
 
-    def is_method_test(self):
+    def test_is_method(self):
         """Test if methods are DBus methods."""
 
         class IsMethodClass(object):
@@ -81,7 +81,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
         self.assertFalse(self.generator._is_method(IsMethodClass.Test3))
         self.assertFalse(self.generator._is_method(IsMethodClass.Test4))
 
-    def invalid_method_test(self):
+    def test_invalid_method(self):
         """Test invalid methods."""
 
         class InvalidMethodClass(object):
@@ -125,7 +125,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
             with self.assertRaises(DBusSpecificationError):
                 self.generator._generate_method(method, method.__name__)
 
-    def method_test(self):
+    def test_method(self):
         """Test interface with a method."""
 
         @dbus_interface("Interface")
@@ -165,7 +165,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
 
         self._compare(MethodClass, expected_xml)
 
-    def is_property_test(self):
+    def test_is_property(self):
         """Test property detection."""
 
         class IsPropertyClass(object):
@@ -191,7 +191,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
         self.assertFalse(self.generator._is_property(IsPropertyClass.Property3))
         self.assertFalse(self.generator._is_property(IsPropertyClass.Property4))
 
-    def property_test(self):
+    def test_property(self):
         """Test the interface with a property."""
 
         @dbus_interface("Interface")
@@ -219,7 +219,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
 
         self._compare(ReadWritePropertyClass, expected_xml)
 
-    def invalid_property_test(self):
+    def test_invalid_property(self):
         """Test the interface with an invalid property."""
 
         class InvalidPropertyClass(object):
@@ -236,7 +236,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
         with self.assertRaises(DBusSpecificationError):
             self.generator._generate_property(InvalidPropertyClass.NoHintProperty, "NoHintProperty")
 
-    def property_readonly_test(self):
+    def test_property_readonly(self):
         """Test readonly property."""
 
         @dbus_interface("Interface")
@@ -260,7 +260,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
 
         self._compare(ReadonlyPropertyClass, expected_xml)
 
-    def property_writeonly_test(self):
+    def test_property_writeonly(self):
         """Test writeonly property."""
 
         @dbus_interface("Interface")
@@ -285,7 +285,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
 
         self._compare(WriteonlyPropertyClass, expected_xml)
 
-    def is_signal_test(self):
+    def test_is_signal(self):
         """Test signal detection."""
 
         class IsSignalClass(object):
@@ -316,7 +316,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
         self.assertFalse(self.generator._is_signal(IsSignalClass.Signal5))
         self.assertFalse(self.generator._is_signal(IsSignalClass.Signal6))
 
-    def simple_signal_test(self):
+    def test_simple_signal(self):
         """Test interface with a simple signal."""
 
         @dbus_interface("Interface")
@@ -334,7 +334,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
 
         self._compare(SimpleSignalClass, expected_xml)
 
-    def signal_test(self):
+    def test_signal(self):
         """Test interface with signals."""
 
         @dbus_interface("Interface")
@@ -374,7 +374,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
 
         self._compare(SignalClass, expected_xml)
 
-    def invalid_signal_test(self):
+    def test_invalid_signal(self):
         """Test interface with an invalid signal."""
 
         class InvalidSignalClass(object):
@@ -393,7 +393,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
         with self.assertRaises(DBusSpecificationError):
             self.generator._generate_signal(InvalidSignalClass.Signal2, "Signal2")
 
-    def override_method_test(self):
+    def test_override_method(self):
         """Test interface with overridden methods."""
 
         @dbus_interface("A")
@@ -473,7 +473,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
 
         self._compare(DClass, expected_xml)
 
-    def complex_test(self):
+    def test_complex(self):
         """Test complex example."""
 
         @dbus_interface("ComplexA")
@@ -605,7 +605,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
 
         self._compare(ComplexClassC, expected_xml)
 
-    def standard_interfaces_test(self):
+    def test_standard_interfaces(self):
         """Test members of standard interfaces."""
 
         @dbus_interface("InterfaceWithoutStandard")

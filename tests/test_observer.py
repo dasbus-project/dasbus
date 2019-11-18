@@ -62,7 +62,7 @@ class DBusObserverTestCase(unittest.TestCase):
         observer._service_available.emit.assert_not_called()
         observer._service_available.reset_mock()
 
-    def observer_test(self):
+    def test_observer(self):
         """Test the observer."""
         observer = DBusObserver(Mock(), "SERVICE")
         self._setup_observer(observer)
@@ -70,7 +70,7 @@ class DBusObserverTestCase(unittest.TestCase):
         self._make_service_unavailable(observer)
 
     @patch("dasbus.client.observer.Gio")
-    def connect_test(self, gio):
+    def test_connect(self, gio):
         """Test Gio support for watching names."""
         dbus = Mock()
         observer = DBusObserver(dbus, "my.service")

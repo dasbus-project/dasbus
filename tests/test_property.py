@@ -32,7 +32,7 @@ from dasbus.server.template import InterfaceTemplate
 class DBusPropertySpecificationTestCase(unittest.TestCase):
     """Test generating properties from DBus specification."""
 
-    def properties_mapping_test(self):
+    def test_properties_mapping(self):
         """Test properties mapping."""
 
         class Interface(object):
@@ -69,7 +69,7 @@ class DBusPropertySpecificationTestCase(unittest.TestCase):
 
         self.assertDictEqual(mapping, expected_mapping)
 
-    def invalid_properties_mapping_test(self):
+    def test_invalid_properties_mapping(self):
         """Test for invalid properties."""
 
         class Interface(object):
@@ -106,7 +106,7 @@ class DBusPropertyTestCase(unittest.TestCase):
         def B(self) -> Int:
             return 2
 
-    def report_changed_test(self):
+    def test_report_changed(self):
         """Test reporting changed properties."""
         test1 = self.Test1()
 
@@ -173,7 +173,7 @@ class DBusPropertyTestCase(unittest.TestCase):
         def DoNothing(self):
             pass
 
-    def emit_changed_test(self):
+    def test_emit_changed(self):
         """Test emitting changed properties."""
         test2 = self.Test2()
 
@@ -278,7 +278,7 @@ class DBusPropertyTestCase(unittest.TestCase):
             self._a = a
             self._b = b
 
-    def template_test(self):
+    def test_template(self):
         """Test the template with support for properties."""
         test3implementation = self.Test3Implementation()
         test3 = self.Test3(test3implementation)
@@ -362,7 +362,7 @@ class DBusPropertyTestCase(unittest.TestCase):
     class Test5Implementation(Test3Implementation):
         pass
 
-    def multiple_interfaces_test(self):
+    def test_multiple_interfaces(self):
         """Test template with multiple inheritance."""
         test5implementation = self.Test5Implementation()
         test5 = self.Test5(test5implementation)
@@ -419,7 +419,7 @@ class DBusPropertyTestCase(unittest.TestCase):
     class Test6(PropertiesInterface):
         pass
 
-    def invalid_class_test(self):
+    def test_invalid_class(self):
         """Test the properties interface with invalid class."""
         with self.assertRaises(DBusSpecificationError):
             self.Test6()
@@ -428,7 +428,7 @@ class DBusPropertyTestCase(unittest.TestCase):
     class Test7(PropertiesInterface):
         pass
 
-    def invalid_property_test(self):
+    def test_invalid_property(self):
         """Test the properties interface with invalid property."""
         test7 = self.Test7()
 
@@ -442,7 +442,7 @@ class DBusPropertyTestCase(unittest.TestCase):
     class Test8Implementation(object):
         pass
 
-    def invalid_property_template_test(self):
+    def test_invalid_property_template(self):
         """Test the template with invalid property."""
         test8implementation = self.Test8Implementation()
         test8 = self.Test8(test8implementation)

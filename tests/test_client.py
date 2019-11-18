@@ -84,7 +84,7 @@ class DBusClientTestCase(unittest.TestCase):
     def tearDown(self):
         self.variant_type_factory.tear_down()
 
-    def variant_type_factory_test(self):
+    def test_variant_type_factory(self):
         """Test the variant type factory."""
         self.assertEqual(str(get_variant_type("s")), "s")
         self.assertEqual(repr(get_variant_type("i")), "i")
@@ -101,7 +101,7 @@ class DBusClientTestCase(unittest.TestCase):
         self.handler = self.proxy._handler
         self.handler._specification = DBusSpecification.from_xml(xml)
 
-    def introspect_test(self):
+    def test_introspect(self):
         """Test the introspection."""
         self._set_reply(get_variant("(s)", (dedent("""
         <node>
@@ -125,7 +125,7 @@ class DBusClientTestCase(unittest.TestCase):
         )
 
     @patch("dasbus.error.GLibErrorHandler.register", new_callable=ErrorRegister)
-    def method_test(self, register):
+    def test_method(self, register):
         """Test the method proxy."""
         self._create_proxy("""
         <node>
@@ -233,7 +233,7 @@ class DBusClientTestCase(unittest.TestCase):
         self.connection.call_sync.reset_mock()
 
     @patch("dasbus.error.GLibErrorHandler.register", new_callable=ErrorRegister)
-    def async_method_test(self, register):
+    def test_async_method(self, register):
         """Test asynchronous calls of a method proxy."""
         self._create_proxy("""
         <node>
@@ -321,7 +321,7 @@ class DBusClientTestCase(unittest.TestCase):
             user_data=(self.handler._method_callback, (_callback, callback_args))
         )
 
-    def property_test(self):
+    def test_property(self):
         """Test the property proxy."""
         self._create_proxy("""
         <node>
@@ -379,7 +379,7 @@ class DBusClientTestCase(unittest.TestCase):
             get_variant_type("(v)")
         )
 
-    def signal_test(self):
+    def test_signal(self):
         """Test the signal publishing."""
         self._create_proxy("""
         <node>
