@@ -101,8 +101,8 @@ class DBusObserverTestCase(unittest.TestCase):
 
         # Check the observer.
         self.assertFalse(observer.is_service_available)
-        observer._service_available.emit.assert_not_called()  # pylint: disable=no-member
-        observer._service_unavailable.emit.assert_not_called()  # pylint: disable=no-member
+        observer._service_available.emit.assert_not_called()
+        observer._service_unavailable.emit.assert_not_called()
 
         # Call the name appeared closure.
         name_appeared_closure(dbus.connection, "my.service", "name.owner")

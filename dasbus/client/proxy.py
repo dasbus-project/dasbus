@@ -25,8 +25,13 @@ from dasbus.client.handler import ClientObjectHandler
 from dasbus.client.property import PropertyProxy
 from dasbus.specification import DBusSpecificationError
 
-__all__ = ["AbstractObjectProxy", "ObjectProxy", "InterfaceProxy", "get_object_path",
-           "disconnect_proxy"]
+__all__ = [
+    "AbstractObjectProxy",
+    "ObjectProxy",
+    "InterfaceProxy",
+    "get_object_path",
+    "disconnect_proxy"
+]
 
 
 def get_object_handler(proxy):
@@ -63,7 +68,12 @@ def disconnect_proxy(proxy):
 class AbstractObjectProxy(ABC):
     """Abstract proxy of a remote DBus object."""
 
-    __slots__ = ["_handler", "_members", "_lock", "__weakref__"]
+    __slots__ = [
+        "_handler",
+        "_members",
+        "_lock",
+        "__weakref__"
+    ]
 
     # Set of local instance attributes.
     _locals = {*__slots__}
@@ -217,7 +227,8 @@ class InterfaceProxy(AbstractObjectProxy):
     # Set of instance attributes.
     _locals = {*AbstractObjectProxy._locals, *__slots__}
 
-    def __init__(self, message_bus, service_name, object_path, interface_name, *args, **kwargs):
+    def __init__(self, message_bus, service_name, object_path,
+                 interface_name, *args, **kwargs):
         """Create a new proxy.
 
         :param message_bus: a message bus
@@ -225,7 +236,8 @@ class InterfaceProxy(AbstractObjectProxy):
         :param object_path: a DBus path the object
         :param handler: a DBus client object handler
         """
-        super().__init__(message_bus, service_name, object_path, *args, **kwargs)
+        super().__init__(message_bus, service_name, object_path,
+                         *args, **kwargs)
         self._interface_name = interface_name
 
     def _get_interface(self, member_name):

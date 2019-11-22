@@ -33,8 +33,13 @@ from gi.repository import Gio
 
 log = logging.getLogger(__name__)
 
-__all__ = ["GLibConnection", "MessageBus", "SystemMessageBus", "SessionMessageBus",
-           "AddressedMessageBus"]
+__all__ = [
+    "GLibConnection",
+    "MessageBus",
+    "SystemMessageBus",
+    "SessionMessageBus",
+    "AddressedMessageBus"
+]
 
 
 class GLibConnection(object):
@@ -64,8 +69,8 @@ class GLibConnection(object):
         )
 
     @staticmethod
-    def get_addressed_bus_connection(bus_address, flags=DEFAULT_FLAGS, observer=None,
-                                     cancellable=None):
+    def get_addressed_bus_connection(bus_address, flags=DEFAULT_FLAGS,
+                                     observer=None, cancellable=None):
         """Get a connection to a bus at the specified address."""
         return Gio.DBusConnection.new_for_address_sync(
             bus_address,
@@ -177,7 +182,8 @@ class MessageBus(AbstractMessageBus):
         return self._proxy
 
     # pylint: disable=arguments-differ
-    def get_proxy(self, service_name, object_path, proxy_factory=ObjectProxy, **proxy_arguments):
+    def get_proxy(self, service_name, object_path, proxy_factory=ObjectProxy,
+                  **proxy_arguments):
         """Returns a proxy of a remote DBus object.
 
         :param service_name: a DBus name of a service
@@ -187,7 +193,12 @@ class MessageBus(AbstractMessageBus):
         :return: a proxy object
         """
         self._check_service_access(service_name)
-        return proxy_factory(self, service_name, object_path, **proxy_arguments)
+        return proxy_factory(
+            self,
+            service_name,
+            object_path,
+            **proxy_arguments
+        )
 
     def _check_service_access(self, service_name):
         """Check if we can access a DBus service.
@@ -210,10 +221,13 @@ class MessageBus(AbstractMessageBus):
             # We don't try to access this service from the main thread.
             return
 
-        raise RuntimeError("Cannot access {} from the main thread.".format(service_name))
+        raise RuntimeError(
+            "Cannot access {} from the main thread.".format(service_name)
+        )
 
     # pylint: disable=arguments-differ
-    def register_service(self, service_name, flags=DBUS_NAME_FLAG_ALLOW_REPLACEMENT):
+    def register_service(self, service_name,
+                         flags=DBUS_NAME_FLAG_ALLOW_REPLACEMENT):
         """Register a service on DBus.
 
         :param service_name: a DBus name of a service
@@ -225,11 +239,16 @@ class MessageBus(AbstractMessageBus):
         if result != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER:
             raise ConnectionError("Name request has failed: {}".format(result))
 
-        self._requested_names.add(service_name)
-        self._registrations.append(lambda: self.proxy.ReleaseName(service_name))
+        self._requested_names.add(
+            service_name
+        )
+        self._registrations.append(
+            lambda: self.proxy.ReleaseName(service_name)
+        )
 
     # pylint: disable=arguments-differ
-    def publish_object(self, object_path, obj, server_factory=ServerObjectHandler):
+    def publish_object(self, object_path, obj,
+                       server_factory=ServerObjectHandler):
         """Publish an object on DBus.
 
         :param object_path: a DBus path of an object

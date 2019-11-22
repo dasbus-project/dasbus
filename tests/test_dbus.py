@@ -122,7 +122,8 @@ class ExampleInterface(object):
         raise ExampleException(message)
 
     @dbus_signal
-    def PropertiesChanged(self, interface: Str, changed: Dict[Str, Variant], invalid: List[Str]):
+    def PropertiesChanged(self, interface: Str, changed: Dict[Str, Variant],
+                          invalid: List[Str]):
         pass
 
 
@@ -265,7 +266,10 @@ class DBusTestCase(unittest.TestCase):
         self._add_client(test3)
         self._run_test()
 
-        self.assertEqual(sorted(self.service._secrets), ["Secret 1", "Secret 2"])
+        self.assertEqual(sorted(self.service._secrets), [
+            "Secret 1",
+            "Secret 2"
+        ])
 
     def test_value(self):
         """Use a DBus read-write property."""
@@ -294,8 +298,10 @@ class DBusTestCase(unittest.TestCase):
 
         self.assertEqual(sorted(self.service._values), [0, 1, 2, 3, 4])
         self.assertEqual(self.service._values[0], 0)
-        self.assertLess(self.service._values.index(1), self.service._values.index(2))
-        self.assertLess(self.service._values.index(3), self.service._values.index(4))
+        self.assertLess(self.service._values.index(1),
+                        self.service._values.index(2))
+        self.assertLess(self.service._values.index(3),
+                        self.service._values.index(4))
 
     def test_knocked(self):
         """Use a simple DBus signal."""

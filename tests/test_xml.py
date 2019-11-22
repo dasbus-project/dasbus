@@ -40,7 +40,9 @@ class XMLParserTestCase(unittest.TestCase):
 
     def test_is_interface(self):
         """Test if the element is an interface."""
-        element = XMLParser.xml_to_element('<interface name="InterfaceName" />')
+        element = XMLParser.xml_to_element(
+            '<interface name="InterfaceName" />'
+        )
         self.assertEqual(XMLParser.is_interface(element), True)
 
     def test_is_signal(self):
@@ -92,7 +94,10 @@ class XMLParserTestCase(unittest.TestCase):
             'name="ParameterName" '
             'type="ParameterType" />'
         )
-        self.assertEqual(XMLParser.get_type(element), "ParameterType")
+        self.assertEqual(
+            XMLParser.get_type(element),
+            "ParameterType"
+        )
 
     def test_get_access(self):
         """Get the access attribute."""
@@ -102,7 +107,10 @@ class XMLParserTestCase(unittest.TestCase):
             'name="PropertyName" '
             'type="PropertyType" />'
         )
-        self.assertEqual(XMLParser.get_access(element), "PropertyAccess")
+        self.assertEqual(
+            XMLParser.get_access(element),
+            "PropertyAccess"
+        )
 
     def test_get_direction(self):
         """Get the direction attribute."""
@@ -112,7 +120,10 @@ class XMLParserTestCase(unittest.TestCase):
             'name="ParameterName" '
             'type="ParameterType" />'
         )
-        self.assertEqual(XMLParser.get_direction(element), "ParameterDirection")
+        self.assertEqual(
+            XMLParser.get_direction(element),
+            "ParameterDirection"
+        )
 
     def test_get_interfaces_from_node(self):
         """Get interfaces from the node."""
@@ -131,7 +142,9 @@ class XMLGeneratorTestCase(unittest.TestCase):
 
     def _compare(self, element, xml):
         self.assertEqual(
-            XMLGenerator.prettify_xml(XMLGenerator.element_to_xml(element)),
+            XMLGenerator.prettify_xml(
+                XMLGenerator.element_to_xml(element)
+            ),
             XMLGenerator.prettify_xml(xml)
         )
 
@@ -149,20 +162,25 @@ class XMLGeneratorTestCase(unittest.TestCase):
     def test_parameter(self):
         """Test the parameter element."""
         self._compare(
-            XMLGenerator.create_parameter("ParameterName",
-                                          "ParameterType",
-                                          "ParameterDirection"),
+            XMLGenerator.create_parameter(
+                "ParameterName",
+                "ParameterType",
+                "ParameterDirection"
+            ),
             '<arg '
             'direction="ParameterDirection" '
             'name="ParameterName" '
-            'type="ParameterType" />')
+            'type="ParameterType" />'
+        )
 
     def test_property(self):
         """Test the property element."""
         self._compare(
-            XMLGenerator.create_property("PropertyName",
-                                         "PropertyType",
-                                         "PropertyAccess"),
+            XMLGenerator.create_property(
+                "PropertyName",
+                "PropertyType",
+                "PropertyAccess"
+            ),
             '<property '
             'access="PropertyAccess" '
             'name="PropertyName" '

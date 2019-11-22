@@ -20,7 +20,11 @@
 #
 from dasbus.namespace import get_dbus_path, get_dbus_name
 
-__all__ = ['DBusInterfaceIdentifier', 'DBusObjectIdentifier', 'DBusServiceIdentifier']
+__all__ = [
+    'DBusInterfaceIdentifier',
+    'DBusObjectIdentifier',
+    'DBusServiceIdentifier'
+]
 
 
 class DBusBaseIdentifier(object):
@@ -86,7 +90,8 @@ class DBusInterfaceIdentifier(DBusBaseIdentifier):
 class DBusObjectIdentifier(DBusInterfaceIdentifier):
     """Identifier of a DBus object."""
 
-    def __init__(self, namespace, basename=None, interface_version=None, object_version=None):
+    def __init__(self, namespace, basename=None, interface_version=None,
+                 object_version=None):
         """Describe a DBus object.
 
         :param namespace: a sequence of strings
@@ -94,7 +99,8 @@ class DBusObjectIdentifier(DBusInterfaceIdentifier):
         :param interface_version: a version of the DBus interface
         :param object_version: a version of the DBus object
         """
-        super().__init__(namespace, basename=basename, interface_version=interface_version)
+        super().__init__(namespace, basename=basename,
+                         interface_version=interface_version)
         self._object_version = object_version
 
     @property
@@ -110,8 +116,9 @@ class DBusObjectIdentifier(DBusInterfaceIdentifier):
 class DBusServiceIdentifier(DBusObjectIdentifier):
     """Identifier of a DBus service."""
 
-    def __init__(self, message_bus, namespace, basename=None, interface_version=None,
-                 object_version=None, service_version=None):
+    def __init__(self, message_bus, namespace, basename=None,
+                 interface_version=None, object_version=None,
+                 service_version=None):
         """Describe a DBus service.
 
         :param message_bus: a message bus

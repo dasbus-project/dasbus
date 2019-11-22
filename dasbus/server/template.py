@@ -22,7 +22,10 @@ from abc import ABC
 
 from dasbus.server.property import PropertiesInterface
 
-__all__ = ["BasicInterfaceTemplate", "InterfaceTemplate"]
+__all__ = [
+    "BasicInterfaceTemplate",
+    "InterfaceTemplate"
+]
 
 
 class BasicInterfaceTemplate(ABC):
@@ -94,8 +97,9 @@ class InterfaceTemplate(BasicInterfaceTemplate, PropertiesInterface):
 
         def connect_signals(self):
             super().connect_signals()
-
-            self.implementation.module_properties_changed.connect(self.flush_changes)
+            self.implementation.module_properties_changed.connect(
+                self.flush_changes
+            )
             self.watch_property("X", self.implementation.x_changed)
 
         @property
@@ -121,4 +125,8 @@ class InterfaceTemplate(BasicInterfaceTemplate, PropertiesInterface):
         :param signal: a signal that emits when the property is changed
         """
         self._properties_changes.check_property(property_name)
-        signal.connect(lambda *args, **kwargs: self.report_changed_property(property_name))
+
+        def callback(*args, **kwargs):
+            self.report_changed_property(property_name)
+
+        signal.connect(callback)

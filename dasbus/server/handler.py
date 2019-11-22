@@ -34,15 +34,19 @@ from gi.repository import Gio
 
 log = logging.getLogger(__name__)
 
-__all__ = ["GLibServer", "AbstractServerObjectHandler", "ServerObjectHandler"]
+__all__ = [
+    "GLibServer",
+    "AbstractServerObjectHandler",
+    "ServerObjectHandler"
+]
 
 
 class GLibServer(object):
     """The low-level DBus server library based on GLib."""
 
     @classmethod
-    def emit_signal(cls, connection, object_path, interface_name, signal_name, parameters,
-                    destination=None):
+    def emit_signal(cls, connection, object_path, interface_name,
+                    signal_name, parameters, destination=None):
         """Emit a DBus signal."""
         connection.emit_signal(
             destination,
@@ -53,14 +57,22 @@ class GLibServer(object):
         )
 
     @classmethod
-    def register_object(cls, connection, object_path, object_xml, callback, callback_args=()):
+    def register_object(cls, connection, object_path, object_xml,
+                        callback, callback_args=()):
         """Register an object on DBus."""
-        node_info = Gio.DBusNodeInfo.new_for_xml(object_xml)
-        method_call_closure = partial(cls._object_callback, user_data=(callback, callback_args))
+        node_info = Gio.DBusNodeInfo.new_for_xml(
+            object_xml
+        )
+        method_call_closure = partial(
+            cls._object_callback,
+            user_data=(callback, callback_args)
+        )
         registrations = []
 
         if not node_info.interfaces:
-            raise DBusSpecificationError("No interfaces for registration.")
+            raise DBusSpecificationError(
+                "No interfaces for registration."
+            )
 
         for interface_info in node_info.interfaces:
             registration_id = connection.register_object(
@@ -72,7 +84,11 @@ class GLibServer(object):
             )
             registrations.append(registration_id)
 
-        return partial(cls._unregister_object, connection, registrations)
+        return partial(
+            cls._unregister_object,
+            connection,
+            registrations
+        )
 
     @classmethod
     def _unregister_object(cls, connection, registrations):
@@ -81,13 +97,20 @@ class GLibServer(object):
             connection.unregister_object(registration_id)
 
     @classmethod
-    def _object_callback(cls, connection, sender, object_path, interface_name, method_name,
-                         parameters, invocation, user_data):
+    def _object_callback(cls, connection, sender, object_path,
+                         interface_name, method_name, parameters,
+                         invocation, user_data):
         # Prepare the user's callback.
         callback, callback_args = user_data
 
         # Call user's callback.
-        callback(invocation, interface_name, method_name, parameters, *callback_args)
+        callback(
+            invocation,
+            interface_name,
+            method_name,
+            parameters,
+            *callback_args
+        )
 
     @classmethod
     def set_call_error(cls, invocation, error_name, error_message):
@@ -118,7 +141,12 @@ class GLibServer(object):
 class AbstractServerObjectHandler(ABC):
     """The abstract handler of a published object."""
 
-    __slots__ = ["_message_bus", "_object_path", "_object", "_specification"]
+    __slots__ = [
+        "_message_bus",
+        "_object_path",
+        "_object",
+        "_specification"
+    ]
 
     def __init__(self, message_bus, object_path, obj):
         """Create a new handler.
@@ -145,7 +173,9 @@ class AbstractServerObjectHandler(ABC):
 
         :return: a DBus specification
         """
-        return DBusSpecification.from_xml(self._get_xml_specification())
+        return DBusSpecification.from_xml(
+            self._get_xml_specification()
+        )
 
     @abstractmethod
     def _get_xml_specification(self):
@@ -159,8 +189,9 @@ class AbstractServerObjectHandler(ABC):
     def connect_object(self):
         """Connect the object to DBus.
 
-        Handle emitted signals of the object with the _emit_signal method
-        and handle incoming DBus calls with the _handle_call method.
+        Handle emitted signals of the object with the _emit_signal
+        method and handle incoming DBus calls with the _handle_call
+        method.
         """
         pass
 
@@ -257,7 +288,12 @@ class AbstractServerObjectHandler(ABC):
 class ServerObjectHandler(AbstractServerObjectHandler):
     """The handler of an object published on DBus."""
 
-    __slots__ = ["_server", "_signal_factory", "_error_handler", "_registrations"]
+    __slots__ = [
+        "_server",
+        "_signal_factory",
+        "_error_handler",
+        "_registrations"
+    ]
 
     def __init__(self, message_bus, object_path, obj, server=GLibServer,
                  signal_factory=Signal, error_handler=GLibErrorHandler):
@@ -356,7 +392,8 @@ class ServerObjectHandler(AbstractServerObjectHandler):
             parameters
         )
 
-    def _method_callback(self, invocation, interface_name, method_name, parameters):
+    def _method_callback(self, invocation, interface_name, method_name,
+                         parameters):
         """The callback for a DBus call.
 
         :param invocation: an invocation of the DBus call
@@ -366,8 +403,15 @@ class ServerObjectHandler(AbstractServerObjectHandler):
         """
         try:
             # Handle the method call.
-            member = self._find_member_spec(interface_name, method_name)
-            result = self._handle_call(interface_name, method_name, *parameters.unpack())
+            member = self._find_member_spec(
+                interface_name,
+                method_name
+            )
+            result = self._handle_call(
+                interface_name,
+                method_name,
+                *parameters.unpack()
+            )
         except Exception as error:  # pylint: disable=broad-except
             # Log the error.
             log.warning(

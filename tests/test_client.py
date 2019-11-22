@@ -97,7 +97,11 @@ class DBusClientTestCase(unittest.TestCase):
 
     def _create_proxy(self, xml, proxy_factory=ObjectProxy):
         """Create a proxy with a mocked message bus."""
-        self.proxy = proxy_factory(self.message_bus, self.service_name, self.object_path)
+        self.proxy = proxy_factory(
+            self.message_bus,
+            self.service_name,
+            self.object_path
+        )
         self.handler = self.proxy._handler
         self.handler._specification = DBusSpecification.from_xml(xml)
 
@@ -111,7 +115,11 @@ class DBusClientTestCase(unittest.TestCase):
         </node>
         """), )))
 
-        self.handler = ClientObjectHandler(self.message_bus, self.service_name, self.object_path)
+        self.handler = ClientObjectHandler(
+            self.message_bus,
+            self.service_name,
+            self.object_path
+        )
         self.assertIsNotNone(self.handler.specification)
         self._check_call(
             "org.freedesktop.DBus.Introspectable",
@@ -124,7 +132,8 @@ class DBusClientTestCase(unittest.TestCase):
             self.handler.specification.members
         )
 
-    @patch("dasbus.error.GLibErrorHandler.register", new_callable=ErrorRegister)
+    @patch("dasbus.error.GLibErrorHandler.register",
+           new_callable=ErrorRegister)
     def test_method(self, register):
         """Test the method proxy."""
         self._create_proxy("""
@@ -177,7 +186,8 @@ class DBusClientTestCase(unittest.TestCase):
         )
 
         self._set_reply(get_variant("((ib))", ((1, True), )))
-        self.assertEqual(self.proxy.Method4([1.2, 2.3], "/my/path"), (1, True))
+        self.assertEqual(self.proxy.Method4([1.2, 2.3], "/my/path"),
+                         (1, True))
         self._check_call(
             "Interface",
             "Method4",
@@ -194,7 +204,10 @@ class DBusClientTestCase(unittest.TestCase):
         )
 
         register.map_exception_to_name(FakeException, "org.test.Unknown")
-        self._set_reply(Gio.DBusError.new_for_dbus_error("org.test.Unknown", "My message."))
+        self._set_reply(Gio.DBusError.new_for_dbus_error(
+            "org.test.Unknown",
+            "My message."
+        ))
 
         with self.assertRaises(FakeException) as cm:
             self.proxy.Method1()
@@ -216,7 +229,8 @@ class DBusClientTestCase(unittest.TestCase):
         else:
             self.connection.call_sync.return_value = reply_value
 
-    def _check_call(self, interface_name, method_name, parameters=None, reply_type=None):
+    def _check_call(self, interface_name, method_name, parameters=None,
+                    reply_type=None):
         """Check the DBus call."""
         self.connection.call_sync.assert_called_once_with(
             self.service_name,
@@ -232,7 +246,8 @@ class DBusClientTestCase(unittest.TestCase):
 
         self.connection.call_sync.reset_mock()
 
-    @patch("dasbus.error.GLibErrorHandler.register", new_callable=ErrorRegister)
+    @patch("dasbus.error.GLibErrorHandler.register",
+           new_callable=ErrorRegister)
     def test_async_method(self, register):
         """Test asynchronous calls of a method proxy."""
         self._create_proxy("""
@@ -262,7 +277,9 @@ class DBusClientTestCase(unittest.TestCase):
 
         callback = Mock()
         callback_args = ("A", "B")
-        self.proxy.Method2(1, 2, callback=callback, callback_args=callback_args)
+        self.proxy.Method2(
+            1, 2, callback=callback, callback_args=callback_args
+        )
         self._check_async_call(
             "Interface",
             "Method2",
@@ -272,13 +289,20 @@ class DBusClientTestCase(unittest.TestCase):
             get_variant_type("(i)")
         )
 
-        self._finish_async_call(get_variant("(i)", (3, )), callback, callback_args)
+        self._finish_async_call(
+            get_variant("(i)", (3, )),
+            callback,
+            callback_args
+        )
         callback.assert_called_once_with(3, "A", "B")
 
         callback = Mock()
         callback_args = ("A", "B")
         register.map_exception_to_name(FakeException, "org.test.Unknown")
-        error = Gio.DBusError.new_for_dbus_error("org.test.Unknown", "My message.")
+        error = Gio.DBusError.new_for_dbus_error(
+            "org.test.Unknown",
+            "My message."
+        )
 
         with self.assertRaises(FakeException) as cm:
             self._finish_async_call(error, callback, callback_args)
@@ -286,8 +310,8 @@ class DBusClientTestCase(unittest.TestCase):
         self.assertEqual(str(cm.exception), "My message.")
         callback.assert_not_called()
 
-    def _check_async_call(self, interface_name, method_name, callback, callback_args,
-                          parameters=None, reply_type=None):
+    def _check_async_call(self, interface_name, method_name, callback,
+                          callback_args, parameters=None, reply_type=None):
         """Check the asynchronous DBus call."""
         self.connection.call.assert_called_once_with(
             self.service_name,
@@ -299,7 +323,10 @@ class DBusClientTestCase(unittest.TestCase):
             DBUS_FLAG_NONE,
             GLibClient.DBUS_TIMEOUT_NONE,
             callback=GLibClient._async_call_finish,
-            user_data=(self.handler._method_callback, (callback, callback_args))
+            user_data=(
+                self.handler._method_callback,
+                (callback, callback_args)
+            )
         )
 
         self.connection.call.reset_mock()
@@ -318,7 +345,10 @@ class DBusClientTestCase(unittest.TestCase):
         GLibClient._async_call_finish(
             source_object=Mock(call_finish=_call_finish),
             result_object=result,
-            user_data=(self.handler._method_callback, (_callback, callback_args))
+            user_data=(
+                self.handler._method_callback,
+                (_callback, callback_args)
+            )
         )
 
     def test_property(self):
@@ -401,7 +431,8 @@ class DBusClientTestCase(unittest.TestCase):
         self.assertEqual(len(self.handler._subscriptions), 2)
 
         self._check_signal("Interface", "Signal2", self.proxy.Signal2.emit)
-        self._emit_signal(get_variant("(is)", (1, "Test")), self.proxy.Signal2.emit)
+        self._emit_signal(get_variant("(is)", (1, "Test")),
+                          self.proxy.Signal2.emit)
         self.assertEqual(len(self.handler._subscriptions), 4)
 
         with self.assertRaises(AttributeError):

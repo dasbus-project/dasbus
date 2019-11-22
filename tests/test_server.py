@@ -55,10 +55,15 @@ class DBusServerTestCase(unittest.TestCase):
         # Create default object signals.
         self.object.PropertiesChanged = Signal()
 
-        self.handler = ServerObjectHandler(self.message_bus, self.object_path, self.object)
+        self.handler = ServerObjectHandler(
+            self.message_bus,
+            self.object_path,
+            self.object
+        )
         self.handler.connect_object()
 
-    def _call_method(self, interface, method, parameters=NO_PARAMETERS, reply=None):
+    def _call_method(self, interface, method, parameters=NO_PARAMETERS,
+                     reply=None):
         invocation = Mock()
         GLibServer._object_callback(
             self.connection, Mock(), self.object_path, interface, method,
@@ -68,12 +73,19 @@ class DBusServerTestCase(unittest.TestCase):
         invocation.return_dbus_error.assert_not_called()
         invocation.return_value.assert_called_once_with(reply)
 
-    def _call_method_with_error(self, interface, method, parameters=NO_PARAMETERS,
-                                error_name="", error_message=""):
+    def _call_method_with_error(self, interface, method,
+                                parameters=NO_PARAMETERS,
+                                error_name="",
+                                error_message=""):
         invocation = Mock()
 
         with self.assertLogs(level='WARN'):
-            self.handler._method_callback(invocation, interface, method, parameters)
+            self.handler._method_callback(
+                invocation,
+                interface,
+                method,
+                parameters
+            )
 
         invocation.return_dbus_error(error_name, error_message)
         invocation.return_value.assert_not_called()
@@ -93,7 +105,8 @@ class DBusServerTestCase(unittest.TestCase):
         self.handler.disconnect_object()
         self.message_bus.connection.unregister_object.assert_called()
 
-    @patch("dasbus.error.GLibErrorHandler.register", new_callable=ErrorRegister)
+    @patch("dasbus.error.GLibErrorHandler.register",
+           new_callable=ErrorRegister)
     def test_method(self, register):
         """Test the method publishing."""
         self._publish_object("""
@@ -116,7 +129,11 @@ class DBusServerTestCase(unittest.TestCase):
         """)
 
         self.object.Method2.return_value = None
-        self._call_method("Interface", "Method2", parameters=get_variant("(i)", (1, )))
+        self._call_method(
+            "Interface",
+            "Method2",
+            parameters=get_variant("(i)", (1, ))
+        )
         self.object.Method2.assert_called_once_with(1)
 
         self.object.Method1.return_value = None
@@ -124,12 +141,17 @@ class DBusServerTestCase(unittest.TestCase):
         self.object.Method1.assert_called_once_with()
 
         self.object.Method3.return_value = 0
-        self._call_method("Interface", "Method3", reply=get_variant("(i)", (0, )))
+        self._call_method(
+            "Interface",
+            "Method3",
+            reply=get_variant("(i)", (0, ))
+        )
         self.object.Method3.assert_called_once_with()
 
         self.object.Method4.return_value = (1, True)
         self._call_method(
-            "Interface", "Method4",
+            "Interface",
+            "Method4",
             parameters=get_variant("(ado)", ([1.2, 2.3], "/my/path")),
             reply=get_variant("((ib))", ((1, True), ))
         )
@@ -139,7 +161,8 @@ class DBusServerTestCase(unittest.TestCase):
             "Interface",
             "MethodInvalid",
             error_name="not.known.Error.DBusSpecificationError",
-            error_message="Unknown member MethodInvalid of the interface Interface."
+            error_message="Unknown member MethodInvalid of "
+                          "the interface Interface."
         )
 
     def test_property(self):
@@ -157,25 +180,39 @@ class DBusServerTestCase(unittest.TestCase):
         self.object.Property1 = 0
         self._call_method(
             "org.freedesktop.DBus.Properties", "Get",
-            parameters=get_variant("(ss)", ("Interface", "Property1")),
+            parameters=get_variant("(ss)", (
+                "Interface",
+                "Property1"
+            )),
             reply=get_variant("(v)", (get_variant("i", 0), ))
         )
 
         self._call_method(
             "org.freedesktop.DBus.Properties", "Set",
-            parameters=get_variant("(ssv)", ("Interface", "Property1", get_variant("i", 1))),
+            parameters=get_variant("(ssv)", (
+                "Interface",
+                "Property1",
+                get_variant("i", 1)
+            )),
         )
         self.assertEqual(self.object.Property1, 1)
 
         self.object.Property2 = "Hello"
         self._call_method(
             "org.freedesktop.DBus.Properties", "Get",
-            parameters=get_variant("(ss)", ("Interface", "Property2")),
+            parameters=get_variant("(ss)", (
+                "Interface",
+                "Property2"
+            )),
             reply=get_variant("(v)", (get_variant("s", "Hello"), ))
         )
         self._call_method_with_error(
             "org.freedesktop.DBus.Properties", "Set",
-            parameters=get_variant("(ssv)", ("Interface", "Property2", get_variant("s", "World"))),
+            parameters=get_variant("(ssv)", (
+                "Interface",
+                "Property2",
+                get_variant("s", "World")
+            )),
             error_name="not.known.AttributeError",
             error_message="Property2 of Interface is not writable."
         )
@@ -184,13 +221,20 @@ class DBusServerTestCase(unittest.TestCase):
         self.object.Property3 = True
         self._call_method_with_error(
             "org.freedesktop.DBus.Properties", "Get",
-            parameters=get_variant("(ss)", ("Interface", "Property3")),
+            parameters=get_variant("(ss)", (
+                "Interface",
+                "Property3"
+            )),
             error_name="not.known.AttributeError",
             error_message="Property3 of Interface is not readable."
         )
         self._call_method(
             "org.freedesktop.DBus.Properties", "Set",
-            parameters=get_variant("(ssv)", ("Interface", "Property3", get_variant("b", False))),
+            parameters=get_variant("(ssv)", (
+                "Interface",
+                "Property3",
+                get_variant("b", False)
+            )),
         )
         self.assertEqual(self.object.Property3, False)
 

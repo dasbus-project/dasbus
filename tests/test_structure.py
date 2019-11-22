@@ -18,9 +18,10 @@
 #
 import unittest
 
-from dasbus.typing import get_variant, get_native, Int, Str, List, Bool, Dict, Structure
-from dasbus.structure import DBusData, DBusStructureError, generate_string_from_data, \
-    compare_data
+from dasbus.typing import get_variant, get_native, Int, Str, List, Bool, \
+    Dict, Structure
+from dasbus.structure import DBusData, DBusStructureError, compare_data, \
+    generate_string_from_data
 
 
 class DBusStructureTestCase(unittest.TestCase):
@@ -454,7 +455,10 @@ class DBusStructureTestCase(unittest.TestCase):
         with self.assertRaises(DBusStructureError) as cm:
             generate_string_from_data({"x": 1})
 
-        self.assertEqual(str(cm.exception), "Fields are not defined at '__dbus_fields__'.")
+        self.assertEqual(
+            str(cm.exception),
+            "Fields are not defined at '__dbus_fields__'."
+        )
 
     def test_nested_structure(self):
         class SimpleData(DBusData):

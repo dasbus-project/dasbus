@@ -32,8 +32,12 @@ from dasbus.specification import DBusSpecificationError, DBusSpecification
 from dasbus.typing import get_dbus_type
 from dasbus.xml import XMLGenerator
 
-__all__ = ["dbus_class", "dbus_interface", "dbus_signal", "get_xml"]
-
+__all__ = [
+    "dbus_class",
+    "dbus_interface",
+    "dbus_signal",
+    "get_xml"
+]
 
 # Class attribute for the XML specification.
 DBUS_XML_ATTRIBUTE = "__dbus_xml__"
@@ -173,7 +177,9 @@ def get_xml(obj):
 
     if xml_specification is None:
         raise DBusSpecificationError(
-            "XML specification is not defined at '{}'.".format(DBUS_XML_ATTRIBUTE)
+            "XML specification is not defined at '{}'.".format(
+                DBUS_XML_ATTRIBUTE
+            )
         )
 
     return xml_specification
@@ -206,7 +212,11 @@ class DBusSpecificationGenerator(object):
         if interface_name:
             all_interfaces = cls._collect_standard_interfaces()
             all_interfaces.update(interfaces)
-            interface = cls._generate_interface(interface_cls, all_interfaces, interface_name)
+            interface = cls._generate_interface(
+                interface_cls,
+                all_interfaces,
+                interface_name
+            )
             interfaces[interface_name] = interface
 
         # Generate XML specification for the given class.
@@ -221,7 +231,9 @@ class DBusSpecificationGenerator(object):
 
         :return: a dictionary of standard interfaces
         """
-        node = cls.xml_generator.xml_to_element(DBusSpecification.STANDARD_INTERFACES)
+        node = cls.xml_generator.xml_to_element(
+            DBusSpecification.STANDARD_INTERFACES
+        )
         return cls.xml_generator.get_interfaces_from_node(node)
 
     @classmethod
@@ -281,9 +293,11 @@ class DBusSpecificationGenerator(object):
             elif cls._is_method(member):
                 element = cls._generate_method(member, member_name)
             else:
-                raise DBusSpecificationError("{}.{} cannot be exported.".format(
-                    interface_cls.__name__, member_name
-                ))
+                raise DBusSpecificationError(
+                    "{}.{} cannot be exported.".format(
+                        interface_cls.__name__, member_name
+                    )
+                )
 
             # Add generated element to the interface.
             cls.xml_generator.add_child(interface, element)
@@ -344,11 +358,18 @@ class DBusSpecificationGenerator(object):
         for name, type_hint, direction in cls._iterate_parameters(method):
             # Only input parameters can be defined.
             if direction == DBusSpecification.DIRECTION_OUT:
-                raise DBusSpecificationError("Signal %s has defined return type." % member_name)
+                raise DBusSpecificationError(
+                    "Signal {} has defined return type.".format(member_name)
+                )
 
-            # All parameters are exported as output parameters (see specification).
+            # All parameters are exported as output parameters
+            # (see specification).
             direction = DBusSpecification.DIRECTION_OUT
-            parameter = cls.xml_generator.create_parameter(name, get_dbus_type(type_hint), direction)
+            parameter = cls.xml_generator.create_parameter(
+                name,
+                get_dbus_type(type_hint),
+                direction
+            )
             cls.xml_generator.add_child(element, parameter)
 
         return element
@@ -373,12 +394,17 @@ class DBusSpecificationGenerator(object):
         # Iterate over method parameters, skip cls.
         for name in list(signature.parameters)[1:]:
             # Check the kind of the parameter
-            if signature.parameters[name].kind != Parameter.POSITIONAL_OR_KEYWORD:
-                raise DBusSpecificationError("Only positional or keyword arguments are allowed.")
+            kind = signature.parameters[name].kind
+            if kind != Parameter.POSITIONAL_OR_KEYWORD:
+                raise DBusSpecificationError(
+                    "Only positional or keyword arguments are allowed."
+                )
 
             # Check if the type is defined.
             if name not in type_hints:
-                raise DBusSpecificationError("Parameter %s doesn't have defined type." % name)
+                raise DBusSpecificationError(
+                    "Parameter {} doesn't have defined type.".format(name)
+                )
 
             yield name, type_hints[name], DBusSpecification.DIRECTION_IN
 
@@ -426,16 +452,24 @@ class DBusSpecificationGenerator(object):
                 access = DBusSpecification.ACCESS_READ
 
         except ValueError:
-            raise DBusSpecificationError("Property %s has invalid parameters." % member_name)
+            raise DBusSpecificationError(
+                "Property {} has invalid parameters.".format(member_name)
+            )
 
         # Property has both.
         if member.fget and member.fset:
             access = DBusSpecification.ACCESS_READWRITE
 
         if access is None:
-            raise DBusSpecificationError("Property %s is not accessible." % member_name)
+            raise DBusSpecificationError(
+                "Property {} is not accessible.".format(member_name)
+            )
 
-        return cls.xml_generator.create_property(member_name, get_dbus_type(type_hint), access)
+        return cls.xml_generator.create_property(
+            member_name,
+            get_dbus_type(type_hint),
+            access
+        )
 
     @classmethod
     def _is_method(cls, member):
@@ -472,7 +506,9 @@ class DBusSpecificationGenerator(object):
         # Process the parameters.
         for name, type_hint, direction in cls._iterate_parameters(member):
             # Create the parameter element.
-            parameter = cls.xml_generator.create_parameter(name, get_dbus_type(type_hint), direction)
+            parameter = cls.xml_generator.create_parameter(
+                name, get_dbus_type(type_hint), direction
+            )
             # Add the element to the method element.
             cls.xml_generator.add_child(method, parameter)
 
@@ -489,7 +525,9 @@ class DBusSpecificationGenerator(object):
         node = cls.xml_generator.create_node()
 
         # Add comment about specified class.
-        cls.xml_generator.add_comment(node, "Specifies %s" % interface_cls.__name__)
+        cls.xml_generator.add_comment(
+            node, "Specifies {}".format(interface_cls.__name__)
+        )
 
         # Add interfaces sorted by their names.
         for interface_name in sorted(interfaces.keys()):

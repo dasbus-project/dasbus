@@ -18,7 +18,11 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA#
 
-__all__ = ['get_dbus_name', 'get_dbus_path', 'get_namespace_from_name']
+__all__ = [
+    "get_dbus_name",
+    "get_dbus_path",
+    "get_namespace_from_name"
+]
 
 
 def get_dbus_name(*namespace):

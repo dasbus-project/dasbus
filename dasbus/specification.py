@@ -25,7 +25,11 @@ from collections import namedtuple
 
 from dasbus.xml import XMLParser
 
-__all__ = ["DBusSpecificationError", "DBusSpecification", "DBusSpecificationParser"]
+__all__ = [
+    "DBusSpecificationError",
+    "DBusSpecification",
+    "DBusSpecificationParser"
+]
 
 
 class DBusSpecificationError(Exception):
@@ -81,9 +85,26 @@ class DBusSpecification(object):
     """
 
     # Representation of specification members.
-    Signal = namedtuple("Signal", ["name", "interface_name", "type"])
-    Method = namedtuple("Method", ["name", "interface_name", "in_type", "out_type"])
-    Property = namedtuple("Property", ["name", "interface_name", "readable", "writable", "type"])
+    Signal = namedtuple("Signal", [
+        "name",
+        "interface_name",
+        "type"
+    ])
+
+    Method = namedtuple("Method", [
+        "name",
+        "interface_name",
+        "in_type",
+        "out_type"
+    ])
+
+    Property = namedtuple("Property", [
+        "name",
+        "interface_name",
+        "readable",
+        "writable",
+        "type"
+    ])
 
     # Specification data holders.
     __slots__ = ["_members"]
