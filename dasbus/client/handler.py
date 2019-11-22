@@ -26,7 +26,7 @@ from dasbus.signal import Signal
 from dasbus.constants import DBUS_FLAG_NONE
 from dasbus.error import GLibErrorHandler
 from dasbus.specification import DBusSpecification
-from dasbus.typing import *  # pylint: disable=wildcard-import
+from dasbus.typing import get_variant, get_variant_type
 
 import gi
 gi.require_version("GLib", "2.0")

@@ -24,10 +24,11 @@
 from abc import ABC
 from collections import defaultdict
 from functools import wraps
+from typing import Dict
 
 from dasbus.server.interface import dbus_signal, get_xml
 from dasbus.specification import DBusSpecification, DBusSpecificationError
-from dasbus.typing import *  # pylint: disable=wildcard-import
+from dasbus.typing import get_variant, Str, Variant, List
 
 __all__ = ["emits_properties_changed", "PropertiesException", "PropertiesInterface"]
 

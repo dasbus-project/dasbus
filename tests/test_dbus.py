@@ -25,7 +25,7 @@ from dasbus.client.proxy import disconnect_proxy
 from dasbus.connection import AddressedMessageBus
 from dasbus.error import map_error
 from dasbus.server.interface import dbus_interface, dbus_signal
-from dasbus.typing import *  # pylint: disable=wildcard-import
+from dasbus.typing import get_variant, Str, Int, Dict, Variant, List
 
 import gi
 gi.require_version("Gio", "2.0")

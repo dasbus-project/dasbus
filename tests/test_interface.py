@@ -18,7 +18,7 @@
 #
 import unittest
 
-from dasbus.typing import *  # pylint: disable=wildcard-import
+from dasbus.typing import Int, Str, List, Double, File, Tuple, Bool
 from dasbus.server.interface import DBusSpecificationGenerator, DBusSpecificationError, \
     dbus_interface, dbus_class, dbus_signal, get_xml
 from dasbus.xml import XMLGenerator

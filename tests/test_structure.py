@@ -18,7 +18,7 @@
 #
 import unittest
 
-from dasbus.typing import *  # pylint: disable=wildcard-import
+from dasbus.typing import get_variant, get_native, Int, Str, List, Bool, Dict, Structure
 from dasbus.structure import DBusData, DBusStructureError, generate_string_from_data, \
     compare_data
 

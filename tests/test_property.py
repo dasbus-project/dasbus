@@ -25,7 +25,7 @@ from dasbus.server.property import PropertiesInterface, emits_properties_changed
     PropertiesException, PropertiesChanges
 from dasbus.signal import Signal
 from dasbus.specification import DBusSpecificationError
-from dasbus.typing import *  # pylint: disable=wildcard-import
+from dasbus.typing import get_variant, Int
 from dasbus.server.template import InterfaceTemplate
 
 

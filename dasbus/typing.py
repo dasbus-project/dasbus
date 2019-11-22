@@ -31,7 +31,7 @@ from gi.repository.GLib import Variant, VariantType
 __all__ = ["Bool", "Double", "Str", "Int", "Byte", "Int16", "UInt16",
            "Int32", "UInt32", "Int64", "UInt64", "File", "ObjPath",
            "Tuple", "List", "Dict", "Variant", "VariantType", "Structure",
-           "get_variant", "get_variant_type", "get_native",
+           "get_variant", "get_variant_type", "get_native", "get_dbus_type",
            "is_base_type", "get_type_arguments"]
 
 # Basic types.
