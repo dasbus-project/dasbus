@@ -18,7 +18,7 @@
 #
 import unittest
 
-from mock import Mock, call
+from unittest.mock import Mock, call
 
 from dasbus.server.interface import dbus_interface
 from dasbus.server.property import PropertiesInterface, PropertiesException, \
