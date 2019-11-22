@@ -34,6 +34,10 @@ coverage:
 	PYTHONPATH=. $(COVERAGE) run --branch -m unittest discover -v -s tests/
 	$(COVERAGE) report -m --include="dasbus/*" | tee coverage-report.log
 
+check:
+	@echo "*** Running pylint ***"
+	$(PYTHON) -m pylint dasbus/ tests/
+
 install:
 	$(PYTHON) setup.py install --root=$(DESTDIR) --skip-build
 
