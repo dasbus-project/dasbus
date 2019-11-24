@@ -135,31 +135,18 @@ class GLibErrorHandler(object):
         return exception
 
 
-def dbus_error(error_name, namespace=()):
+def dbus_error(error_name, namespace=(), error_handler=GLibErrorHandler):
     """Define decorated class as a DBus error.
 
     The decorated exception class will be mapped to a DBus error.
 
     :param error_name: a DBus name of the error
     :param namespace: a sequence of strings
+    :param error_handler: an error handler
     :return: a decorator
     """
-    return map_error(get_dbus_name(*namespace, error_name))
+    error_name = get_dbus_name(*namespace, error_name)
 
-
-def dbus_error_by_default(cls):
-    """Define a default DBus error.
-
-    The decorated exception class will be mapped to all unknown DBus errors.
-
-    :param cls: an exception class
-    :return: a decorated class
-    """
-    return map_by_default(cls)
-
-
-def map_error(error_name, error_handler=GLibErrorHandler):
-    """Map decorated exception class to a DBus error."""
     def decorated(cls):
         error_handler.register.map_exception_to_name(cls, error_name)
         return cls
@@ -167,7 +154,14 @@ def map_error(error_name, error_handler=GLibErrorHandler):
     return decorated
 
 
-def map_by_default(cls, error_handler=GLibErrorHandler):
-    """Map decorated exception class to all unknown DBus errors."""
+def dbus_error_by_default(cls, error_handler=GLibErrorHandler):
+    """Define a default DBus error.
+
+    The decorated exception class will be mapped to all unknown DBus errors.
+
+    :param cls: an exception class
+    :param error_handler: an error handler
+    :return: a decorated class
+    """
     error_handler.register.set_default_exception(cls)
     return cls

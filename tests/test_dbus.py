@@ -23,7 +23,7 @@ from unittest.mock import Mock
 
 from dasbus.client.proxy import disconnect_proxy
 from dasbus.connection import AddressedMessageBus
-from dasbus.error import map_error
+from dasbus.error import dbus_error
 from dasbus.server.interface import dbus_interface, dbus_signal
 from dasbus.typing import get_variant, Str, Int, Dict, Variant, List
 
@@ -65,7 +65,7 @@ class run_in_glib(object):
         return create_loop
 
 
-@map_error("my.testing.Error")
+@dbus_error("my.testing.Error")
 class ExampleException(Exception):
     pass
 
