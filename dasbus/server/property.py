@@ -24,12 +24,17 @@
 from abc import ABC
 from collections import defaultdict
 from functools import wraps
+from typing import Dict
 
 from dasbus.server.interface import dbus_signal, get_xml
 from dasbus.specification import DBusSpecification, DBusSpecificationError
-from dasbus.typing import *  # pylint: disable=wildcard-import
+from dasbus.typing import get_variant, Str, Variant, List
 
-__all__ = ["emits_properties_changed", "PropertiesException", "PropertiesInterface"]
+__all__ = [
+    "emits_properties_changed",
+    "PropertiesException",
+    "PropertiesInterface"
+]
 
 
 def emits_properties_changed(method):
@@ -129,8 +134,11 @@ class PropertiesChanges(object):
     def check_property(self, property_name):
         """Check if the property name is valid."""
         if property_name not in self._properties_specs:
-            raise PropertiesException("Unknown interface of property {}."
-                                      .format(property_name))
+            raise PropertiesException(
+                "Unknown interface of property {}.".format(
+                    property_name
+                )
+            )
 
     def update(self, property_name):
         """Update the cache."""
@@ -141,8 +149,9 @@ class PropertiesChanges(object):
 class PropertiesInterface(ABC):
     """Standard DBus interface org.freedesktop.DBus.Properties.
 
-    DBus objects don't have to inherit this class, because the DBus library provides
-    support for this interface by default. This class only extends this support.
+    DBus objects don't have to inherit this class, because the
+    DBus library provides support for this interface by default.
+    This class only extends this support.
 
     Report the changed property:
 
@@ -161,7 +170,8 @@ class PropertiesInterface(ABC):
         self._properties_changes = PropertiesChanges(self)
 
     @dbus_signal
-    def PropertiesChanged(self, interface: Str, changed: Dict[Str, Variant], invalid: List[Str]):
+    def PropertiesChanged(self, interface: Str, changed: Dict[Str, Variant],
+                          invalid: List[Str]):
         """Standard signal properties changed.
 
         :param interface: a name of an interface

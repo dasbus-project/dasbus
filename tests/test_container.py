@@ -81,7 +81,8 @@ class DBusContainerTestCase(unittest.TestCase):
         path = self.container.to_object_path(obj)
 
         self.message_bus.publish_object.assert_called_once()
-        published_path, published_obj = self.message_bus.publish_object.call_args[0]
+        published_path, published_obj = \
+            self.message_bus.publish_object.call_args[0]
 
         self.assertEqual(path, "/org/Project/Object/1")
         self.assertEqual(path, published_path)

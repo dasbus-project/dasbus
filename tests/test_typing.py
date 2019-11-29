@@ -21,8 +21,9 @@ import unittest
 
 from typing import Set
 
-from dasbus.typing import *  # pylint: disable=wildcard-import
-from dasbus.typing import get_dbus_type
+from dasbus.typing import get_dbus_type, is_base_type, get_native, \
+    get_variant, get_variant_type, Int, Int16, Int32, Int64, UInt16, UInt32, \
+    UInt64, Bool, Byte, Str, Dict, List, Tuple, Variant, Double, ObjPath, File
 
 import gi
 gi.require_version("GLib", "2.0")
@@ -141,7 +142,8 @@ class DBusTypingTests(unittest.TestCase):
 
         self._compare(Dict[Str, List[Bool]], "a{sab}")
         self._compare(Dict[Str, Tuple[Int, Int, Double]], "a{s(iid)}")
-        self._compare(Dict[Str, Tuple[Int, Int, Dict[Int, Str]]], "a{s(iia{is})}")
+        self._compare(Dict[Str, Tuple[Int, Int, Dict[Int, Str]]],
+                      "a{s(iia{is})}")
 
     def test_base_type(self):
         """Test the base type checks."""
@@ -203,7 +205,7 @@ class DBusTypingVariantTests(unittest.TestCase):
         # Create a variant from a type hint.
         v1 = get_variant(type_hint, value)
         self.assertTrue(isinstance(v1, Variant))
-        self.assertEqual(v1.format_string, expected_string)  # pylint: disable=no-member
+        self.assertEqual(v1.format_string, expected_string)
         self.assertEqual(v1.unpack(), value)
 
         v2 = Variant(expected_string, value)
@@ -261,7 +263,9 @@ class DBusTypingVariantTests(unittest.TestCase):
     def test_variant_alias(self):
         """Test variants with type aliases."""
         AliasType = List[Double]
-        self._test_variant(Dict[Str, AliasType], "a{sad}", {"test": [1.1, 2.2]})
+        self._test_variant(Dict[Str, AliasType], "a{sad}", {
+            "test": [1.1, 2.2]
+        })
 
     def _test_native(self, variants, values):
         """Test native values of variants."""
@@ -270,7 +274,8 @@ class DBusTypingVariantTests(unittest.TestCase):
 
         self.assertEqual(get_native(tuple(variants)), tuple(values))
         self.assertEqual(get_native(list(variants)), list(values))
-        self.assertEqual(get_native(dict(enumerate(variants))), dict(enumerate(values)))
+        self.assertEqual(get_native(dict(enumerate(variants))),
+                         dict(enumerate(values)))
 
     def test_basic_native(self):
         """Test get_native with basic variants."""
@@ -294,9 +299,17 @@ class DBusTypingVariantTests(unittest.TestCase):
         self._test_native(
             [
                 get_variant(Variant, get_variant(Double, 1.2)),
-                get_variant(List[Variant], [get_variant(Int, 0), get_variant(Int, -1)]),
-                get_variant(Tuple[Variant, Bool], (get_variant(Bool, True), False)),
-                get_variant(Dict[Str, Variant], {"key": get_variant(Int, 0)})
+                get_variant(List[Variant], [
+                    get_variant(Int, 0),
+                    get_variant(Int, -1)
+                ]),
+                get_variant(Tuple[Variant, Bool], (
+                    get_variant(Bool, True),
+                    False
+                )),
+                get_variant(Dict[Str, Variant], {
+                    "key": get_variant(Int, 0)
+                })
             ],
             [
                 1.2,

@@ -25,7 +25,12 @@ gi.require_version("Gio", "2.0")
 gi.require_version("GLib", "2.0")
 from gi.repository import Gio, GLib
 
-__all__ = ['dbus_error', 'dbus_error_by_default', "GLibErrorHandler", "ErrorRegister"]
+__all__ = [
+    "dbus_error",
+    "dbus_error_by_default",
+    "GLibErrorHandler",
+    "ErrorRegister"
+]
 
 
 class ErrorRegister(object):
@@ -56,7 +61,10 @@ class ErrorRegister(object):
             return self._reversed_map.get(exception_cls)
 
         if self._default_namespace:
-            return "{}.{}".format(self._default_namespace, exception_cls.__name__)
+            return "{}.{}".format(
+                self._default_namespace,
+                exception_cls.__name__
+            )
 
         return exception_cls.__name__
 

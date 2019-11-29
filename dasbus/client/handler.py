@@ -26,13 +26,17 @@ from dasbus.signal import Signal
 from dasbus.constants import DBUS_FLAG_NONE
 from dasbus.error import GLibErrorHandler
 from dasbus.specification import DBusSpecification
-from dasbus.typing import *  # pylint: disable=wildcard-import
+from dasbus.typing import get_variant, get_variant_type
 
 import gi
 gi.require_version("GLib", "2.0")
 from gi.repository import GLib
 
-__all__ = ["GLibClient", "AbstractClientObjectHandler", "ClientObjectHandler"]
+__all__ = [
+    "GLibClient",
+    "AbstractClientObjectHandler",
+    "ClientObjectHandler"
+]
 
 
 class GLibClient(object):
@@ -42,8 +46,9 @@ class GLibClient(object):
     DBUS_TIMEOUT_NONE = GLib.MAXINT
 
     @classmethod
-    def sync_call(cls, connection, service_name, object_path, interface_name, method_name,
-                  parameters, reply_type, flags=DBUS_FLAG_NONE, timeout=DBUS_TIMEOUT_NONE):
+    def sync_call(cls, connection, service_name, object_path, interface_name,
+                  method_name, parameters, reply_type, flags=DBUS_FLAG_NONE,
+                  timeout=DBUS_TIMEOUT_NONE):
         """Synchronously call a DBus method.
 
         :return: a result of the DBus call
@@ -61,8 +66,9 @@ class GLibClient(object):
         )
 
     @classmethod
-    def async_call(cls, connection, service_name, object_path, interface_name, method_name,
-                   parameters, reply_type, callback, callback_args=(), flags=DBUS_FLAG_NONE,
+    def async_call(cls, connection, service_name, object_path, interface_name,
+                   method_name, parameters, reply_type, callback,
+                   callback_args=(), flags=DBUS_FLAG_NONE,
                    timeout=DBUS_TIMEOUT_NONE):
         """Asynchronously call a DBus method."""
         connection.call(
@@ -85,7 +91,10 @@ class GLibClient(object):
         callback, callback_args = user_data
 
         # Call user's callback.
-        callback(lambda: source_object.call_finish(result_object), *callback_args)
+        callback(
+            lambda: source_object.call_finish(result_object),
+            *callback_args
+        )
 
     @staticmethod
     def unpack_call_result(variant):
@@ -109,8 +118,9 @@ class GLibClient(object):
         return values
 
     @classmethod
-    def subscribe_signal(cls, connection, service_name, object_path, interface_name, signal_name,
-                         callback, callback_args=(), flags=DBUS_FLAG_NONE):
+    def subscribe_signal(cls, connection, service_name, object_path,
+                         interface_name, signal_name, callback,
+                         callback_args=(), flags=DBUS_FLAG_NONE):
         """Subscribe to a signal.
 
         :return: a callback to unsubscribe
@@ -123,13 +133,18 @@ class GLibClient(object):
             None,
             flags,
             callback=cls._signal_callback,
-            user_data=(callback, callback_args))
+            user_data=(callback, callback_args)
+        )
 
-        return partial(cls._unsubscribe_signal, connection, subscription_id)
+        return partial(
+            cls._unsubscribe_signal,
+            connection,
+            subscription_id
+        )
 
     @classmethod
-    def _signal_callback(cls, connection, sender_name, object_path, interface_name, signal_name,
-                         parameters, user_data):
+    def _signal_callback(cls, connection, sender_name, object_path,
+                         interface_name, signal_name, parameters, user_data):
         """A callback that is called when a DBus signal is emitted."""
         # Prepare the user's callback.
         callback, callback_args = user_data
@@ -146,7 +161,12 @@ class GLibClient(object):
 class AbstractClientObjectHandler(ABC):
     """The abstract handler of a remote DBus object."""
 
-    __slots__ = ["_message_bus", "_service_name", "_object_path", "_specification"]
+    __slots__ = [
+        "_message_bus",
+        "_service_name",
+        "_object_path",
+        "_specification"
+    ]
 
     def __init__(self, message_bus, service_name, object_path):
         """Create a new handler.
@@ -229,7 +249,9 @@ class AbstractClientObjectHandler(ABC):
         if member_type is DBusSpecification.Signal:
             return self._get_signal
 
-        raise TypeError("Unsupported type: {}".format(member_type.__name__))
+        raise TypeError(
+            "Unsupported type: {}".format(member_type.__name__)
+        )
 
     @abstractmethod
     def _get_property(self, property_spec):
@@ -271,10 +293,16 @@ class AbstractClientObjectHandler(ABC):
 class ClientObjectHandler(AbstractClientObjectHandler):
     """The client handler of a DBus object."""
 
-    __slots__ = ["_client", "_signal_factory", "_error_handler", "_subscriptions"]
+    __slots__ = [
+        "_client",
+        "_signal_factory",
+        "_error_handler",
+        "_subscriptions"
+    ]
 
-    def __init__(self, message_bus, service_name, object_path, client=GLibClient,
-                 signal_factory=Signal, error_handler=GLibErrorHandler):
+    def __init__(self, message_bus, service_name, object_path,
+                 client=GLibClient, signal_factory=Signal,
+                 error_handler=GLibErrorHandler):
         """Create a new handler.
 
         :param message_bus: a message bus
@@ -371,7 +399,8 @@ class ClientObjectHandler(AbstractClientObjectHandler):
             method_spec.out_type
         )
 
-    def _call_method(self, interface_name, method_name, in_type, out_type, *parameters, **kwargs):
+    def _call_method(self, interface_name, method_name, in_type,
+                     out_type, *parameters, **kwargs):
         """Call a DBus method.
 
         :return: a result of the call or None
@@ -421,7 +450,10 @@ class ClientObjectHandler(AbstractClientObjectHandler):
 
     def _method_callback(self, getter, callback, callback_args):
         """A callback of an asynchronous DBus method call."""
-        callback(lambda: self._get_method_reply(getter), *callback_args)
+        callback(
+            lambda: self._get_method_reply(getter),
+            *callback_args
+        )
 
     def _get_method_reply(self, call, *args, **kwargs):
         """Get a result of a DBus call.

@@ -28,11 +28,33 @@ import gi
 gi.require_version("GLib", "2.0")
 from gi.repository.GLib import Variant, VariantType
 
-__all__ = ["Bool", "Double", "Str", "Int", "Byte", "Int16", "UInt16",
-           "Int32", "UInt32", "Int64", "UInt64", "File", "ObjPath",
-           "Tuple", "List", "Dict", "Variant", "VariantType", "Structure",
-           "get_variant", "get_variant_type", "get_native",
-           "is_base_type", "get_type_arguments"]
+__all__ = [
+    "Bool",
+    "Str",
+    "Double",
+    "Byte",
+    "Int",
+    "Int16",
+    "UInt16",
+    "Int32",
+    "UInt32",
+    "Int64",
+    "UInt64",
+    "File",
+    "ObjPath",
+    "Variant",
+    "VariantType",
+    "Tuple",
+    "List",
+    "Dict",
+    "Structure",
+    "get_native",
+    "get_variant",
+    "get_variant_type",
+    "is_base_type",
+    "get_type_arguments",
+    "get_dbus_type",
+]
 
 # Basic types.
 Bool = bool
@@ -218,7 +240,7 @@ class DBusType(object):
             return DBusType._get_container_type(type_hint)
 
         # Or raise an error.
-        raise TypeError("Unknown type: %s" % type_hint)
+        raise TypeError("Unknown type: {}".format(type_hint))
 
     @staticmethod
     def _is_basic_type(type_hint):
@@ -272,4 +294,6 @@ class DBusType(object):
         key, _ = get_type_arguments(type_hint)
 
         if DBusType._is_container_type(key) or key == Variant:
-            raise TypeError("Dictionary key cannot be of type %s." % key)
+            raise TypeError(
+                "Dictionary key cannot be of type {}.".format(key)
+            )

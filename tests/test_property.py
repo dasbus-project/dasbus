@@ -21,11 +21,11 @@ import unittest
 from mock import Mock, call
 
 from dasbus.server.interface import dbus_interface
-from dasbus.server.property import PropertiesInterface, emits_properties_changed, \
-    PropertiesException, PropertiesChanges
+from dasbus.server.property import PropertiesInterface, PropertiesException, \
+    PropertiesChanges, emits_properties_changed
 from dasbus.signal import Signal
 from dasbus.specification import DBusSpecificationError
-from dasbus.typing import *  # pylint: disable=wildcard-import
+from dasbus.typing import get_variant, Int
 from dasbus.server.template import InterfaceTemplate
 
 
@@ -222,7 +222,9 @@ class DBusPropertyTestCase(unittest.TestCase):
 
         def connect_signals(self):
             super().connect_signals()
-            self.implementation.module_properties_changed.connect(self.flush_changes)
+            self.implementation.module_properties_changed.connect(
+                self.flush_changes
+            )
             self.watch_property("A", self.implementation.a_changed)
             self.watch_property("B", self.implementation.b_changed)
 
@@ -328,7 +330,9 @@ class DBusPropertyTestCase(unittest.TestCase):
 
         def connect_signals(self):
             super().connect_signals()
-            self.implementation.module_properties_changed.connect(self.flush_changes)
+            self.implementation.module_properties_changed.connect(
+                self.flush_changes
+            )
             self.watch_property("A", self.implementation.a_changed)
 
         @property

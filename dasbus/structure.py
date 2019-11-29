@@ -22,10 +22,15 @@ import inspect
 from abc import ABC
 from typing import get_type_hints
 
-from dasbus.typing import get_variant, Structure, Dict, List, get_type_arguments, \
-    is_base_type
+from dasbus.typing import get_variant, get_type_arguments, is_base_type, \
+    Structure, Dict, List
 
-__all__ = ["DBusStructureError", "generate_string_from_data", "DBusData", "compare_data"]
+__all__ = [
+    "DBusStructureError",
+    "DBusData",
+    "generate_string_from_data",
+    "compare_data"
+]
 
 
 # Class attribute for DBus fields.
@@ -191,7 +196,11 @@ class DBusData(ABC):
         super().__init_subclass__(*args, **kwargs)
 
         # Generate the DBus fields from the members of the class cls.
-        setattr(cls, DBUS_FIELDS_ATTRIBUTE, DBusFieldFactory.generate_fields(cls))
+        setattr(
+            cls,
+            DBUS_FIELDS_ATTRIBUTE,
+            DBusFieldFactory.generate_fields(cls)
+        )
 
     @classmethod
     def from_structure(cls, structure: Dict):
@@ -201,7 +210,9 @@ class DBusData(ABC):
         :return: a data object
         """
         if not isinstance(structure, dict):
-            raise TypeError("Invalid type '{}'.".format(type(structure).__name__))
+            raise TypeError(
+                "Invalid type '{}'.".format(type(structure).__name__)
+            )
 
         data = cls()
         fields = get_fields(cls)
@@ -210,7 +221,9 @@ class DBusData(ABC):
             field = fields.get(name, None)
 
             if not field:
-                raise DBusStructureError("Field '{}' doesn't exist.".format(name))
+                raise DBusStructureError(
+                    "Field '{}' doesn't exist.".format(name)
+                )
 
             field.set_data(data, value)
 
@@ -223,7 +236,9 @@ class DBusData(ABC):
         :return: a DBus structure
         """
         if not isinstance(data, cls):
-            raise TypeError("Invalid type '{}'.".format(type(data).__name__))
+            raise TypeError(
+                "Invalid type '{}'.".format(type(data).__name__)
+            )
 
         structure = {}
         fields = get_fields(cls)
@@ -265,7 +280,9 @@ def get_fields(obj):
     fields = getattr(obj, DBUS_FIELDS_ATTRIBUTE, None)
 
     if fields is None:
-        raise DBusStructureError("Fields are not defined at '{}'.".format(DBUS_FIELDS_ATTRIBUTE))
+        raise DBusStructureError(
+            "Fields are not defined at '{}'.".format(DBUS_FIELDS_ATTRIBUTE)
+        )
 
     return fields
 
@@ -338,16 +355,22 @@ class DBusFieldFactory(object):
         :return: a type hint
         """
         if not member.fset:
-            raise DBusStructureError("Field '{}' cannot be set.".format(field_name))
+            raise DBusStructureError(
+                "Field '{}' cannot be set.".format(field_name)
+            )
 
         if not member.fget:
-            raise DBusStructureError("Field '{}' cannot be get.".format(field_name))
+            raise DBusStructureError(
+                "Field '{}' cannot be get.".format(field_name)
+            )
 
         getter_type_hints = get_type_hints(member.fget)
         type_hint = getter_type_hints.get('return', None)
 
         if not type_hint:
-            raise DBusStructureError("Field '{}' has unknown type.".format(field_name))
+            raise DBusStructureError(
+                "Field '{}' has unknown type.".format(field_name)
+            )
 
         return type_hint
 
@@ -419,5 +442,7 @@ def compare_data(obj, other):
     :param other: another data object
     :return: True if the data is equal, otherwise False
     """
-    return isinstance(obj, DBusData) and isinstance(other, DBusData) \
-        and generate_dictionary_from_data(obj) == generate_dictionary_from_data(other)
+    return isinstance(obj, DBusData) \
+        and isinstance(other, DBusData) \
+        and (generate_dictionary_from_data(obj) ==
+             generate_dictionary_from_data(other))

@@ -25,7 +25,10 @@ __all__ = ["Signal"]
 class Signal(object):
     """Default representation of a signal."""
 
-    __slots__ = ["_callbacks", "__weakref__"]
+    __slots__ = [
+        "_callbacks",
+        "__weakref__"
+    ]
 
     def __init__(self):
         """Create a new signal."""
@@ -65,4 +68,3 @@ class Signal(object):
             self._callbacks.remove(callback)
         except ValueError:
             pass
-

@@ -22,7 +22,10 @@ from dasbus.namespace import get_dbus_path
 from dasbus.server.publishable import Publishable
 from dasbus.typing import ObjPath, List
 
-__all__ = ["DBusContainerError", "DBusContainer"]
+__all__ = [
+    "DBusContainerError",
+    "DBusContainer"
+]
 
 
 class DBusContainerError(Exception):
@@ -107,7 +110,9 @@ class DBusContainer(object):
         :return: a DBus path
         """
         if not isinstance(obj, Publishable):
-            raise TypeError("Unpublishable type '{}'.".format(type(obj).__name__))
+            raise TypeError(
+                "Unpublishable type '{}'.".format(type(obj).__name__)
+            )
 
         if not self._is_object_published(obj):
             self._publish_object(obj)
@@ -166,7 +171,9 @@ class DBusContainer(object):
             if found_obj is obj:
                 return object_path
 
-        raise DBusContainerError("Unknown object: {}".format(obj))
+        raise DBusContainerError(
+            "Unknown object: {}".format(obj)
+        )
 
     def _find_object(self, object_path):
         """Find an object by its DBus path.
@@ -178,7 +185,9 @@ class DBusContainer(object):
         if object_path in self._container:
             return self._container[object_path]
 
-        raise DBusContainerError("Unknown DBus path: {}".format(object_path))
+        raise DBusContainerError(
+            "Unknown DBus path: {}".format(object_path)
+        )
 
     def _generate_object_path(self):
         """Generate a unique object path.

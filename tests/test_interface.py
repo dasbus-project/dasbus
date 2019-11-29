@@ -18,9 +18,9 @@
 #
 import unittest
 
-from dasbus.typing import *  # pylint: disable=wildcard-import
-from dasbus.server.interface import DBusSpecificationGenerator, DBusSpecificationError, \
-    dbus_interface, dbus_class, dbus_signal, get_xml
+from dasbus.typing import Int, Str, List, Double, File, Tuple, Bool
+from dasbus.server.interface import dbus_interface, dbus_class, dbus_signal, \
+    get_xml, DBusSpecificationGenerator, DBusSpecificationError
 from dasbus.xml import XMLGenerator
 
 
@@ -134,7 +134,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
             def Method1(self):
                 pass
 
-            def Method2(self, x:Int):
+            def Method2(self, x: Int):
                 pass
 
             def Method3(self) -> Int:
@@ -186,10 +186,18 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
             def Property4(self):
                 pass
 
-        self.assertTrue(self.generator._is_property(IsPropertyClass.Property1))
-        self.assertTrue(self.generator._is_property(IsPropertyClass.Property2))
-        self.assertFalse(self.generator._is_property(IsPropertyClass.Property3))
-        self.assertFalse(self.generator._is_property(IsPropertyClass.Property4))
+        self.assertTrue(self.generator._is_property(
+            IsPropertyClass.Property1
+        ))
+        self.assertTrue(self.generator._is_property(
+            IsPropertyClass.Property2
+        ))
+        self.assertFalse(self.generator._is_property(
+            IsPropertyClass.Property3
+        ))
+        self.assertFalse(self.generator._is_property(
+            IsPropertyClass.Property4
+        ))
 
     def test_property(self):
         """Test the interface with a property."""
@@ -231,10 +239,16 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
                 return 1
 
         with self.assertRaises(DBusSpecificationError):
-            self.generator._generate_property(InvalidPropertyClass.InvalidProperty, "InvalidProperty")
+            self.generator._generate_property(
+                InvalidPropertyClass.InvalidProperty,
+                "InvalidProperty"
+            )
 
         with self.assertRaises(DBusSpecificationError):
-            self.generator._generate_property(InvalidPropertyClass.NoHintProperty, "NoHintProperty")
+            self.generator._generate_property(
+                InvalidPropertyClass.NoHintProperty,
+                "NoHintProperty"
+            )
 
     def test_property_readonly(self):
         """Test readonly property."""
@@ -295,7 +309,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
                 pass
 
             @dbus_signal
-            def Signal2(self, x:Int, y:Double):
+            def Signal2(self, x: Int, y: Double):
                 pass
 
             Signal3 = dbus_signal()
@@ -357,7 +371,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
 
             def _emit_signals(self):
                 self.SomethingHappened.emit()  # pylint: disable=no-member
-                self.SignalSomething.emit(0, "Something!")  # pylint: disable=no-member
+                self.SignalSomething.emit(0, "Something!")
 
         expected_xml = '''
         <node>
@@ -388,10 +402,16 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
                 return 1
 
         with self.assertRaises(DBusSpecificationError):
-            self.generator._generate_signal(InvalidSignalClass.Signal1, "Signal1")
+            self.generator._generate_signal(
+                InvalidSignalClass.Signal1,
+                "Signal1"
+            )
 
         with self.assertRaises(DBusSpecificationError):
-            self.generator._generate_signal(InvalidSignalClass.Signal2, "Signal2")
+            self.generator._generate_signal(
+                InvalidSignalClass.Signal2,
+                "Signal2"
+            )
 
     def test_override_method(self):
         """Test interface with overridden methods."""

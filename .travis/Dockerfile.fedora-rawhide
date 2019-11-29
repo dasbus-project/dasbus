@@ -10,4 +10,5 @@ RUN dnf -y install \
 
 RUN pip3 install \
     coverage \
+    pylint \
     mock

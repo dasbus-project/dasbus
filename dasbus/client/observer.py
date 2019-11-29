@@ -30,7 +30,11 @@ from gi.repository import Gio
 
 log = logging.getLogger(__name__)
 
-__all__ = ["DBusObserverError", "DBusObserver", "GLibMonitoring"]
+__all__ = [
+    "DBusObserverError",
+    "DBusObserver",
+    "GLibMonitoring"
+]
 
 
 class DBusObserverError(Exception):
@@ -42,8 +46,8 @@ class GLibMonitoring(object):
     """The low-level DBus monitoring library based on GLib."""
 
     @classmethod
-    def watch_name(cls, connection, name, flags=DBUS_FLAG_NONE, name_appeared=None,
-                   name_vanished=None):
+    def watch_name(cls, connection, name, flags=DBUS_FLAG_NONE,
+                   name_appeared=None, name_vanished=None):
         """Watch a service name on the DBus connection."""
         name_appeared_closure = None
         name_vanished_closure = None
@@ -67,7 +71,12 @@ class GLibMonitoring(object):
             name_appeared_closure,
             name_vanished_closure
         )
-        return partial(cls._unwatch_name, connection, registration_id)
+
+        return partial(
+            cls._unwatch_name,
+            connection,
+            registration_id
+        )
 
     @classmethod
     def _name_appeared_callback(cls, connection, name, name_owner, user_data):
@@ -228,5 +237,7 @@ class DBusObserver(object):
 
     def __repr__(self):
         """Returns a string representation."""
-        return "{}({})".format(self.__class__.__name__,
-                               self._service_name)
+        return "{}({})".format(
+            self.__class__.__name__,
+            self._service_name
+        )

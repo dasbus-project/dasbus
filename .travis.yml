@@ -18,6 +18,7 @@ before_script:
 
 script:
   # Run tests in the running container.
+  - docker exec "$(cat container_id)" make check
   - docker exec "$(cat container_id)" make coverage
 
 after_script:

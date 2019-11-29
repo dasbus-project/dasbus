@@ -20,8 +20,8 @@ import unittest
 from collections import defaultdict
 from unittest.mock import Mock, patch
 
-from dasbus.connection import MessageBus, SystemMessageBus, SessionMessageBus, \
-    AddressedMessageBus
+from dasbus.connection import MessageBus, SystemMessageBus, \
+    SessionMessageBus, AddressedMessageBus
 from dasbus.constants import DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER, \
     DBUS_NAME_FLAG_ALLOW_REPLACEMENT, DBUS_REQUEST_NAME_REPLY_ALREADY_OWNER
 
@@ -41,11 +41,15 @@ class TestMessageBus(MessageBus):
     def _get_connection(self):
         return Mock()
 
-    def publish_object(self, *args, **kwargs):  # pylint: disable=arguments-differ
-        return super().publish_object(*args, **kwargs, server_factory=self._server_factory)
+    def publish_object(self, *args, **kwargs):
+        return super().publish_object(
+            *args, **kwargs, server_factory=self._server_factory
+        )
 
     def get_proxy(self, *args, **kwargs):  # pylint: disable=arguments-differ
-        return super().get_proxy(*args, **kwargs, proxy_factory=self._proxy_factory)
+        return super().get_proxy(
+            *args, **kwargs, proxy_factory=self._proxy_factory
+        )
 
 
 class DBusConnectionTestCase(unittest.TestCase):
@@ -59,7 +63,8 @@ class DBusConnectionTestCase(unittest.TestCase):
     def test_connection(self):
         """Test the bus connection."""
         self.assertIsNotNone(self.message_bus.connection)
-        self.assertEqual(self.message_bus.connection, self.message_bus.connection)
+        self.assertEqual(self.message_bus.connection,
+                         self.message_bus.connection)
         self.assertTrue(self.message_bus.check_connection())
 
     def test_failing_connection(self):
@@ -102,7 +107,9 @@ class DBusConnectionTestCase(unittest.TestCase):
 
     def test_register_service(self):
         """Test the service registration."""
-        self.message_bus.proxy.RequestName.return_value = DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER
+        self.message_bus.proxy.RequestName.return_value = \
+            DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER
+
         self.message_bus.register_service(
             "my.service",
             DBUS_NAME_FLAG_ALLOW_REPLACEMENT
@@ -124,7 +131,8 @@ class DBusConnectionTestCase(unittest.TestCase):
 
     def test_failed_register_service(self):
         """Test the failing service registration."""
-        self.message_bus.proxy.RequestName.return_value = DBUS_REQUEST_NAME_REPLY_ALREADY_OWNER
+        self.message_bus.proxy.RequestName.return_value = \
+            DBUS_REQUEST_NAME_REPLY_ALREADY_OWNER
 
         with self.assertRaises(ConnectionError):
             self.message_bus.register_service("my.service")
@@ -142,7 +150,9 @@ class DBusConnectionTestCase(unittest.TestCase):
         self.message_bus.get_proxy("my.service", "/my/object")
 
         # The service cannot be accessed.
-        self.message_bus.proxy.RequestName.return_value = DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER
+        self.message_bus.proxy.RequestName.return_value = \
+            DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER
+
         self.message_bus.register_service("my.service")
 
         with self.assertRaises(RuntimeError):

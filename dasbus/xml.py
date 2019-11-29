@@ -24,7 +24,10 @@
 from xml.etree import ElementTree
 from xml.dom import minidom
 
-__all__ = ["XMLParser", "XMLGenerator"]
+__all__ = [
+    "XMLParser",
+    "XMLGenerator"
+]
 
 
 class XMLParser(object):
@@ -95,7 +98,11 @@ class XMLGenerator(XMLParser):
     @staticmethod
     def element_to_xml(element):
         """Return XML of the element."""
-        return ElementTree.tostring(element, method="xml", encoding="unicode")
+        return ElementTree.tostring(
+            element,
+            method="xml",
+            encoding="unicode"
+        )
 
     @staticmethod
     def prettify_xml(xml):

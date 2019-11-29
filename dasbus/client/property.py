@@ -18,6 +18,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
 #
+
 __all__ = ["PropertyProxy"]
 
 
@@ -27,7 +28,10 @@ class PropertyProxy(object):
     It can be used to define instance attributes.
     """
 
-    __slots__ = ["_getter", "_setter"]
+    __slots__ = [
+        "_getter",
+        "_setter"
+    ]
 
     def __init__(self, getter, setter):
         """Create a new proxy of the DBus property."""
