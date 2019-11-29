@@ -47,7 +47,9 @@ class Signal(object):
 
     def emit(self, *args, **kwargs):
         """Emit a signal with the given arguments."""
-        for callback in self._callbacks:
+        # The list of callbacks can be changed, so
+        # use a copy of the list for the iteration.
+        for callback in self._callbacks.copy():
             callback(*args, **kwargs)
 
     def disconnect(self, callback=None):
