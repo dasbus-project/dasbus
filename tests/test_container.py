@@ -17,7 +17,7 @@
 # USA
 #
 import unittest
-from mock import Mock
+from unittest.mock import Mock
 
 from dasbus.server.container import DBusContainer, DBusContainerError
 from dasbus.server.interface import dbus_interface

@@ -17,7 +17,7 @@
 # USA
 #
 import unittest
-from mock import Mock
+from unittest.mock import Mock
 
 from dasbus.identifier import DBusInterfaceIdentifier, DBusObjectIdentifier, \
     DBusServiceIdentifier, DBusBaseIdentifier
