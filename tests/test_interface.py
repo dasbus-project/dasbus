@@ -128,7 +128,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
     def test_method(self):
         """Test interface with a method."""
 
-        @dbus_interface("Interface")
+        @dbus_interface("my.example.Interface")
         class MethodClass(object):
 
             def Method1(self):
@@ -146,7 +146,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
         expected_xml = '''
         <node>
             <!--Specifies MethodClass-->
-            <interface name="Interface">
+            <interface name="my.example.Interface">
                 <method name="Method1"/>
                 <method name="Method2">
                     <arg direction="in" name="x" type="i"/>
@@ -202,7 +202,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
     def test_property(self):
         """Test the interface with a property."""
 
-        @dbus_interface("Interface")
+        @dbus_interface("Interface", namespace=("my", "example"))
         class ReadWritePropertyClass(object):
 
             def __init__(self):
@@ -219,7 +219,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
         expected_xml = '''
         <node>
             <!--Specifies ReadWritePropertyClass-->
-            <interface name="Interface">
+            <interface name="my.example.Interface">
                 <property name="Property" type="i" access="readwrite" />
             </interface>
         </node>

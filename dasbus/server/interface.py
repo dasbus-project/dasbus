@@ -27,6 +27,7 @@ import re
 from inspect import Parameter
 from typing import get_type_hints
 
+from dasbus.namespace import get_dbus_name
 from dasbus.signal import Signal
 from dasbus.specification import DBusSpecificationError, DBusSpecification
 from dasbus.typing import get_dbus_type
@@ -120,7 +121,7 @@ class dbus_signal(object):
         raise AttributeError("Can't set DBus signal.")
 
 
-def dbus_interface(interface_name):
+def dbus_interface(interface_name, namespace=()):
     """DBus interface.
 
     A new DBus interface can be defined as:
@@ -135,12 +136,16 @@ def dbus_interface(interface_name):
 
     The XML specification is accessible as:
         Interface.__dbus_xml__
+
+    :param interface_name: a DBus name of the interface
+    :param namespace: a sequence of strings
     """
     def decorated(cls):
-        generator = DBusSpecificationGenerator
-        xml = generator.generate_specification(cls, interface_name)
+        name = get_dbus_name(*namespace, interface_name)
+        xml = DBusSpecificationGenerator.generate_specification(cls, name)
         setattr(cls, DBUS_XML_ATTRIBUTE, xml)
         return cls
+
     return decorated
 
 
@@ -161,10 +166,9 @@ def dbus_class(cls):
     accessible as:
         Class.__dbus_xml__
     """
-    # Get the interface decorator without a name.
-    decorated = dbus_interface(None)
-    # Apply the decorator on the given class.
-    return decorated(cls)
+    xml = DBusSpecificationGenerator.generate_specification(cls)
+    setattr(cls, DBUS_XML_ATTRIBUTE, xml)
+    return cls
 
 
 def get_xml(obj):
