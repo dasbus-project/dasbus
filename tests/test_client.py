@@ -23,15 +23,14 @@ from unittest.mock import Mock
 from dasbus.client.handler import ClientObjectHandler, GLibClient
 from dasbus.client.proxy import ObjectProxy, disconnect_proxy
 from dasbus.constants import DBUS_FLAG_NONE
-from dasbus.error import ErrorRegister
+from dasbus.error import ErrorRegister, DBusError
 from dasbus.signal import Signal
 from dasbus.specification import DBusSpecification
 from dasbus.typing import get_variant, get_variant_type, VariantType
 
 import gi
 gi.require_version("Gio", "2.0")
-gi.require_version("GLib", "2.0")
-from gi.repository import Gio, GLib
+from gi.repository import Gio
 
 
 class FakeException(Exception):
@@ -210,7 +209,7 @@ class DBusClientTestCase(unittest.TestCase):
             "My message."
         ))
 
-        with self.assertRaises(GLib.Error) as cm:
+        with self.assertRaises(DBusError) as cm:
             self.proxy.Method1()
 
         self.assertTrue("My message." in str(cm.exception))

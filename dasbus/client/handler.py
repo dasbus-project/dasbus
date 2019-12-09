@@ -508,10 +508,7 @@ class ClientObjectHandler(AbstractClientObjectHandler):
         cls = self._error_register.get_exception_class(name)
         message = self._client.get_remote_error_message(error)
 
-        # Re-raise if we cannot match it to an exception class.
-        if not cls:
-            raise error from None
-
+        # Create a new exception.
         exception = cls(message)
         exception.dbus_name = name
 

@@ -22,8 +22,9 @@ from dasbus.namespace import get_dbus_name
 
 __all__ = [
     "dbus_error",
-    "dbus_error_by_default",
-    "register"
+    "DBusError",
+    "register",
+    "ErrorRegister"
 ]
 
 
@@ -45,34 +46,20 @@ def dbus_error(error_name, namespace=()):
     return decorated
 
 
-def dbus_error_by_default(cls):
-    """Define a default DBus error.
-
-    The decorated exception class will be mapped to all unknown DBus errors.
-
-    :param cls: an exception class
-    :return: a decorated class
-    """
-    register.set_default_exception(cls)
-    return cls
+class DBusError(Exception):
+    """A default DBus error."""
+    pass
 
 
 class ErrorRegister(object):
     """Class for mapping exceptions to DBus errors."""
 
-    def __init__(self):
-        self._default_class = None
-        self._default_namespace = "not.known.Error"
+    def __init__(self, default_namespace="not.known.Error",
+                 default_class=DBusError):
+        self._default_class = default_class
+        self._default_namespace = default_namespace
         self._map = dict()
         self._reversed_map = dict()
-
-    def set_default_namespace(self, namespace):
-        """Set the namespace for names of unknown errors."""
-        self._default_namespace = namespace
-
-    def set_default_exception(self, exception_cls):
-        """Set the exception class as a default."""
-        self._default_class = exception_cls
 
     def map_exception_to_name(self, exception_cls, name):
         """Map the exception class to a DBus name."""
@@ -84,13 +71,10 @@ class ErrorRegister(object):
         if exception_cls in self._reversed_map:
             return self._reversed_map.get(exception_cls)
 
-        if self._default_namespace:
-            return "{}.{}".format(
-                self._default_namespace,
-                exception_cls.__name__
-            )
-
-        return exception_cls.__name__
+        return "{}.{}".format(
+            self._default_namespace,
+            exception_cls.__name__
+        )
 
     def get_exception_class(self, name):
         """Get the exception class mapped to the DBus name."""
