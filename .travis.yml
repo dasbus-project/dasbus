@@ -21,6 +21,11 @@ script:
   - docker exec "$(cat container_id)" make check
   - docker exec "$(cat container_id)" make coverage
 
+after_success:
+  # Analyze the code coverage.
+  - docker exec "$(cat container_id)" coverage3 xml -i
+  - bash <(curl -s https://codecov.io/bash)
+
 after_script:
   # Stop the container.
   - docker stop "$(cat container_id)"

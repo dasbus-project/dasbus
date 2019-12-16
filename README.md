@@ -5,6 +5,8 @@ The code used to be part of the [Anaconda Installer](https://github.com/rhinstal
 project. It was based on the [pydbus](https://github.com/LEW21/pydbus) library, but we replaced
 it with our own solution because of its inactivity. The dasbus library is a result of this effort.
 
+[![codecov](https://codecov.io/gh/rhinstaller/dasbus/branch/master/graph/badge.svg)](https://codecov.io/gh/rhinstaller/dasbus)
+
 ## Requirements
 
 * Python 3.6+
