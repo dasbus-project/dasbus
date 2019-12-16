@@ -18,13 +18,18 @@
 #
 import unittest
 from textwrap import dedent
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 from dasbus.error import ErrorRegister
 from dasbus.server.handler import ServerObjectHandler, GLibServer
 from dasbus.signal import Signal
 from dasbus.specification import DBusSpecificationError
 from dasbus.typing import get_variant
+
+
+class MethodFailedException(Exception):
+    """The method has failed."""
+    pass
 
 
 class DBusServerTestCase(unittest.TestCase):
@@ -35,6 +40,7 @@ class DBusServerTestCase(unittest.TestCase):
     def setUp(self):
         self.message_bus = Mock()
         self.connection = self.message_bus.connection
+        self.register = ErrorRegister()
         self.object = None
         self.object_path = "/my/path"
         self.handler = None
@@ -58,7 +64,8 @@ class DBusServerTestCase(unittest.TestCase):
         self.handler = ServerObjectHandler(
             self.message_bus,
             self.object_path,
-            self.object
+            self.object,
+            error_register=self.register
         )
         self.handler.connect_object()
 
@@ -105,9 +112,7 @@ class DBusServerTestCase(unittest.TestCase):
         self.handler.disconnect_object()
         self.message_bus.connection.unregister_object.assert_called()
 
-    @patch("dasbus.error.GLibErrorHandler.register",
-           new_callable=ErrorRegister)
-    def test_method(self, register):
+    def test_method(self):
         """Test the method publishing."""
         self._publish_object("""
         <node>
@@ -163,6 +168,21 @@ class DBusServerTestCase(unittest.TestCase):
             error_name="not.known.Error.DBusSpecificationError",
             error_message="Unknown member MethodInvalid of "
                           "the interface Interface."
+        )
+
+        self.register.map_exception_to_name(
+            MethodFailedException,
+            "MethodFailed"
+        )
+
+        self.object.Method1.side_effect = MethodFailedException(
+            "The method has failed."
+        )
+        self._call_method_with_error(
+            "Interface",
+            "Method1",
+            error_name="MethodFailed",
+            error_message="The method has failed."
         )
 
     def test_property(self):

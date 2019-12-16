@@ -18,7 +18,7 @@
 #
 import unittest
 from textwrap import dedent
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 from dasbus.client.handler import ClientObjectHandler, GLibClient
 from dasbus.client.proxy import ObjectProxy, disconnect_proxy
@@ -30,7 +30,8 @@ from dasbus.typing import get_variant, get_variant_type, VariantType
 
 import gi
 gi.require_version("Gio", "2.0")
-from gi.repository import Gio
+gi.require_version("GLib", "2.0")
+from gi.repository import Gio, GLib
 
 
 class FakeException(Exception):
@@ -73,6 +74,7 @@ class DBusClientTestCase(unittest.TestCase):
         self.maxDiff = None
         self.message_bus = Mock()
         self.connection = self.message_bus.connection
+        self.register = ErrorRegister()
         self.service_name = "my.service"
         self.object_path = "/my/object"
         self.handler = None
@@ -104,6 +106,7 @@ class DBusClientTestCase(unittest.TestCase):
         )
         self.handler = self.proxy._handler
         self.handler._specification = DBusSpecification.from_xml(xml)
+        self.handler._error_register = self.register
 
     def test_introspect(self):
         """Test the introspection."""
@@ -132,9 +135,7 @@ class DBusClientTestCase(unittest.TestCase):
             self.handler.specification.members
         )
 
-    @patch("dasbus.error.GLibErrorHandler.register",
-           new_callable=ErrorRegister)
-    def test_method(self, register):
+    def test_method(self):
         """Test the method proxy."""
         self._create_proxy("""
         <node>
@@ -203,7 +204,23 @@ class DBusClientTestCase(unittest.TestCase):
             reply_type=get_variant_type("(ii)")
         )
 
-        register.map_exception_to_name(FakeException, "org.test.Unknown")
+        # Handle unregistered remote exception.
+        self._set_reply(Gio.DBusError.new_for_dbus_error(
+            "org.test.Unknown",
+            "My message."
+        ))
+
+        with self.assertRaises(GLib.Error) as cm:
+            self.proxy.Method1()
+
+        self.assertTrue("My message." in str(cm.exception))
+
+        # Handle registered remote exception.
+        self.register.map_exception_to_name(
+            FakeException,
+            "org.test.Unknown"
+        )
+
         self._set_reply(Gio.DBusError.new_for_dbus_error(
             "org.test.Unknown",
             "My message."
@@ -214,9 +231,19 @@ class DBusClientTestCase(unittest.TestCase):
 
         self.assertEqual(str(cm.exception), "My message.")
 
+        # Handle local exception.
+        self._set_reply(Exception("My message."))
+
+        with self.assertRaises(Exception) as cm:
+            self.proxy.Method1()
+
+        self.assertEqual(str(cm.exception), "My message.")
+
+        # Test invalid method.
         with self.assertRaises(AttributeError):
             self.proxy.MethodInvalid()
 
+        # Test invalid attribute.
         with self.assertRaises(AttributeError):
             self.proxy.Method1 = lambda: 1
 
@@ -246,9 +273,7 @@ class DBusClientTestCase(unittest.TestCase):
 
         self.connection.call_sync.reset_mock()
 
-    @patch("dasbus.error.GLibErrorHandler.register",
-           new_callable=ErrorRegister)
-    def test_async_method(self, register):
+    def test_async_method(self):
         """Test asynchronous calls of a method proxy."""
         self._create_proxy("""
         <node>
@@ -296,9 +321,14 @@ class DBusClientTestCase(unittest.TestCase):
         )
         callback.assert_called_once_with(3, "A", "B")
 
+        self.register.map_exception_to_name(
+            FakeException,
+            "org.test.Unknown"
+        )
+
         callback = Mock()
         callback_args = ("A", "B")
-        register.map_exception_to_name(FakeException, "org.test.Unknown")
+
         error = Gio.DBusError.new_for_dbus_error(
             "org.test.Unknown",
             "My message."
@@ -474,4 +504,29 @@ class DBusClientTestCase(unittest.TestCase):
             None,
             parameters=parameters,
             user_data=(self.handler._signal_callback, (signal_callback,))
+        )
+
+    def test_error(self):
+        """Test the error handling."""
+        error = Exception("My message.")
+        self.assertEqual(
+            GLibClient.is_remote_error(error),
+            False
+        )
+
+        error = Gio.DBusError.new_for_dbus_error(
+            "org.test.Error",
+            "My message."
+        )
+        self.assertEqual(
+            GLibClient.is_remote_error(error),
+            True
+        )
+        self.assertEqual(
+            GLibClient.get_remote_error_name(error),
+            "org.test.Error",
+        )
+        self.assertEqual(
+            GLibClient.get_remote_error_message(error),
+            "My message."
         )
