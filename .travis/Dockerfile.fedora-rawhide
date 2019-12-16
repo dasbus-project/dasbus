@@ -9,5 +9,5 @@ RUN dnf -y install \
     dbus-daemon
 
 RUN pip3 install \
-    coverage \
-    pylint
+    pylint \
+    coveralls

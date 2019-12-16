@@ -14,12 +14,25 @@ before_script:
   # directory to /app inside the container and let the container running
   # in the background. The resulting container ID will be saved to
   # container_id so we can reference it later on.
-  - docker run --volume "$(pwd):/app" --workdir "/app" --tty --detach myimage bash > container_id
+  - >
+    docker run
+    --volume "$(pwd):/app"
+    --workdir "/app"
+    --tty
+    --detach
+    --env TRAVIS
+    --env TRAVIS_JOB_ID
+    --env TRAVIS_PULL_REQUEST
+    myimage bash > container_id
 
 script:
   # Run tests in the running container.
   - docker exec "$(cat container_id)" make check
   - docker exec "$(cat container_id)" make coverage
+
+after_success:
+  # Analyze the code coverage.
+  - docker exec "$(cat container_id)" coveralls
 
 after_script:
   # Stop the container.
