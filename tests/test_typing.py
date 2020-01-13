@@ -23,7 +23,8 @@ from typing import Set
 
 from dasbus.typing import get_dbus_type, is_base_type, get_native, \
     get_variant, get_variant_type, Int, Int16, Int32, Int64, UInt16, UInt32, \
-    UInt64, Bool, Byte, Str, Dict, List, Tuple, Variant, Double, ObjPath, File
+    UInt64, Bool, Byte, Str, Dict, List, Tuple, Variant, Double, ObjPath, \
+    File, unwrap_variant
 
 import gi
 gi.require_version("GLib", "2.0")
@@ -207,6 +208,7 @@ class DBusTypingVariantTests(unittest.TestCase):
         self.assertTrue(isinstance(v1, Variant))
         self.assertEqual(v1.format_string, expected_string)
         self.assertEqual(v1.unpack(), value)
+        self.assertEqual(unwrap_variant(v1), value)
 
         v2 = Variant(expected_string, value)
         self.assertTrue(v2.equal(v1))
@@ -276,6 +278,24 @@ class DBusTypingVariantTests(unittest.TestCase):
         self.assertEqual(get_native(list(variants)), list(values))
         self.assertEqual(get_native(dict(enumerate(variants))),
                          dict(enumerate(values)))
+
+        variant = get_variant(
+            Tuple[Variant, Variant, Variant, Variant],
+            tuple(variants)
+        )
+        self.assertEqual(unwrap_variant(variant), tuple(variants))
+
+        variant = get_variant(
+            List[Variant],
+            list(variants)
+        )
+        self.assertEqual(unwrap_variant(variant), list(variants))
+
+        variant = get_variant(
+            Dict[Int, Variant],
+            dict(enumerate(variants))
+        )
+        self.assertEqual(unwrap_variant(variant), dict(enumerate(variants)))
 
     def test_basic_native(self):
         """Test get_native with basic variants."""
