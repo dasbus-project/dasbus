@@ -1,7 +1,7 @@
 %global srcname dasbus
 
 Name:           python-%{srcname}
-Version:        0.1
+Version:        0.2
 Release:        1%{?dist}
 Summary:        DBus library in Python 3
 
@@ -43,5 +43,28 @@ Requires:       python3-gobject-base
 %{python3_sitelib}/%{srcname}/
 
 %changelog
+* Mon Jan 13 2020 Vendula Poncova <vponcova@redhat.com> - 0.2-1
+- Unwrap DBus values (vponcova)
+- Unwrap a variant data type (vponcova)
+- Add a default DBus error (vponcova)
+- Use the minimal image in Travis CI (vponcova)
+- Remove GLibErrorHandler (vponcova)
+- Remove map_error and map_by_default (vponcova)
+- Extend arguments of dbus_error (vponcova)
+- Extend arguments of dbus_interface (vponcova)
+- The list of callbacks in signals can be changed during emitting (vponcova)
+- Don't import from mock (vponcova)
+- Enable checks in Travis CI (vponcova)
+- Fix too long lines (vponcova)
+- Don't use wildcard imports (vponcova)
+- Add the check target to the Makefile (vponcova)
+- Enable Travis CI (vponcova)
+- Catch logged warnings in the unit tests (vponcova)
+- Add the coverage target to the Makefile (vponcova)
+- Rename tests (vponcova)
+- Create Makefile (vponcova)
+- Create a .spec file (vponcova)
+- Add requirements to the README file (vponcova)
+
 * Thu Oct 31 2019 Vendula Poncova <vponcova@redhat.com> - 0.1-1
 - Initial package
