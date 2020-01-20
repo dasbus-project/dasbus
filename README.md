@@ -17,3 +17,224 @@ The system package is usually called `python3-gi`, `python3-gobject` or `pygobje
 
 The library is known to work with Python 3.8, PyGObject 3.34 and GLib 2.63, but these are not the
 required minimal versions.
+
+## Installation
+
+Install the package from [PyPI](https://pypi.org/project/dasbus/). Follow the instructions above
+to install the required dependencies.
+
+```
+pip3 install dasbus
+```
+
+Or install the RPM package on Fedora.
+
+```
+sudo dnf install python3-dasbus
+```
+
+## Examples
+
+Show the current hostname.
+
+```
+from dasbus.connection import SystemMessageBus
+bus = SystemMessageBus()
+
+proxy = bus.get_proxy(
+    "org.freedesktop.hostname1",
+    "/org/freedesktop/hostname1"
+)
+
+print(proxy.Hostname)
+```
+
+Send a notification to the notification server.
+
+```
+from dasbus.connection import SessionMessageBus
+bus = SessionMessageBus()
+
+proxy = bus.get_proxy(
+    "org.freedesktop.Notifications",
+    "/org/freedesktop/Notifications"
+)
+
+id = proxy.Notify(
+    "", 0, "face-smile", "Hello World!",
+    "This notification can be ignored.",
+    [], {}, 0
+)
+
+print("The notification {} was send.".format(id))
+```
+
+Handle a closed notification.
+
+```
+from gi.repository import GLib
+loop = GLib.MainLoop()
+
+from dasbus.connection import SessionMessageBus
+bus = SessionMessageBus()
+
+proxy = bus.get_proxy(
+    "org.freedesktop.Notifications",
+    "/org/freedesktop/Notifications"
+)
+
+def callback(id, reason):
+    print("The notification {} was closed.".format(id))
+
+proxy.NotificationClosed.connect(callback)
+loop.run()
+```
+
+Run the service org.example.HelloWorld.
+
+```
+from gi.repository import GLib
+loop = GLib.MainLoop()
+
+from dasbus.connection import SessionMessageBus
+bus = SessionMessageBus()
+
+class HelloWorld(object):
+    __dbus_xml__ = """
+    <node>
+        <interface name="org.example.HelloWorld">
+            <method name="Hello">
+                <arg direction="in" name="name" type="s" />
+                <arg direction="out" name="return" type="s" />
+            </method>
+        </interface>
+    </node>
+    """
+
+    def Hello(self, name):
+        return "Hello {}!".format(name)
+
+bus.publish_object("/org/example/HelloWorld", HelloWorld())
+bus.register_service("org.example.HelloWorld")
+loop.run()
+```
+
+
+## Features
+
+Use constants to define DBus services and objects.
+
+```
+from dasbus.connection import SystemMessageBus
+from dasbus.identifier import DBusServiceIdentifier
+
+NETWORK_MANAGER = DBusServiceIdentifier(
+    namespace=("org", "freedesktop", "NetworkManager"),
+    message_bus=SystemMessageBus()
+)
+
+proxy = NETWORK_MANAGER.get_proxy()
+print(proxy.NetworkingEnabled)
+```
+
+Use exceptions to propagate and handle DBus errors.
+
+```
+from dasbus.error import dbus_error, DBusError
+
+@dbus_error("org.freedesktop.DBus.Error.InvalidArgs")
+class InvalidArgs(DBusError):
+    pass
+```
+
+Call DBus methods asynchronously.
+
+```
+from gi.repository import GLib
+loop = GLib.MainLoop()
+
+def callback(call):
+    print(call())
+
+proxy = NETWORK_MANAGER.get_proxy()
+proxy.GetDevices(callback=callback)
+loop.run()
+```
+
+Generate XML specifications from Python classes.
+
+```
+from dasbus.server.interface import dbus_interface
+from dasbus.typing import Str
+
+@dbus_interface("org.example.HelloWorld")
+class HelloWorld(object):
+
+    def Hello(self, name: Str) -> Str:
+        return "Hello {}!".format(name)
+
+print(HelloWorld.__dbus_xml__)
+```
+
+Represent DBus structures by Python objects.
+
+```
+from dasbus.structure import DBusData
+from dasbus.typing import Str, get_variant
+
+class UserData(DBusData):
+    def __init__(self):
+        self._name = ""
+    @property
+    def name(self) -> Str:
+        return self._name
+    @name.setter
+    def name(self, name):
+        self._name = name
+
+data = UserData()
+data.name = "Alice"
+
+print(UserData.to_structure(data))
+print(UserData.from_structure({
+    "name": get_variant(Str, "Bob")
+}))
+```
+
+Create Python objects that can be published on DBus.
+
+```
+from dasbus.server.interface import dbus_interface
+from dasbus.server.template import InterfaceTemplate
+from dasbus.server.publishable import Publishable
+from dasbus.typing import Str, ObjPath
+
+@dbus_interface("org.example.Chat")
+class ChatInterface(InterfaceTemplate):
+
+    def Send(self, message: Str):
+        return self.implementation.send()
+
+class Chat(Publishable):
+
+    def for_publication(self):
+        return ChatInterface(self)
+
+    def send(self, message):
+        print(message) 
+
+```
+
+Use DBus containers to publish dynamically created Python objects.
+
+```
+from dasbus.connection import SessionMessageBus
+from dasbus.server.container import DBusContainer
+
+container = DBusContainer(
+    namespace=("org", "example", "Chat"),
+    message_bus=SessionMessageBus()
+)
+
+print(container.to_object_path(Chat()))
+```
