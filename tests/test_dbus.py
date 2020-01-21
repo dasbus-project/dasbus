@@ -24,6 +24,7 @@ from unittest.mock import Mock
 from dasbus.client.proxy import disconnect_proxy
 from dasbus.connection import AddressedMessageBus
 from dasbus.error import dbus_error
+from dasbus.loop import EventLoop
 from dasbus.server.interface import dbus_interface, dbus_signal
 from dasbus.typing import get_variant, Str, Int, Dict, Variant, List
 
@@ -53,7 +54,7 @@ class run_in_glib(object):
             self._result = func(*args, **kwargs)
 
         def create_loop(*args, **kwargs):
-            loop = GLib.MainLoop()
+            loop = EventLoop()
 
             GLib.idle_add(run_in_loop, *args, **kwargs)
             GLib.timeout_add_seconds(self._timeout, kill_loop, loop)
