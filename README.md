@@ -240,3 +240,9 @@ container = DBusContainer(
 
 print(container.to_object_path(Chat()))
 ```
+
+## Inspiration
+
+Look at the [complete examples](https://github.com/rhinstaller/dasbus/tree/master/examples) or
+[DBus services](https://github.com/rhinstaller/anaconda/tree/master/pyanaconda/modules) of
+the Anaconda Installer for more inspiration.
