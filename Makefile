@@ -17,72 +17,57 @@
 #
 PKGNAME=dasbus
 VERSION=$(shell awk '/Version:/ { print $$2 }' python-$(PKGNAME).spec)
-
-PREFIX=/usr
-
+TAG=v$(VERSION)
 PYTHON?=python3
 COVERAGE?=coverage3
 
-build:
-	$(PYTHON) setup.py build
-
+.PHONY: clean
 clean:
-	$(PYTHON) setup.py -q clean --all
+	git clean -fdx
 
+.PHONY: check
+check:
+	@echo "*** Running pylint ***"
+	$(PYTHON) -m pylint dasbus/ tests/
+
+.PHONY: coverage
 coverage:
 	@echo "*** Running unittests with $(COVERAGE) ***"
 	PYTHONPATH=. $(COVERAGE) run --branch -m unittest discover -v -s tests/
 	$(COVERAGE) report -m --include="dasbus/*" | tee coverage-report.log
 
-check:
-	@echo "*** Running pylint ***"
-	$(PYTHON) -m pylint dasbus/ tests/
+.PHONY: changelog
+changelog:
+	@git log --no-merges --pretty="format:- %s (%ae)" $(TAG).. | sed -e 's/@.*)/)/'
 
-install:
-	$(PYTHON) setup.py install --root=$(DESTDIR) --skip-build
-
-tag:
-	git tag -a -m "Tag as $(VERSION)" -f v$(VERSION)
-	@echo "Tagged as $(VERSION)"
-
-archive: check tag
-	git archive --format=tar --prefix=$(PKGNAME)-$(VERSION)/ $(VERSION) > $(PKGNAME)-$(VERSION).tar
-	gzip -9 $(PKGNAME)-$(VERSION).tar
-	@echo "The archive is in $(PKGNAME)-$(VERSION).tar.gz"
-
-release-pypi:
-	if ! $(PYTHON) setup.py sdist bdist_wheel; then \
-		echo ""; \
-		echo Distribution package build failed! Please verify that you have \'python3-wheel\' and \'python3-setuptools\' installed. >&2; \
-		exit 1; \
-	fi
-	if ! $(PYTHON) -m twine upload dist/*; then \
-		echo ""; \
-		echo Package upload failed! Make sure the \'twine tool\' is installed and you are registered >&2; \
-		exit 1; \
-	fi
-
-local:
-	@rm -rf $(PKGNAME)-$(VERSION).tar.gz
-	@rm -rf /tmp/$(PKGNAME)-$(VERSION) /tmp/$(PKGNAME)
-	@dir=$$PWD; cp -a $$dir /tmp/$(PKGNAME)-$(VERSION)
-	@cd /tmp/$(PKGNAME)-$(VERSION) ; $(PYTHON) setup.py -q sdist
-	@cp /tmp/$(PKGNAME)-$(VERSION)/dist/$(PKGNAME)-$(VERSION).tar.gz .
-	@rm -rf /tmp/$(PKGNAME)-$(VERSION)
-	@echo "The archive is in $(PKGNAME)-$(VERSION).tar.gz"
-
-rpmlog:
-	@git log --pretty="format:- %s (%ae)" $(VERSION).. |sed -e 's/@.*)/)/' | grep -v "Merge pull request"
-
-bumpver:
-	@NEWSUBVER=$$((`echo $(VERSION) |cut -d . -f 2` + 1)) ; \
-	NEWVERSION=`echo $(VERSION).$$NEWSUBVER |cut -d . -f 1,3` ; \
+.PHONY: commit
+commit:
+	@NEWSUBVER=$$((`echo $(VERSION) | cut -d . -f 2` + 1)) ; \
+	NEWVERSION=`echo $(VERSION).$$NEWSUBVER | cut -d . -f 1,3` ; \
 	DATELINE="* `LC_ALL=C.UTF-8 date "+%a %b %d %Y"` `git config user.name` <`git config user.email`> - $$NEWVERSION-1"  ; \
-	cl=`grep -n %changelog python-${PKGNAME}.spec |cut -d : -f 1` ; \
+	cl=`grep -n %changelog python-${PKGNAME}.spec | cut -d : -f 1` ; \
 	tail --lines=+$$(($$cl + 1)) python-${PKGNAME}.spec > speclog ; \
-	(head -n $$cl python-${PKGNAME}.spec ; echo "$$DATELINE" ; make --quiet rpmlog 2>/dev/null ; echo ""; cat speclog) > python-${PKGNAME}.spec.new ; \
+	(head -n $$cl python-${PKGNAME}.spec ; echo "$$DATELINE" ; make --quiet changelog 2>/dev/null ; echo ""; cat speclog) > python-${PKGNAME}.spec.new ; \
 	mv python-${PKGNAME}.spec.new python-${PKGNAME}.spec ; rm -f speclog ; \
-	sed -i "s/Version:   $(VERSION)/Version:   $$NEWVERSION/" python-${PKGNAME}.spec ; \
-	sed -i "s/version='$(VERSION)'/version='$$NEWVERSION'/" setup.py
+	sed -i "s/Version:\( *\)$(VERSION)/Version:\1$$NEWVERSION/" python-${PKGNAME}.spec ; \
+	sed -i "s/version=\"$(VERSION)\"/version=\"$$NEWVERSION\"/" setup.py ; \
+	git add python-${PKGNAME}.spec setup.py ; \
+	git commit -m "New release: $$NEWVERSION"
 
-.PHONY: clean install tag archive local
+.PHONY: tag
+tag:
+	git tag -a -m "Tag as $(VERSION)" -f $(TAG)
+	@echo "Tagged as $(TAG)"
+
+.PHONY: push
+push:
+	@echo "Run the command 'git push --follow-tags' with '--dry-run' first."
+
+.PHONY: archive
+archive:
+	$(PYTHON) setup.py sdist bdist_wheel
+	@echo "The archive is in dist/$(PKGNAME)-$(VERSION).tar.gz"
+
+.PHONY: upload
+upload:
+	$(PYTHON) -m twine upload dist/*
