@@ -72,8 +72,8 @@ print("The notification {} was send.".format(id))
 Handle a closed notification.
 
 ```
-from gi.repository import GLib
-loop = GLib.MainLoop()
+from dasbus.loop import EventLoop
+loop = EventLoop()
 
 from dasbus.connection import SessionMessageBus
 bus = SessionMessageBus()
@@ -93,8 +93,8 @@ loop.run()
 Run the service org.example.HelloWorld.
 
 ```
-from gi.repository import GLib
-loop = GLib.MainLoop()
+from dasbus.loop import EventLoop
+loop = EventLoop()
 
 from dasbus.connection import SessionMessageBus
 bus = SessionMessageBus()
@@ -150,8 +150,8 @@ class InvalidArgs(DBusError):
 Call DBus methods asynchronously.
 
 ```
-from gi.repository import GLib
-loop = GLib.MainLoop()
+from dasbus.loop import EventLoop
+loop = EventLoop()
 
 def callback(call):
     print(call())
