@@ -38,7 +38,7 @@ coverage:
 
 .PHONY: changelog
 changelog:
-	@git log --pretty="format:- %s (%ae)" $(TAG).. | sed -e 's/@.*)/)/' | grep -v "Merge pull request"
+	@git log --no-merges --pretty="format:- %s (%ae)" $(TAG).. | sed -e 's/@.*)/)/'
 
 .PHONY: commit
 commit:
