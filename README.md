@@ -37,7 +37,7 @@ sudo dnf install python3-dasbus
 
 Show the current hostname.
 
-```
+```python
 from dasbus.connection import SystemMessageBus
 bus = SystemMessageBus()
 
@@ -51,7 +51,7 @@ print(proxy.Hostname)
 
 Send a notification to the notification server.
 
-```
+```python
 from dasbus.connection import SessionMessageBus
 bus = SessionMessageBus()
 
@@ -71,9 +71,9 @@ print("The notification {} was send.".format(id))
 
 Handle a closed notification.
 
-```
-from gi.repository import GLib
-loop = GLib.MainLoop()
+```python
+from dasbus.loop import EventLoop
+loop = EventLoop()
 
 from dasbus.connection import SessionMessageBus
 bus = SessionMessageBus()
@@ -92,9 +92,9 @@ loop.run()
 
 Run the service org.example.HelloWorld.
 
-```
-from gi.repository import GLib
-loop = GLib.MainLoop()
+```python
+from dasbus.loop import EventLoop
+loop = EventLoop()
 
 from dasbus.connection import SessionMessageBus
 bus = SessionMessageBus()
@@ -124,7 +124,7 @@ loop.run()
 
 Use constants to define DBus services and objects.
 
-```
+```python
 from dasbus.connection import SystemMessageBus
 from dasbus.identifier import DBusServiceIdentifier
 
@@ -139,7 +139,7 @@ print(proxy.NetworkingEnabled)
 
 Use exceptions to propagate and handle DBus errors.
 
-```
+```python
 from dasbus.error import dbus_error, DBusError
 
 @dbus_error("org.freedesktop.DBus.Error.InvalidArgs")
@@ -149,9 +149,9 @@ class InvalidArgs(DBusError):
 
 Call DBus methods asynchronously.
 
-```
-from gi.repository import GLib
-loop = GLib.MainLoop()
+```python
+from dasbus.loop import EventLoop
+loop = EventLoop()
 
 def callback(call):
     print(call())
@@ -163,7 +163,7 @@ loop.run()
 
 Generate XML specifications from Python classes.
 
-```
+```python
 from dasbus.server.interface import dbus_interface
 from dasbus.typing import Str
 
@@ -178,16 +178,18 @@ print(HelloWorld.__dbus_xml__)
 
 Represent DBus structures by Python objects.
 
-```
+```python
 from dasbus.structure import DBusData
 from dasbus.typing import Str, get_variant
 
 class UserData(DBusData):
     def __init__(self):
         self._name = ""
+
     @property
     def name(self) -> Str:
         return self._name
+
     @name.setter
     def name(self, name):
         self._name = name
@@ -203,11 +205,11 @@ print(UserData.from_structure({
 
 Create Python objects that can be published on DBus.
 
-```
+```python
 from dasbus.server.interface import dbus_interface
 from dasbus.server.template import InterfaceTemplate
 from dasbus.server.publishable import Publishable
-from dasbus.typing import Str, ObjPath
+from dasbus.typing import Str
 
 @dbus_interface("org.example.Chat")
 class ChatInterface(InterfaceTemplate):
@@ -227,7 +229,7 @@ class Chat(Publishable):
 
 Use DBus containers to publish dynamically created Python objects.
 
-```
+```python
 from dasbus.connection import SessionMessageBus
 from dasbus.server.container import DBusContainer
 
@@ -238,3 +240,9 @@ container = DBusContainer(
 
 print(container.to_object_path(Chat()))
 ```
+
+## Inspiration
+
+Look at the [complete examples](https://github.com/rhinstaller/dasbus/tree/master/examples) or
+[DBus services](https://github.com/rhinstaller/anaconda/tree/master/pyanaconda/modules) of
+the Anaconda Installer for more inspiration.
