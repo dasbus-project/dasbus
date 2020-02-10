@@ -115,6 +115,9 @@ def get_variant(type_hint, value):
     else:
         type_string = get_dbus_type(type_hint)
 
+    if value is None:
+        raise TypeError("Invalid DBus value 'None'.")
+
     return Variant(type_string, value)
 
 
@@ -239,6 +242,15 @@ def get_type_arguments(type_hint):
     return getattr(type_hint, "__args__", ())
 
 
+def get_type_name(type_hint):
+    """Get the name of the type hint.
+
+    :param type_hint: a type hint
+    :return: a name of the type hint
+    """
+    return getattr(type_hint, "__name__", str(type_hint))
+
+
 class DBusType(object):
     """Class for transforming type hints to DBus types."""
 
@@ -289,7 +301,11 @@ class DBusType(object):
             return DBusType._get_container_type(type_hint)
 
         # Or raise an error.
-        raise TypeError("Unknown type: {}".format(type_hint))
+        raise TypeError(
+            "Invalid DBus type '{}'.".format(
+                get_type_name(type_hint)
+            )
+        )
 
     @staticmethod
     def _is_basic_type(type_hint):
@@ -344,5 +360,6 @@ class DBusType(object):
 
         if DBusType._is_container_type(key) or key == Variant:
             raise TypeError(
-                "Dictionary key cannot be of type {}.".format(key)
+                "Invalid DBus type of dictionary key: "
+                "'{}'".format(get_type_name(key))
             )

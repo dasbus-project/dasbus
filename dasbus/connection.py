@@ -222,7 +222,8 @@ class MessageBus(AbstractMessageBus):
             return
 
         raise RuntimeError(
-            "Cannot access {} from the main thread.".format(service_name)
+            "Can't access DBus service '{}' from "
+            "the main thread.".format(service_name)
         )
 
     # pylint: disable=arguments-differ

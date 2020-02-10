@@ -91,11 +91,8 @@ class PropertiesChanges(object):
 
             if member.name in properties_specs:
                 raise DBusSpecificationError(
-                    "The property {} is defined in {} and {}.".format(
-                        member.name,
-                        member.interface_name,
-                        properties_specs[member.name].interface_name
-                    )
+                    "DBus property '{}' is defined in more than "
+                    "one interface.".format(member.name)
                 )
 
             properties_specs[member.name] = member
@@ -135,7 +132,7 @@ class PropertiesChanges(object):
         """Check if the property name is valid."""
         if property_name not in self._properties_specs:
             raise PropertiesException(
-                "Unknown interface of property {}.".format(
+                "DBus object has no property '{}'.".format(
                     property_name
                 )
             )

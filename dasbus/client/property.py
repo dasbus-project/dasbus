@@ -47,7 +47,9 @@ class PropertyProxy(object):
             return self
 
         if not self._getter:
-            raise AttributeError("Can't read attribute.")
+            raise AttributeError(
+                "Can't read DBus property."
+            )
 
         return self._getter()
 
@@ -57,6 +59,8 @@ class PropertyProxy(object):
 
     def __set__(self, instance, value):
         if not self._setter:
-            raise AttributeError("Can't set attribute.")
+            raise AttributeError(
+                "Can't set DBus property."
+            )
 
         return self._setter(value)

@@ -71,7 +71,7 @@ class GLibServer(object):
 
         if not node_info.interfaces:
             raise DBusSpecificationError(
-                "No interfaces for registration."
+                "No DBus interfaces for registration."
             )
 
         for interface_info in node_info.interfaces:

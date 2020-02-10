@@ -99,8 +99,13 @@ class DBusServerTestCase(unittest.TestCase):
 
     def test_register(self):
         """Test the object registration."""
-        with self.assertRaises(DBusSpecificationError):
+        with self.assertRaises(DBusSpecificationError) as cm:
             self._publish_object("<node />")
+
+        self.assertEqual(
+            "No DBus interfaces for registration.",
+            str(cm.exception)
+        )
 
         self._publish_object("""
         <node>

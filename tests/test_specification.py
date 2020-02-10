@@ -52,11 +52,21 @@ class SpecificationTestCase(unittest.TestCase):
         specification.add_member(signal)
         specification.add_member(prop)
 
-        with self.assertRaises(DBusSpecificationError):
+        with self.assertRaises(DBusSpecificationError) as cm:
             specification.get_member("A", "Invalid")
 
-        with self.assertRaises(DBusSpecificationError):
+        self.assertEqual(
+            "DBus specification has no member 'A.Invalid'.",
+            str(cm.exception)
+        )
+
+        with self.assertRaises(DBusSpecificationError) as cm:
             specification.get_member("Invalid", "Method")
+
+        self.assertEqual(
+            "DBus specification has no member 'Invalid.Method'.",
+            str(cm.exception)
+        )
 
         self.assertEqual(specification.interfaces, ["A", "B"])
         self.assertEqual(specification.members, [method, signal, prop])

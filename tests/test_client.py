@@ -239,12 +239,22 @@ class DBusClientTestCase(unittest.TestCase):
         self.assertEqual(str(cm.exception), "My message.")
 
         # Test invalid method.
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(AttributeError) as cm:
             self.proxy.MethodInvalid()
 
+        self.assertEqual(
+            "DBus object has no attribute 'MethodInvalid'.",
+            str(cm.exception)
+        )
+
         # Test invalid attribute.
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(AttributeError) as cm:
             self.proxy.Method1 = lambda: 1
+
+        self.assertEqual(
+            "Can't set DBus attribute 'Method1'.",
+            str(cm.exception)
+        )
 
     def _set_reply(self, reply_value):
         """Set the reply of the DBus call."""
@@ -400,8 +410,10 @@ class DBusClientTestCase(unittest.TestCase):
         self.assertEqual(self.proxy.Property1, 20)
         self._check_get_property("Property1")
 
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(AttributeError) as cm:
             self.proxy.Property2 = "World"
+
+        self.assertEqual(str(cm.exception), "Can't set DBus property.")
 
         self._set_reply(get_variant("(v)", (get_variant("s", "Hello"), )))
         self.assertEqual(self.proxy.Property2, "Hello")
@@ -411,14 +423,26 @@ class DBusClientTestCase(unittest.TestCase):
         self.proxy.Property3 = False
         self._check_set_property("Property3", get_variant("b", False))
 
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(AttributeError) as cm:
             self.fail(self.proxy.Property3)
 
-        with self.assertRaises(AttributeError):
+        self.assertEqual(str(cm.exception), "Can't read DBus property.")
+
+        with self.assertRaises(AttributeError) as cm:
             self.proxy.PropertyInvalid = 0
 
-        with self.assertRaises(AttributeError):
+        self.assertEqual(
+            "DBus object has no attribute 'PropertyInvalid'.",
+            str(cm.exception)
+        )
+
+        with self.assertRaises(AttributeError) as cm:
             self.fail(self.proxy.PropertyInvalid)
+
+        self.assertEqual(
+            "DBus object has no attribute 'PropertyInvalid'.",
+            str(cm.exception)
+        )
 
     def _check_set_property(self, name, value):
         """Check the DBus call that sets a property."""
@@ -464,11 +488,21 @@ class DBusClientTestCase(unittest.TestCase):
                           self.proxy.Signal2.emit)
         self.assertEqual(len(self.handler._subscriptions), 4)
 
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(AttributeError) as cm:
             self.fail(self.proxy.SignalInvalid)
 
-        with self.assertRaises(AttributeError):
+        self.assertEqual(
+            "DBus object has no attribute 'SignalInvalid'.",
+            str(cm.exception)
+        )
+
+        with self.assertRaises(AttributeError) as cm:
             self.proxy.Signal1 = self.handler._signal_factory()
+
+        self.assertEqual(
+            "Can't set DBus attribute 'Signal1'.",
+            str(cm.exception)
+        )
 
         self.proxy.Signal1.connect(Mock())
         self.proxy.Signal2.connect(Mock())

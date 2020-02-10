@@ -298,8 +298,8 @@ class DBusSpecificationGenerator(object):
                 element = cls._generate_method(member, member_name)
             else:
                 raise DBusSpecificationError(
-                    "{}.{} cannot be exported.".format(
-                        interface_cls.__name__, member_name
+                    "Unsupported definition of DBus member '{}'.".format(
+                        member_name
                     )
                 )
 
@@ -363,7 +363,8 @@ class DBusSpecificationGenerator(object):
             # Only input parameters can be defined.
             if direction == DBusSpecification.DIRECTION_OUT:
                 raise DBusSpecificationError(
-                    "Signal {} has defined return type.".format(member_name)
+                    "Invalid return type of DBus signal "
+                    "'{}'.".format(member_name)
                 )
 
             # All parameters are exported as output parameters
@@ -407,7 +408,7 @@ class DBusSpecificationGenerator(object):
             # Check if the type is defined.
             if name not in type_hints:
                 raise DBusSpecificationError(
-                    "Parameter {} doesn't have defined type.".format(name)
+                    "Undefined type of parameter '{}'.".format(name)
                 )
 
             yield name, type_hints[name], DBusSpecification.DIRECTION_IN
@@ -457,7 +458,7 @@ class DBusSpecificationGenerator(object):
 
         except ValueError:
             raise DBusSpecificationError(
-                "Property {} has invalid parameters.".format(member_name)
+                "Undefined type of DBus property '{}'.".format(member_name)
             )
 
         # Property has both.
@@ -466,7 +467,7 @@ class DBusSpecificationGenerator(object):
 
         if access is None:
             raise DBusSpecificationError(
-                "Property {} is not accessible.".format(member_name)
+                "DBus property '{}' is not accessible.".format(member_name)
             )
 
         return cls.xml_generator.create_property(

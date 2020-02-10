@@ -58,6 +58,24 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
         self.assertFalse(self.generator._is_exportable("invalidName"))
         self.assertFalse(self.generator._is_exportable("123InvalidName"))
 
+    def test_invalid_member(self):
+        """Test invalid members."""
+
+        class InvalidMemberClass(object):
+            Test1 = None
+
+        with self.assertRaises(DBusSpecificationError) as cm:
+            self.generator._generate_interface(
+                InvalidMemberClass,
+                {},
+                "my.example.Interface"
+            )
+
+        self.assertEqual(
+            "Unsupported definition of DBus member 'Test1'.",
+            str(cm.exception)
+        )
+
     def test_is_method(self):
         """Test if methods are DBus methods."""
 
@@ -107,23 +125,48 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
             def Test7(self, **kwargs):
                 pass
 
-            def Test8(self, a, b, *, c, d=None):
+            def Test8(self, a: Int, b: Double, *, c, d=None):
                 pass
 
-        methods = [
+        self._check_invalid_method(
             InvalidMethodClass.Test1,
+            "Undefined type of parameter 'a'."
+        )
+        self._check_invalid_method(
             InvalidMethodClass.Test2,
+            "Undefined type of parameter 'a'."
+        )
+        self._check_invalid_method(
             InvalidMethodClass.Test3,
+            "Undefined type of parameter 'a'."
+        )
+        self._check_invalid_method(
             InvalidMethodClass.Test4,
+            "Undefined type of parameter 'c'."
+        )
+        self._check_invalid_method(
             InvalidMethodClass.Test5,
+            "Undefined type of parameter 'c'."
+        )
+        self._check_invalid_method(
             InvalidMethodClass.Test6,
+            "Only positional or keyword arguments are allowed."
+        )
+        self._check_invalid_method(
             InvalidMethodClass.Test7,
+            "Only positional or keyword arguments are allowed."
+        )
+        self._check_invalid_method(
             InvalidMethodClass.Test8,
-        ]
+            "Only positional or keyword arguments are allowed."
+        )
 
-        for method in methods:
-            with self.assertRaises(DBusSpecificationError):
-                self.generator._generate_method(method, method.__name__)
+    def _check_invalid_method(self, method, message):
+        """Try to generate a specification for an invalid method."""
+        with self.assertRaises(DBusSpecificationError) as cm:
+            self.generator._generate_method(method, method.__name__)
+
+        self.assertEqual(str(cm.exception), message)
 
     def test_method(self):
         """Test interface with a method."""
@@ -238,17 +281,27 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
             def NoHintProperty(self):
                 return 1
 
-        with self.assertRaises(DBusSpecificationError):
+        with self.assertRaises(DBusSpecificationError) as cm:
             self.generator._generate_property(
                 InvalidPropertyClass.InvalidProperty,
                 "InvalidProperty"
             )
 
-        with self.assertRaises(DBusSpecificationError):
+        self.assertEqual(
+            "DBus property 'InvalidProperty' is not accessible.",
+            str(cm.exception)
+        )
+
+        with self.assertRaises(DBusSpecificationError) as cm:
             self.generator._generate_property(
                 InvalidPropertyClass.NoHintProperty,
                 "NoHintProperty"
             )
+
+        self.assertEqual(
+            "Undefined type of DBus property 'NoHintProperty'.",
+            str(cm.exception)
+        )
 
     def test_property_readonly(self):
         """Test readonly property."""
@@ -401,17 +454,27 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
             def Signal2(self) -> Int:
                 return 1
 
-        with self.assertRaises(DBusSpecificationError):
+        with self.assertRaises(DBusSpecificationError) as cm:
             self.generator._generate_signal(
                 InvalidSignalClass.Signal1,
                 "Signal1"
             )
 
-        with self.assertRaises(DBusSpecificationError):
+        self.assertEqual(
+            "Undefined type of parameter 'x'.",
+            str(cm.exception)
+        )
+
+        with self.assertRaises(DBusSpecificationError) as cm:
             self.generator._generate_signal(
                 InvalidSignalClass.Signal2,
                 "Signal2"
             )
+
+        self.assertEqual(
+            "Invalid return type of DBus signal 'Signal2'.",
+            str(cm.exception)
+        )
 
     def test_override_method(self):
         """Test interface with overridden methods."""

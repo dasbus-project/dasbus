@@ -59,31 +59,71 @@ class DBusTypingTests(unittest.TestCase):
         class UnknownType:
             pass
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             get_dbus_type(UnknownType)
 
-        with self.assertRaises(TypeError):
+        self.assertEqual(
+            "Invalid DBus type 'UnknownType'.",
+            str(cm.exception)
+        )
+
+        with self.assertRaises(TypeError) as cm:
             get_dbus_type(List[UnknownType])
 
-        with self.assertRaises(TypeError):
+        self.assertEqual(
+            "Invalid DBus type 'UnknownType'.",
+            str(cm.exception)
+        )
+
+        with self.assertRaises(TypeError) as cm:
             get_dbus_type(Tuple[Int, Str, UnknownType])
 
-        with self.assertRaises(TypeError):
+        self.assertEqual(
+            "Invalid DBus type 'UnknownType'.",
+            str(cm.exception)
+        )
+
+        with self.assertRaises(TypeError) as cm:
             get_dbus_type(Dict[Int, UnknownType])
+
+        self.assertEqual(
+            "Invalid DBus type 'UnknownType'.",
+            str(cm.exception)
+        )
 
     def test_invalid(self):
         """Test the invalid types."""
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             get_dbus_type(Dict[List[Bool], Bool])
 
-        with self.assertRaises(TypeError):
+        self.assertEqual(
+            "Invalid DBus type of dictionary key: 'typing.List[bool]'",
+            str(cm.exception)
+        )
+
+        with self.assertRaises(TypeError) as cm:
             get_dbus_type(Dict[Variant, Int])
 
-        with self.assertRaises(TypeError):
+        self.assertEqual(
+            "Invalid DBus type of dictionary key: 'Variant'",
+            str(cm.exception)
+        )
+
+        with self.assertRaises(TypeError) as cm:
             get_dbus_type(Tuple[Int, Double, Dict[Tuple[Int, Int], Bool]])
 
-        with self.assertRaises(TypeError):
+        self.assertEqual(
+            "Invalid DBus type of dictionary key: 'typing.Tuple[int, int]'",
+            str(cm.exception)
+        )
+
+        with self.assertRaises(TypeError) as cm:
             get_dbus_type(Set[Int])
+
+        self.assertEqual(
+            "Invalid DBus type 'typing.Set[int]'.",
+            str(cm.exception)
+        )
 
     def test_simple(self):
         """Test simple types."""
@@ -228,8 +268,21 @@ class DBusTypingVariantTests(unittest.TestCase):
         class UnknownType:
             pass
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             get_variant(UnknownType, 1)
+
+        self.assertEqual(
+            "Invalid DBus type 'UnknownType'.",
+            str(cm.exception)
+        )
+
+        with self.assertRaises(TypeError) as cm:
+            get_variant(Int, None)
+
+        self.assertEqual(
+            "Invalid DBus value 'None'.",
+            str(cm.exception)
+        )
 
         with self.assertRaises(TypeError):
             get_variant(List[Int], True)
