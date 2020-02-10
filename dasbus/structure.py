@@ -263,6 +263,11 @@ class DBusData(ABC):
         :param structures: a list of DBus structures
         :return: a list of data objects
         """
+        if not isinstance(structures, list):
+            raise TypeError(
+                "Invalid type '{}'.".format(type(structures).__name__)
+            )
+
         return list(map(cls.from_structure, structures))
 
     @classmethod
