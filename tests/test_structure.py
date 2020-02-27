@@ -236,6 +236,14 @@ class DBusStructureTestCase(unittest.TestCase):
 
         self.assertEqual(str(cm.exception), "Invalid type 'list'.")
 
+    def test_apply_structure_with_invalid_type_variant(self):
+        structure = get_variant(List[Structure], [{'x': get_variant(Int, 10)}])
+
+        with self.assertRaises(TypeError) as cm:
+            self.SimpleData.from_structure_list(structure)
+
+        self.assertEqual(str(cm.exception), "Invalid type 'Variant'.")
+
     class ComplicatedData(DBusData):
 
         def __init__(self):
