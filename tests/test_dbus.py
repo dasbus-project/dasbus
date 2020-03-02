@@ -234,8 +234,13 @@ class DBusTestCase(unittest.TestCase):
 
         def test3():
             proxy = self._get_proxy()
-            with self.assertRaises(AttributeError):
+            with self.assertRaises(AttributeError) as cm:
                 proxy.Name = "Another example"
+
+            self.assertEqual(
+                "Can't set DBus property.",
+                str(cm.exception)
+            )
 
             self.assertEqual("My example", proxy.Name)
 
@@ -259,8 +264,13 @@ class DBusTestCase(unittest.TestCase):
 
         def test3():
             proxy = self._get_proxy()
-            with self.assertRaises(AttributeError):
+            with self.assertRaises(AttributeError) as cm:
                 self.fail(proxy.Secret)
+
+            self.assertEqual(
+                "Can't read DBus property.",
+                str(cm.exception)
+            )
 
         self._add_client(test1)
         self._add_client(test2)

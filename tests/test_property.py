@@ -88,8 +88,13 @@ class DBusPropertySpecificationTestCase(unittest.TestCase):
             </node>
             '''
 
-        with self.assertRaises(DBusSpecificationError):
+        with self.assertRaises(DBusSpecificationError) as cm:
             PropertiesChanges(Interface())
+
+        self.assertEqual(
+            "DBus property 'A1' is defined in more than one interface.",
+            str(cm.exception)
+        )
 
 
 class DBusPropertyTestCase(unittest.TestCase):
@@ -425,8 +430,13 @@ class DBusPropertyTestCase(unittest.TestCase):
 
     def test_invalid_class(self):
         """Test the properties interface with invalid class."""
-        with self.assertRaises(DBusSpecificationError):
+        with self.assertRaises(DBusSpecificationError) as cm:
             self.Test6()
+
+        self.assertEqual(
+            "XML specification is not defined at '__dbus_xml__'.",
+            str(cm.exception)
+        )
 
     @dbus_interface("I7")
     class Test7(PropertiesInterface):
@@ -436,8 +446,13 @@ class DBusPropertyTestCase(unittest.TestCase):
         """Test the properties interface with invalid property."""
         test7 = self.Test7()
 
-        with self.assertRaises(PropertiesException):
+        with self.assertRaises(PropertiesException) as cm:
             test7.report_changed_property("A")
+
+        self.assertEqual(
+            "DBus object has no property 'A'.",
+            str(cm.exception)
+        )
 
     @dbus_interface("I8")
     class Test8(InterfaceTemplate):
@@ -452,7 +467,12 @@ class DBusPropertyTestCase(unittest.TestCase):
         test8 = self.Test8(test8implementation)
         signal = Mock()
 
-        with self.assertRaises(PropertiesException):
+        with self.assertRaises(PropertiesException) as cm:
             test8.watch_property("A", signal)
+
+        self.assertEqual(
+            "DBus object has no property 'A'.",
+            str(cm.exception)
+        )
 
         signal.connect.assert_not_called()

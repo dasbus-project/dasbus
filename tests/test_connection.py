@@ -155,8 +155,13 @@ class DBusConnectionTestCase(unittest.TestCase):
 
         self.message_bus.register_service("my.service")
 
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as cm:
             self.message_bus.get_proxy("my.service", "/my/object")
+
+        self.assertEqual(
+            "Can't access DBus service 'my.service' from the main thread.",
+            str(cm.exception)
+        )
 
     def test_publish_object(self):
         """Test the object publishing."""

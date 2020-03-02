@@ -41,7 +41,7 @@ def get_object_handler(proxy):
     :return: a DBus proxy handler
     """
     if not isinstance(proxy, AbstractObjectProxy):
-        raise TypeError("Invalid type of proxy: {}".format(str(type(proxy))))
+        raise TypeError("Invalid type '{}'.".format(type(proxy).__name__))
 
     return getattr(proxy, "_handler")
 
@@ -175,7 +175,7 @@ class AbstractObjectProxy(ABC):
             return member.set(value)
 
         raise AttributeError(
-            "Can't set {}.{}.".format(member.interface_name, member.name)
+            "Can't set DBus attribute '{}'.".format(name)
         )
 
 
@@ -215,7 +215,7 @@ class ObjectProxy(AbstractObjectProxy):
             pass
 
         raise AttributeError(
-            "Unknown interface of {}.".format(member_name)
+            "DBus object has no attribute '{}'.".format(member_name)
         )
 
 

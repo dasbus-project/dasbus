@@ -30,5 +30,10 @@ class DBusProxyTestCase(unittest.TestCase):
         proxy = ObjectProxy(Mock(), "my.service", "/my/path")
         self.assertEqual(get_object_path(proxy), "/my/path")
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             get_object_path(None)
+
+        self.assertEqual(
+            "Invalid type 'NoneType'.",
+            str(cm.exception)
+        )

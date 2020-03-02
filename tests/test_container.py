@@ -69,11 +69,21 @@ class DBusContainerTestCase(unittest.TestCase):
 
     def test_to_object_path_failed(self):
         """Test failed to_object_path."""
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             self.container.to_object_path(MyUnpublishable())
 
-        with self.assertRaises(DBusContainerError):
+        self.assertEqual(
+            "Type 'MyUnpublishable' is not publishable.",
+            str(cm.exception)
+        )
+
+        with self.assertRaises(DBusContainerError) as cm:
             self.container._find_object_path(MyObject())
+
+        self.assertEqual(
+            "No object path found.",
+            str(cm.exception)
+        )
 
     def test_to_object_path(self):
         """Test to_object_path."""
@@ -120,8 +130,13 @@ class DBusContainerTestCase(unittest.TestCase):
 
     def test_from_object_path_failed(self):
         """Test failures."""
-        with self.assertRaises(DBusContainerError):
+        with self.assertRaises(DBusContainerError) as cm:
             self.container.from_object_path(ObjPath("/org/Project/Object/1"))
+
+        self.assertEqual(
+            "Unknown object path '/org/Project/Object/1'.",
+            str(cm.exception)
+        )
 
     def test_from_object_path(self):
         """Test from_object_path."""

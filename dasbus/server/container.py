@@ -111,7 +111,7 @@ class DBusContainer(object):
         """
         if not isinstance(obj, Publishable):
             raise TypeError(
-                "Unpublishable type '{}'.".format(type(obj).__name__)
+                "Type '{}' is not publishable.".format(type(obj).__name__)
             )
 
         if not self._is_object_published(obj):
@@ -172,7 +172,7 @@ class DBusContainer(object):
                 return object_path
 
         raise DBusContainerError(
-            "Unknown object: {}".format(obj)
+            "No object path found."
         )
 
     def _find_object(self, object_path):
@@ -186,7 +186,7 @@ class DBusContainer(object):
             return self._container[object_path]
 
         raise DBusContainerError(
-            "Unknown DBus path: {}".format(object_path)
+            "Unknown object path '{}'.".format(object_path)
         )
 
     def _generate_object_path(self):

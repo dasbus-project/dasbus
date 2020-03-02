@@ -140,7 +140,9 @@ class DBusSpecification(object):
             pass
 
         raise DBusSpecificationError(
-            "Unknown member {}.{}.".format(interface_name, member_name)
+            "DBus specification has no member '{}.{}'.".format(
+                interface_name, member_name
+            )
         )
 
 
