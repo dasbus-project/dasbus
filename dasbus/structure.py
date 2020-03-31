@@ -144,15 +144,12 @@ class DBusDataField(DBusField):
 
     def set_data(self, obj, value):
         """Set the data attribute."""
-        super().set_data(obj, self._data_type.from_structure(value))
-
-    def get_data(self, obj):
-        """Get the data attribute."""
-        return generate_dictionary_from_data(super().get_data(obj))
+        value = self._data_type.from_structure(value)
+        super().set_data(obj, value)
 
     def get_data_variant(self, obj):
         """Get a variant of the data attribute."""
-        value = self._data_type.to_structure(super().get_data(obj))
+        value = self._data_type.to_structure(self.get_data(obj))
         return get_variant(self._type_hint, value)
 
 
@@ -179,15 +176,12 @@ class DBusDataListField(DBusField):
 
     def set_data(self, obj, value):
         """Set the data attribute."""
-        super().set_data(obj, self._data_type.from_structure_list(value))
-
-    def get_data(self, obj):
-        """Get the data attribute."""
-        return list(map(generate_dictionary_from_data, super().get_data(obj)))
+        value = self._data_type.from_structure_list(value)
+        super().set_data(obj, value)
 
     def get_data_variant(self, obj):
         """Get a variant of the data attribute."""
-        value = self._data_type.to_structure_list(super().get_data(obj))
+        value = self._data_type.to_structure_list(self.get_data(obj))
         return get_variant(self._type_hint, value)
 
 
@@ -407,18 +401,6 @@ class DBusFieldFactory(object):
         return DBusField(field_name, member_hint)
 
 
-def generate_dictionary_from_data(obj):
-    """Generate a dictionary from a data object.
-
-    :param obj: a data object
-    :return: a dictionary representation of the data object
-    """
-    return {
-        field.data_name: field.get_data(obj)
-        for field in get_fields(obj).values()
-    }
-
-
 def generate_string_from_data(obj, skip=None, add=None):
     """Generate a string representation of a data object.
 
@@ -433,7 +415,10 @@ def generate_string_from_data(obj, skip=None, add=None):
     :param add: a dictionary of attributes to add or None
     :return: a string representation of the data object
     """
-    dictionary = generate_dictionary_from_data(obj)
+    dictionary = {}
+
+    for field in get_fields(obj).values():
+        dictionary[field.data_name] = field.get_data(obj)
 
     for name in skip or list():
         dictionary.pop(name, None)
@@ -457,5 +442,4 @@ def compare_data(obj, other):
     """
     return isinstance(obj, DBusData) \
         and isinstance(other, DBusData) \
-        and (generate_dictionary_from_data(obj) ==
-             generate_dictionary_from_data(other))
+        and (obj.to_structure(obj) == other.to_structure(other))
