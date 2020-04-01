@@ -538,10 +538,29 @@ class DBusStructureTestCase(unittest.TestCase):
             def x(self, value):
                 self._x = value
 
+        class SecretData(DBusData):
+
+            def __init__(self):
+                self._y = ""
+
+            @property
+            def y(self) -> Str:
+                return self._y
+
+            @y.setter
+            def y(self, value):
+                self._y = value
+
+            def __repr__(self):
+                return generate_string_from_data(
+                    self, skip=["y"], add={"y_set": bool(self.y)}
+                )
+
         class NestedData(DBusData):
 
             def __init__(self):
                 self._attr = SimpleData()
+                self._secret = SecretData()
                 self._list = []
 
             @property
@@ -553,6 +572,14 @@ class DBusStructureTestCase(unittest.TestCase):
                 self._attr = value
 
             @property
+            def secret(self) -> SecretData:
+                return self._secret
+
+            @secret.setter
+            def secret(self, value):
+                self._secret = value
+
+            @property
             def list(self) -> List[SimpleData]:
                 return self._list
 
@@ -561,24 +588,38 @@ class DBusStructureTestCase(unittest.TestCase):
                 self._list = value
 
         data = NestedData()
-        expected = "NestedData(attr={'x': 0}, list=[])"
+        expected = \
+            "NestedData(" \
+            "attr=SimpleData(x=0), " \
+            "list=[], " \
+            "secret=SecretData(y_set=False))"
+
         self.assertEqual(str(data), expected)
         self.assertEqual(repr(data), expected)
 
         data.attr.x = -1
+        data.secret.y = "SECRET"
 
         for x in range(2):
             item = SimpleData()
             item.x = x
             data.list.append(item)
 
-        expected = "NestedData(attr={'x': -1}, list=[{'x': 0}, {'x': 1}])"
+        expected = \
+            "NestedData(" \
+            "attr=SimpleData(x=-1), " \
+            "list=[SimpleData(x=0), SimpleData(x=1)], " \
+            "secret=SecretData(y_set=True))"
+
         self.assertEqual(str(data), expected)
         self.assertEqual(repr(data), expected)
 
         self.assertEqual(NestedData.to_structure(data), {
             'attr': get_variant(Structure, {
                 'x': get_variant(Int, -1)
+            }),
+            'secret': get_variant(Structure, {
+                'y': get_variant(Str, "SECRET")
             }),
             'list': get_variant(List[Structure], [
                 {'x': get_variant(Int, 0)},
@@ -588,12 +629,16 @@ class DBusStructureTestCase(unittest.TestCase):
 
         dictionary = {
             'attr': {'x': 10},
+            'secret': {'y': "SECRET"},
             'list': [{'x': 200}, {'x': 300}]
         }
 
         structure = {
             'attr': get_variant(Dict[Str, Variant], {
                 'x': get_variant(Int, 10)
+            }),
+            'secret': get_variant(Dict[Str, Variant], {
+                'y': get_variant(Str, "SECRET")
             }),
             'list': get_variant(List[Dict[Str, Variant]], [
                 {'x': get_variant(Int, 200)},
@@ -603,6 +648,7 @@ class DBusStructureTestCase(unittest.TestCase):
 
         data = NestedData.from_structure(structure)
         self.assertEqual(data.attr.x, 10)
+        self.assertEqual(data.secret.y, "SECRET")
         self.assertEqual(len(data.list), 2)
         self.assertEqual(data.list[0].x, 200)
         self.assertEqual(data.list[1].x, 300)
