@@ -1,7 +1,7 @@
 %global srcname dasbus
 
 Name:           python-%{srcname}
-Version:        0.2
+Version:        0.3
 Release:        1%{?dist}
 Summary:        DBus library in Python 3
 
@@ -43,6 +43,19 @@ Requires:       python3-gobject-base
 %{python3_sitelib}/%{srcname}/
 
 %changelog
+* Thu Apr 02 2020 Vendula Poncova <vponcova@redhat.com> - 0.3-1
+- Remove generate_dictionary_from_data (vponcova)
+- Improve some of the error messages (vponcova)
+- Check the list of DBus structures to convert (vponcova)
+- Add the Inspiration section to README (vponcova)
+- Enable syntax highlighting in README (vponcova)
+- Use the class EventLoop in README (vponcova)
+- Use the --no-merges option (vponcova)
+- Clean up the Makefile (vponcova)
+- Add examples (vponcova)
+- Add the representation of the event loop (vponcova)
+- Enable copr builds and add packit config (dhodovsk)
+- Extend README (vponcova)
 * Mon Jan 13 2020 Vendula Poncova <vponcova@redhat.com> - 0.2-1
 - Unwrap DBus values (vponcova)
 - Unwrap a variant data type (vponcova)
