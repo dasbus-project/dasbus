@@ -295,12 +295,12 @@ class SessionMessageBus(MessageBus):
 class AddressedMessageBus(MessageBus):
     """Representation of a connection for the specified address."""
 
-    def __init__(self, address):
+    def __init__(self, address, *args, **kwargs):
         """Create a new representation of a connection.
 
         :param address: a bus address
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self._address = address
 
     @property
