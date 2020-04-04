@@ -25,6 +25,7 @@ from abc import ABC, abstractmethod
 from dasbus.constants import DBUS_NAME_FLAG_ALLOW_REPLACEMENT, \
     DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER
 from dasbus.client.proxy import ObjectProxy
+from dasbus.error import ErrorMapper
 from dasbus.server.handler import ServerObjectHandler
 
 import gi
@@ -145,13 +146,15 @@ class AbstractMessageBus(ABC):
 class MessageBus(AbstractMessageBus):
     """Representation of a message bus based on D-Bus."""
 
-    def __init__(self, provider=GLibConnection):
+    def __init__(self, error_mapper=None, provider=GLibConnection):
         """Create a new message bus.
 
+        :param error_mapper: a DBus error mapper
         :param provider: a provider of DBus connections
         """
         super().__init__()
         self._provider = provider
+        self._error_mapper = error_mapper or ErrorMapper()
         self._connection = None
         self._proxy = None
         self._registrations = []
@@ -197,6 +200,7 @@ class MessageBus(AbstractMessageBus):
             self,
             service_name,
             object_path,
+            error_mapper=self._error_mapper,
             **proxy_arguments
         )
 
@@ -257,7 +261,12 @@ class MessageBus(AbstractMessageBus):
         :param server_factory: a factory of a DBus server object handler
         """
         log.debug("Publishing an object at %s.", object_path)
-        object_handler = server_factory(self, object_path, obj)
+        object_handler = server_factory(
+            self,
+            object_path,
+            obj,
+            error_mapper=self._error_mapper
+        )
         object_handler.connect_object()
 
         self._registrations.append(object_handler.disconnect_object)

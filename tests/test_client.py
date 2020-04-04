@@ -23,7 +23,7 @@ from unittest.mock import Mock
 from dasbus.client.handler import ClientObjectHandler, GLibClient
 from dasbus.client.proxy import ObjectProxy, disconnect_proxy
 from dasbus.constants import DBUS_FLAG_NONE
-from dasbus.error import ErrorRegister, DBusError
+from dasbus.error import ErrorMapper, DBusError, ErrorRule
 from dasbus.signal import Signal
 from dasbus.specification import DBusSpecification
 from dasbus.typing import get_variant, get_variant_type, VariantType
@@ -73,7 +73,7 @@ class DBusClientTestCase(unittest.TestCase):
         self.maxDiff = None
         self.message_bus = Mock()
         self.connection = self.message_bus.connection
-        self.register = ErrorRegister()
+        self.error_mapper = ErrorMapper()
         self.service_name = "my.service"
         self.object_path = "/my/object"
         self.handler = None
@@ -101,11 +101,11 @@ class DBusClientTestCase(unittest.TestCase):
         self.proxy = proxy_factory(
             self.message_bus,
             self.service_name,
-            self.object_path
+            self.object_path,
+            error_mapper=self.error_mapper
         )
         self.handler = self.proxy._handler
         self.handler._specification = DBusSpecification.from_xml(xml)
-        self.handler._error_register = self.register
 
     def test_introspect(self):
         """Test the introspection."""
@@ -215,10 +215,10 @@ class DBusClientTestCase(unittest.TestCase):
         self.assertTrue("My message." in str(cm.exception))
 
         # Handle registered remote exception.
-        self.register.map_exception_to_name(
-            FakeException,
-            "org.test.Unknown"
-        )
+        self.error_mapper.add_rule(ErrorRule(
+            exception_type=FakeException,
+            error_name="org.test.Unknown"
+        ))
 
         self._set_reply(Gio.DBusError.new_for_dbus_error(
             "org.test.Unknown",
@@ -330,10 +330,10 @@ class DBusClientTestCase(unittest.TestCase):
         )
         callback.assert_called_once_with(3, "A", "B")
 
-        self.register.map_exception_to_name(
-            FakeException,
-            "org.test.Unknown"
-        )
+        self.error_mapper.add_rule(ErrorRule(
+            exception_type=FakeException,
+            error_name="org.test.Unknown"
+        ))
 
         callback = Mock()
         callback_args = ("A", "B")

@@ -24,6 +24,7 @@ from dasbus.connection import MessageBus, SystemMessageBus, \
     SessionMessageBus, AddressedMessageBus
 from dasbus.constants import DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER, \
     DBUS_NAME_FLAG_ALLOW_REPLACEMENT, DBUS_REQUEST_NAME_REPLY_ALREADY_OWNER
+from dasbus.error import ErrorMapper
 
 import gi
 gi.require_version("Gio", "2.0")
@@ -33,8 +34,8 @@ from gi.repository import Gio
 class TestMessageBus(MessageBus):
     """Message bus for testing."""
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._proxy_factory = Mock()
         self._server_factory = Mock()
 
@@ -57,6 +58,7 @@ class DBusConnectionTestCase(unittest.TestCase):
 
     def setUp(self):
         self.message_bus = TestMessageBus()
+        self.error_mapper = self.message_bus._error_mapper
         self.proxy_factory = self.message_bus._proxy_factory
         self.server_factory = self.message_bus._server_factory
 
@@ -76,6 +78,17 @@ class DBusConnectionTestCase(unittest.TestCase):
         self.message_bus._get_connection = Mock(return_value=None)
         self.assertFalse(self.message_bus.check_connection())
 
+    def test_error_mapper(self):
+        """Test the error mapper."""
+        error_mapper = ErrorMapper()
+
+        message_bus = TestMessageBus(error_mapper=error_mapper)
+        self.assertEqual(message_bus._error_mapper, error_mapper)
+
+        message_bus = TestMessageBus()
+        self.assertNotEqual(message_bus._error_mapper, error_mapper)
+        self.assertIsInstance(message_bus._error_mapper, ErrorMapper)
+
     def test_proxy(self):
         """Test the object proxy."""
         proxy = self.message_bus.get_proxy(
@@ -86,7 +99,8 @@ class DBusConnectionTestCase(unittest.TestCase):
         self.proxy_factory.assert_called_once_with(
             self.message_bus,
             "service.name",
-            "/object/path"
+            "/object/path",
+            error_mapper=self.error_mapper
         )
 
         self.assertEqual(proxy, self.proxy_factory.return_value)
@@ -98,7 +112,8 @@ class DBusConnectionTestCase(unittest.TestCase):
         self.proxy_factory.assert_called_once_with(
             self.message_bus,
             "org.freedesktop.DBus",
-            "/org/freedesktop/DBus"
+            "/org/freedesktop/DBus",
+            error_mapper=self.error_mapper
         )
 
         self.assertIsNotNone(proxy)
@@ -171,7 +186,8 @@ class DBusConnectionTestCase(unittest.TestCase):
         self.server_factory.assert_called_once_with(
             self.message_bus,
             "/my/object",
-            obj
+            obj,
+            error_mapper=self.error_mapper
         )
 
         callback = self.message_bus._registrations[-1]

@@ -23,7 +23,7 @@ from unittest.mock import Mock
 
 from dasbus.client.proxy import disconnect_proxy
 from dasbus.connection import AddressedMessageBus
-from dasbus.error import dbus_error
+from dasbus.error import ErrorMapper, get_error_decorator
 from dasbus.loop import EventLoop
 from dasbus.server.interface import dbus_interface, dbus_signal
 from dasbus.typing import get_variant, Str, Int, Dict, Variant, List
@@ -32,6 +32,10 @@ import gi
 gi.require_version("Gio", "2.0")
 gi.require_version("GLib", "2.0")
 from gi.repository import Gio, GLib
+
+# Define the error mapper and decorator.
+error_mapper = ErrorMapper()
+dbus_error = get_error_decorator(error_mapper)
 
 
 class run_in_glib(object):
@@ -136,7 +140,10 @@ class DBusTestCase(unittest.TestCase):
     def setUp(self):
         self.bus = Gio.TestDBus()
         self.bus.up()
-        self.message_bus = AddressedMessageBus(self.bus.get_bus_address())
+        self.message_bus = AddressedMessageBus(
+            self.bus.get_bus_address(),
+            error_mapper=error_mapper
+        )
 
         self.service = None
         self.clients = []

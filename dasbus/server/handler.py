@@ -22,8 +22,8 @@ import logging
 from abc import ABC, abstractmethod
 from functools import partial
 
+from dasbus.error import ErrorMapper
 from dasbus.signal import Signal
-from dasbus.error import register
 from dasbus.server.interface import get_xml
 from dasbus.specification import DBusSpecification, DBusSpecificationError
 from dasbus.typing import get_variant, unwrap_variant
@@ -291,16 +291,25 @@ class ServerObjectHandler(AbstractServerObjectHandler):
     __slots__ = [
         "_server",
         "_signal_factory",
-        "_error_register",
+        "_error_mapper",
         "_registrations"
     ]
 
-    def __init__(self, message_bus, object_path, obj, server=GLibServer,
-                 signal_factory=Signal, error_register=register):
+    def __init__(self, message_bus, object_path, obj, error_mapper=None,
+                 server=GLibServer, signal_factory=Signal):
+        """Create a new handler.
+
+        :param message_bus: a message bus
+        :param object_path: a DBus path of the object
+        :param obj: a Python instance of the object
+        :param error_mapper: a DBus error mapper
+        :param server: a DBus server library
+        :param signal_factory: a signal factory
+        """
         super().__init__(message_bus, object_path, obj)
         self._server = server
         self._signal_factory = signal_factory
-        self._error_register = error_register
+        self._error_mapper = error_mapper or ErrorMapper()
         self._registrations = []
 
     def _get_xml_specification(self):
@@ -438,7 +447,7 @@ class ServerObjectHandler(AbstractServerObjectHandler):
             "The call %s.%s has failed with an exception:",
             interface_name, method_name, exc_info=True
         )
-        error_name = self._error_register.get_error_name(
+        error_name = self._error_mapper.get_error_name(
             type(error)
         )
         self._server.set_call_error(

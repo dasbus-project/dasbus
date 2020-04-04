@@ -2,13 +2,18 @@
 # The common definitions
 #
 from dasbus.connection import SessionMessageBus
-from dasbus.error import dbus_error, DBusError
+from dasbus.error import DBusError, ErrorMapper, get_error_decorator
 from dasbus.identifier import DBusServiceIdentifier
 from dasbus.structure import DBusData
 from dasbus.typing import Str, Int
 
+# Define the error mapper.
+ERROR_MAPPER = ErrorMapper()
+
 # Define the message bus.
-SESSION_BUS = SessionMessageBus()
+SESSION_BUS = SessionMessageBus(
+    error_mapper=ERROR_MAPPER
+)
 
 # Define namespaces.
 REGISTER_NAMESPACE = ("org", "example", "Register")
@@ -18,6 +23,9 @@ REGISTER = DBusServiceIdentifier(
     namespace=REGISTER_NAMESPACE,
     message_bus=SESSION_BUS
 )
+
+# The decorator for DBus errors.
+dbus_error = get_error_decorator(ERROR_MAPPER)
 
 
 # Define errors.

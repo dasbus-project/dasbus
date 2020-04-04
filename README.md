@@ -140,7 +140,14 @@ print(proxy.NetworkingEnabled)
 Use exceptions to propagate and handle DBus errors.
 
 ```python
-from dasbus.error import dbus_error, DBusError
+from dasbus.error import ErrorMapper
+error_mapper = ErrorMapper()
+
+from dasbus.connection import SessionMessageBus
+bus = SessionMessageBus(error_mapper=error_mapper)
+
+from dasbus.error import DBusError, get_error_decorator
+dbus_error = get_error_decorator(error_mapper)
 
 @dbus_error("org.freedesktop.DBus.Error.InvalidArgs")
 class InvalidArgs(DBusError):

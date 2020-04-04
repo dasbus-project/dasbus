@@ -17,13 +17,22 @@
 # USA
 #
 import unittest
-from unittest.mock import patch
 
-from dasbus.error import ErrorRegister, dbus_error, DBusError
+from dasbus.error import ErrorMapper, DBusError, get_error_decorator, ErrorRule
 
 
 class ExceptionA(Exception):
     """My testing exception A."""
+    pass
+
+
+class ExceptionA1(ExceptionA):
+    """My testing exception A1."""
+    pass
+
+
+class ExceptionA2(ExceptionA):
+    """My testing exception A2."""
     pass
 
 
@@ -37,13 +46,30 @@ class ExceptionC(Exception):
     pass
 
 
+class CustomRule(ErrorRule):
+    """My custom rule for subclasses."""
+
+    def match_type(self, exception_type):
+        return issubclass(exception_type, self._exception_type)
+
+
 class DBusErrorTestCase(unittest.TestCase):
     """Test the DBus error register and handler."""
 
-    @patch("dasbus.error.register", new_callable=ErrorRegister)
-    def test_decorators(self, register):
+    def setUp(self):
+        self.error_mapper = ErrorMapper()
+
+    def _check_type(self, error_name, expected_type):
+        exception_type = self.error_mapper.get_exception_type(error_name)
+        self.assertEqual(exception_type, expected_type)
+
+    def _check_name(self, exception_type, expected_name):
+        error_name = self.error_mapper.get_error_name(exception_type)
+        self.assertEqual(error_name, expected_name)
+
+    def test_decorators(self):
         """Test the error decorators."""
-        r = register
+        dbus_error = get_error_decorator(self.error_mapper)
 
         @dbus_error("org.test.ErrorA")
         class DecoratedA(Exception):
@@ -53,73 +79,117 @@ class DBusErrorTestCase(unittest.TestCase):
         class DecoratedB(Exception):
             pass
 
-        self.assertEqual(r.get_error_name(DecoratedA), "org.test.ErrorA")
-        self.assertEqual(r.get_exception_class("org.test.ErrorA"), DecoratedA)
+        self._check_name(DecoratedA, "org.test.ErrorA")
+        self._check_type("org.test.ErrorA", DecoratedA)
 
-        self.assertEqual(r.get_error_name(DecoratedB), "org.test.ErrorB")
-        self.assertEqual(r.get_exception_class("org.test.ErrorB"), DecoratedB)
+        self._check_name(DecoratedB, "org.test.ErrorB")
+        self._check_type("org.test.ErrorB", DecoratedB)
 
-    def test_error_mapping(self):
-        """Test the error mapping."""
-        r = ErrorRegister()
-        r.map_exception_to_name(ExceptionA, "org.test.ErrorA")
-        r.map_exception_to_name(ExceptionB, "org.test.ErrorB")
+    def test_simple_rule(self):
+        """Test a simple rule."""
+        self.error_mapper.add_rule(ErrorRule(
+            exception_type=ExceptionA,
+            error_name="org.test.ErrorA"
+        ))
 
-        self.assertEqual(
-            r.get_error_name(ExceptionA),
-            "org.test.ErrorA"
-        )
-        self.assertEqual(
-            r.get_error_name(ExceptionB),
-            "org.test.ErrorB"
-        )
-        self.assertEqual(
-            r.get_error_name(ExceptionC),
-            "not.known.Error.ExceptionC"
-        )
+        self._check_name(ExceptionA, "org.test.ErrorA")
+        self._check_name(ExceptionA1, "not.known.Error.ExceptionA1")
+        self._check_name(ExceptionA2, "not.known.Error.ExceptionA2")
 
-        self.assertEqual(
-            r.get_exception_class("org.test.ErrorA"),
-            ExceptionA
-        )
-        self.assertEqual(
-            r.get_exception_class("org.test.ErrorB"),
-            ExceptionB
-        )
-        self.assertEqual(
-            r.get_exception_class("org.test.ErrorC"),
-            DBusError
-        )
+        self._check_type("org.test.ErrorA", ExceptionA)
+        self._check_type("org.test.ErrorA1", DBusError)
+        self._check_type("org.test.ErrorA2", DBusError)
+
+        self._check_name(ExceptionB, "not.known.Error.ExceptionB")
+        self._check_type("org.test.ErrorB", DBusError)
+
+    def test_custom_rule(self):
+        """Test a custom rule."""
+        self.error_mapper.add_rule(CustomRule(
+            exception_type=ExceptionA,
+            error_name="org.test.ErrorA"
+        ))
+
+        self._check_name(ExceptionA, "org.test.ErrorA")
+        self._check_name(ExceptionA1, "org.test.ErrorA")
+        self._check_name(ExceptionA2, "org.test.ErrorA")
+
+        self._check_type("org.test.ErrorA", ExceptionA)
+        self._check_type("org.test.ErrorA1", DBusError)
+        self._check_type("org.test.ErrorA2", DBusError)
+
+        self._check_name(ExceptionB, "not.known.Error.ExceptionB")
+        self._check_type("org.test.ErrorB", DBusError)
+
+    def test_several_rules(self):
+        """Test several rules."""
+        self.error_mapper.add_rule(ErrorRule(
+            exception_type=ExceptionA,
+            error_name="org.test.ErrorA"
+        ))
+        self.error_mapper.add_rule(ErrorRule(
+            exception_type=ExceptionB,
+            error_name="org.test.ErrorB"
+        ))
+
+        self._check_name(ExceptionA, "org.test.ErrorA")
+        self._check_name(ExceptionB, "org.test.ErrorB")
+        self._check_name(ExceptionC, "not.known.Error.ExceptionC")
+
+        self._check_type("org.test.ErrorA", ExceptionA)
+        self._check_type("org.test.ErrorB", ExceptionB)
+        self._check_type("org.test.ErrorC", DBusError)
+
+    def test_rule_priorities(self):
+        """Test the priorities of the rules."""
+        self.error_mapper.add_rule(ErrorRule(
+            exception_type=ExceptionA,
+            error_name="org.test.ErrorA1"
+        ))
+
+        self._check_name(ExceptionA, "org.test.ErrorA1")
+        self._check_type("org.test.ErrorA1", ExceptionA)
+        self._check_type("org.test.ErrorA2", DBusError)
+
+        self.error_mapper.add_rule(ErrorRule(
+            exception_type=ExceptionA,
+            error_name="org.test.ErrorA2"
+        ))
+
+        self._check_name(ExceptionA, "org.test.ErrorA2")
+        self._check_type("org.test.ErrorA1", ExceptionA)
+        self._check_type("org.test.ErrorA2", ExceptionA)
 
     def test_default_mapping(self):
         """Test the default error mapping."""
-        r = ErrorRegister()
-
-        self.assertEqual(
-            r.get_error_name(ExceptionA),
-            "not.known.Error.ExceptionA"
-        )
-        self.assertEqual(
-            r.get_exception_class("org.test.ErrorB"),
-            DBusError
-        )
-        self.assertEqual(
-            r.get_exception_class("org.test.ErrorC"),
-            DBusError
-        )
+        self._check_name(ExceptionA, "not.known.Error.ExceptionA")
+        self._check_type("org.test.ErrorB", DBusError)
+        self._check_type("org.test.ErrorC", DBusError)
 
     def test_default_class(self):
         """Test the default class."""
-        r = ErrorRegister()
-        self.assertEqual(
-            r.get_exception_class("org.test.ErrorA"),
-            DBusError
-        )
+        self._check_type("org.test.ErrorA", DBusError)
 
     def test_default_namespace(self):
         """Test the default namespace."""
-        r = ErrorRegister()
+        self._check_name(ExceptionA, "not.known.Error.ExceptionA")
+
+    def test_failed_mapping(self):
+        """Test the failed mapping."""
+        self.error_mapper._error_rules = []
+
+        with self.assertRaises(LookupError) as cm:
+            self.error_mapper.get_error_name(ExceptionA)
+
         self.assertEqual(
-            r.get_error_name(ExceptionA),
-            "not.known.Error.ExceptionA"
+            "No name found for 'ExceptionA'.",
+            str(cm.exception)
+        )
+
+        with self.assertRaises(LookupError) as cm:
+            self.error_mapper.get_exception_type("org.test.ErrorA")
+
+        self.assertEqual(
+            "No type found for 'org.test.ErrorA'.",
+            str(cm.exception)
         )
