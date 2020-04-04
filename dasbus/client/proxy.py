@@ -79,15 +79,21 @@ class AbstractObjectProxy(ABC):
     _locals = {*__slots__}
 
     def __init__(self, message_bus, service_name, object_path,
-                 handler_factory=ClientObjectHandler):
+                 handler_factory=ClientObjectHandler, **handler_arguments):
         """Create a new proxy.
 
         :param message_bus: a message bus
         :param service_name: a DBus name of the service
         :param object_path: a DBus path the object
         :param handler_factory: a factory of a DBus client object handler
+        :param handler_arguments: additional arguments for the handler factory
         """
-        self._handler = handler_factory(message_bus, service_name, object_path)
+        self._handler = handler_factory(
+            message_bus,
+            service_name,
+            object_path,
+            **handler_arguments
+        )
         self._members = dict()
         self._lock = Lock()
 
