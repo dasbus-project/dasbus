@@ -14,7 +14,7 @@ help:
 
 # Generate the API documentation.
 api:
-	sphinx-apidoc-3 -d 10 -o api ../dasbus
+	sphinx-apidoc-3 --separate -o api ../dasbus
 
 .PHONY: help api Makefile
 
