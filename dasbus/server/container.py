@@ -43,18 +43,20 @@ class DBusContainer(object):
 
     Example:
 
-    # Create a container of tasks.
-    container = DBusContainer(
-        namespace=("my", "project"),
-        basename="Task",
-        message_bus=DBus
-    )
+    .. code-block:: python
 
-    # Publish a task.
-    path = container.to_object_path(MyTask())
+        # Create a container of tasks.
+        container = DBusContainer(
+            namespace=("my", "project"),
+            basename="Task",
+            message_bus=DBus
+        )
 
-    # Resolve an object path into a task.
-    task = container.from_object_path(path)
+        # Publish a task.
+        path = container.to_object_path(MyTask())
+
+        # Resolve an object path into a task.
+        task = container.from_object_path(path)
 
     """
 

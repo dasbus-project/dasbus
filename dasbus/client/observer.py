@@ -111,23 +111,26 @@ class DBusObserver(object):
 
     Usage:
 
-    # Create the observer and connect to its signals.
-    observer = DBusObserver(SystemBus, "org.freedesktop.NetworkManager")
+    .. code-block:: python
 
-    def callback1(observer):
-        print("Service is available!")
+        # Create the observer and connect to its signals.
+        observer = DBusObserver(SystemBus, "org.freedesktop.NetworkManager")
 
-    def callback2(observer):
-        print("Service is unavailable!")
+        def callback1(observer):
+            print("Service is available!")
 
-    observer.service_available.connect(callback1)
-    observer.service_unavailable.connect(callback2)
+        def callback2(observer):
+            print("Service is unavailable!")
 
-    # Connect to the service once it is available.
-    # observer.connect_once_available()
+        observer.service_available.connect(callback1)
+        observer.service_unavailable.connect(callback2)
 
-    # Disconnect the observer.
-    observer.disconnect()
+        # Connect to the service once it is available.
+        # observer.connect_once_available()
+
+        # Disconnect the observer.
+        observer.disconnect()
+
     """
 
     def __init__(self, message_bus, service_name, monitoring=GLibMonitoring):

@@ -28,17 +28,19 @@ class Publishable(ABC):
 
     Example:
 
-    # Define a publishable class.
-    class MyObject(Publishable):
+    .. code-block:: python
 
-        def for_publication(self):
-            return MyDBusInterface(self)
+        # Define a publishable class.
+        class MyObject(Publishable):
 
-    # Create a publishable object.
-    my_object = MyObject()
+            def for_publication(self):
+                return MyDBusInterface(self)
 
-    # Publish the object on DBus.
-    DBus.publish_object("/org/project/x", my_object.for_publication())
+        # Create a publishable object.
+        my_object = MyObject()
+
+        # Publish the object on DBus.
+        DBus.publish_object("/org/project/x", my_object.for_publication())
 
    """
 

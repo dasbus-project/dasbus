@@ -43,21 +43,22 @@ class BasicInterfaceTemplate(ABC):
     and the getters and setters of properties should access the properties
     of the implementation.
 
-    Example:
+    .. code-block:: python
 
-    @dbus_interface("org.myproject.X")
-    class InterfaceX(BasicInterfaceTemplate):
-        def DoSomething(self) -> Str:
-            return self.implementation.do_something()
+        @dbus_interface("org.myproject.X")
+        class InterfaceX(BasicInterfaceTemplate):
+            def DoSomething(self) -> Str:
+                return self.implementation.do_something()
 
-    class X(object):
-        def do_something(self):
-            return "Done!"
+        class X(object):
+            def do_something(self):
+                return "Done!"
 
-    x = X()
-    i = InterfaceX(x)
+        x = X()
+        i = InterfaceX(x)
 
-    DBus.publish_object("/org/myproject/X", i)
+        DBus.publish_object("/org/myproject/X", i)
+
     """
 
     def __init__(self, implementation):
@@ -94,6 +95,8 @@ class InterfaceTemplate(BasicInterfaceTemplate, PropertiesInterface):
     org.freedesktop.DBus.Properties.
 
     Usage:
+
+    .. code-block:: python
 
         def connect_signals(self):
             super().connect_signals()
