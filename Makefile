@@ -36,6 +36,10 @@ coverage:
 	PYTHONPATH=. $(COVERAGE) run --branch -m unittest discover -v -s tests/
 	$(COVERAGE) report -m --include="dasbus/*" | tee coverage-report.log
 
+.PHONY: docs
+docs:
+	$(MAKE) -C docs html text
+
 .PHONY: changelog
 changelog:
 	@git log --no-merges --pretty="format:- %s (%ae)" $(TAG).. | sed -e 's/@.*)/)/'
