@@ -1,0 +1,12 @@
+# Read the Docs configuration file
+# See: https://docs.readthedocs.io/en/stable/config-file/v2.html
+
+# The version of the configuration file.
+version: 2
+
+# Formats of the documentation to be built.
+formats: all
+
+# Configuration for Conda support.
+conda:
+  environment: docs/environment.yml

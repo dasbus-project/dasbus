@@ -1,0 +1,10 @@
+# Conda environment file
+name: dasbus-docs-environment
+
+channels:
+  - defaults
+  - conda-forge
+
+dependencies:
+  - python=3
+  - pygobject
