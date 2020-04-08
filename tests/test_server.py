@@ -20,7 +20,7 @@ import unittest
 from textwrap import dedent
 from unittest.mock import Mock
 
-from dasbus.error import ErrorRegister
+from dasbus.error import ErrorMapper, ErrorRule
 from dasbus.server.handler import ServerObjectHandler, GLibServer
 from dasbus.signal import Signal
 from dasbus.specification import DBusSpecificationError
@@ -40,7 +40,7 @@ class DBusServerTestCase(unittest.TestCase):
     def setUp(self):
         self.message_bus = Mock()
         self.connection = self.message_bus.connection
-        self.register = ErrorRegister()
+        self.error_mapper = ErrorMapper()
         self.object = None
         self.object_path = "/my/path"
         self.handler = None
@@ -65,7 +65,7 @@ class DBusServerTestCase(unittest.TestCase):
             self.message_bus,
             self.object_path,
             self.object,
-            error_register=self.register
+            error_mapper=self.error_mapper
         )
         self.handler.connect_object()
 
@@ -175,10 +175,10 @@ class DBusServerTestCase(unittest.TestCase):
                           "the interface Interface."
         )
 
-        self.register.map_exception_to_name(
-            MethodFailedException,
-            "MethodFailed"
-        )
+        self.error_mapper.add_rule(ErrorRule(
+            exception_type=MethodFailedException,
+            error_name="MethodFailed"
+        ))
 
         self.object.Method1.side_effect = MethodFailedException(
             "The method has failed."

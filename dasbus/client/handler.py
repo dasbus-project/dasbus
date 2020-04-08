@@ -22,7 +22,7 @@ from abc import ABC, abstractmethod
 from functools import partial
 
 from dasbus.client.property import PropertyProxy
-from dasbus.error import register
+from dasbus.error import ErrorMapper
 from dasbus.signal import Signal
 from dasbus.constants import DBUS_FLAG_NONE
 from dasbus.specification import DBusSpecification
@@ -299,24 +299,26 @@ class ClientObjectHandler(AbstractClientObjectHandler):
     __slots__ = [
         "_client",
         "_signal_factory",
-        "_error_register",
+        "_error_mapper",
         "_subscriptions"
     ]
 
     def __init__(self, message_bus, service_name, object_path,
-                 client=GLibClient, signal_factory=Signal,
-                 error_register=register):
+                 error_mapper=None, client=GLibClient,
+                 signal_factory=Signal):
         """Create a new handler.
 
         :param message_bus: a message bus
         :param service_name: a DBus name of the service
         :param object_path: a DBus path the object
+        :param error_mapper: a DBus error mapper
         :param client: a DBus client library
+        :param signal_factory: a signal factory
         """
         super().__init__(message_bus, service_name, object_path)
         self._client = client
         self._signal_factory = signal_factory
-        self._error_register = error_register
+        self._error_mapper = error_mapper or ErrorMapper()
         self._subscriptions = []
 
     def _get_specification(self):
@@ -485,7 +487,7 @@ class ClientObjectHandler(AbstractClientObjectHandler):
             raise error
 
         name = self._client.get_remote_error_name(error)
-        cls = self._error_register.get_exception_class(name)
+        cls = self._error_mapper.get_exception_type(name)
         message = self._client.get_remote_error_message(error)
 
         # Create a new exception.
