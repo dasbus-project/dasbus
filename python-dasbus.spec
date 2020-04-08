@@ -1,7 +1,7 @@
 %global srcname dasbus
 
 Name:           python-%{srcname}
-Version:        0.3
+Version:        0.4
 Release:        1%{?dist}
 Summary:        DBus library in Python 3
 
@@ -43,6 +43,11 @@ Requires:       python3-gobject-base
 %{python3_sitelib}/%{srcname}/
 
 %changelog
+* Wed Apr 08 2020 Vendula Poncova <vponcova@redhat.com> - 0.4-1
+- Replace the error register with the error mapper (vponcova)
+- Propagate additional arguments for the client handler factory (vponcova)
+- Propagate additional arguments in the class AddressedMessageBus (vponcova)
+- Generate the documentation (vponcova)
 * Thu Apr 02 2020 Vendula Poncova <vponcova@redhat.com> - 0.3-1
 - Remove generate_dictionary_from_data (vponcova)
 - Improve some of the error messages (vponcova)
