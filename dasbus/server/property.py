@@ -152,9 +152,13 @@ class PropertiesInterface(ABC):
 
     Report the changed property:
 
+    .. code-block:: python
+
         self.report_changed_property('X')
 
     Emit all changes when the method is done:
+
+    .. code-block:: python
 
         @emits_properties_changed
         def SetX(x: Int):

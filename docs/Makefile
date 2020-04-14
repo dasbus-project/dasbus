@@ -3,7 +3,7 @@
 
 # You can set these variables from the command line, and also
 # from the environment for the first two.
-SPHINXOPTS    ?=
+SPHINXOPTS    ?= -W --keep-going
 SPHINXBUILD   ?= sphinx-build-3
 SOURCEDIR     = .
 BUILDDIR      = _build
@@ -14,7 +14,7 @@ help:
 
 # Generate the API documentation.
 api:
-	sphinx-apidoc-3 -d 10 -o api ../dasbus
+	sphinx-apidoc-3 --separate -o api ../dasbus
 
 .PHONY: help api Makefile
 

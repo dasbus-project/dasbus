@@ -20,6 +20,7 @@ script:
   # Run tests in the running container.
   - docker exec "$(cat container_id)" make check
   - docker exec "$(cat container_id)" make coverage
+  - docker exec "$(cat container_id)" make docs
 
 after_success:
   # Analyze the code coverage.

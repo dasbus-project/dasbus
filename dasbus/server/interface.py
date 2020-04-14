@@ -48,9 +48,14 @@ class dbus_signal(object):
     """DBus signal.
 
     Can be used as:
+
+    .. code-block:: python
+
         Signal = dbus_signal()
 
     Or as a method decorator:
+
+    .. code-block:: python
 
         @dbus_signal
         def Signal(x: Int, y: Double):
@@ -77,9 +82,9 @@ class dbus_signal(object):
 
         The descriptor has been assigned to the specified name.
         Generate a name of a private attribute that will be set
-        to a signal in the __get__ method.
+        to a signal in the ``__get__`` method.
 
-        For example: __dbus_signal_my_name
+        For example: ``__dbus_signal_my_name``
 
         :param owner: the owning class
         :param name: the descriptor name
@@ -126,6 +131,8 @@ def dbus_interface(interface_name, namespace=()):
 
     A new DBus interface can be defined as:
 
+    .. code-block:: python
+
         @dbus_interface
         class Interface():
             ...
@@ -135,6 +142,8 @@ def dbus_interface(interface_name, namespace=()):
     specification of the class.
 
     The XML specification is accessible as:
+    .. code-block:: python
+
         Interface.__dbus_xml__
 
     :param interface_name: a DBus name of the interface
@@ -154,6 +163,8 @@ def dbus_class(cls):
 
     A new DBus class can be defined as:
 
+    .. code-block:: python
+
         @dbus_class
         class Class(Interface):
             ...
@@ -164,7 +175,11 @@ def dbus_class(cls):
     The DBus XML specification will be generated from
     implemented interfaces (inherited) and it will be
     accessible as:
+
+    .. code-block:: python
+
         Class.__dbus_xml__
+
     """
     xml = DBusSpecificationGenerator.generate_specification(cls)
     setattr(cls, DBUS_XML_ATTRIBUTE, xml)
@@ -483,6 +498,9 @@ class DBusSpecificationGenerator(object):
         Ignore the difference between instance method and class method.
 
         For example:
+
+        .. code-block:: python
+
             class Foo(object):
                 def bar(cls, x):
                     pass
@@ -495,6 +513,7 @@ class DBusSpecificationGenerator(object):
 
             _is_method(Foo.bar) # True
             _is_method(Foo().bar) # True
+
         """
         return inspect.ismethod(member) or inspect.isfunction(member)
 

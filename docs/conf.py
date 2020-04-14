@@ -51,12 +51,6 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # A boolean that decides whether module names are prepended to all object names.
 add_module_names = False
 
-# A list of prefixes that are ignored for sorting the Python module index.
-modindex_common_prefix = ['dasbus.']
-
-# This value controls how to represents typehints.
-autodoc_typehints = 'none'
-
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -67,4 +61,4 @@ html_theme = 'sphinx_rtd_theme'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+# html_static_path = ['_static']

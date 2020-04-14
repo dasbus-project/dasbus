@@ -103,6 +103,9 @@ def get_variant(type_hint, value):
     a type hint.
 
     Example:
+
+    .. code-block:: python
+
          v1 = get_variant(Bool, True)
          v2 = get_variant(List[Int], [1,2,3])
 

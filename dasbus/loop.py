@@ -38,13 +38,16 @@ class AbstractEventLoop(ABC):
 
     Example:
 
-    # Create the event loop.
-    loop = EventLoop()
+    .. code-block:: python
 
-    # Start the event loop.
-    loop.run()
+        # Create the event loop.
+        loop = EventLoop()
 
-    # Run loop.quit() to stop.
+        # Start the event loop.
+        loop.run()
+
+        # Run loop.quit() to stop.
+
     """
 
     @abstractmethod
