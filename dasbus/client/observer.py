@@ -134,7 +134,7 @@ class DBusObserver(object):
     """
 
     def __init__(self, message_bus, service_name, monitoring=GLibMonitoring):
-        """Creates an DBus service observer.
+        """Creates a DBus service observer.
 
         :param message_bus: a message bus
         :param service_name: a DBus name of a service

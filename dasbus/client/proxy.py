@@ -109,7 +109,7 @@ class AbstractObjectProxy(ABC):
     def _get_member(self, *key):
         """Find a member of the DBus object.
 
-        If the the member doesn't exist, we will acquire
+        If the member doesn't exist, we will acquire
         a lock and ask a handler to create it.
 
         This method is thread-safe.
@@ -169,7 +169,7 @@ class AbstractObjectProxy(ABC):
         """Set the attribute.
 
         Called when an attribute assignment is attempted.
-        Call the DBus handler if the the name is not a
+        Call the DBus handler if the name is not a
         name of an instance attribute defined in _locals.
         """
         if name in self._locals:

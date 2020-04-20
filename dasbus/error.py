@@ -137,7 +137,7 @@ class ErrorRule(AbstractErrorRule):
         """Create a new error rule.
 
         The rule will return the Python type exception_type
-        for the the DBue error error_name.
+        for the DBue error error_name.
 
         The rule will return the DBue name error_name for
         the Python type exception_type

@@ -108,7 +108,7 @@ class DBusContainer(object):
         the object on the container message bus with a unique
         DBus path generated from the container namespace.
 
-        :param obj: an publishable object
+        :param obj: a publishable object
         :return: a DBus path
         """
         if not isinstance(obj, Publishable):

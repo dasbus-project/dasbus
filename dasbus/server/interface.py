@@ -288,7 +288,7 @@ class DBusSpecificationGenerator(object):
         :param interface_cls: a class object that defines the interface
         :param interfaces: a dictionary of implemented interfaces
         :param interface_name: a name of the new interface
-        :return: an new interface element
+        :return: a new interface element
 
         :raises DBusSpecificationError: if a class member cannot be exported
         """
