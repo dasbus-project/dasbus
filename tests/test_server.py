@@ -46,7 +46,7 @@ class DBusServerTestCase(unittest.TestCase):
         self.handler = None
 
     def _publish_object(self, xml="<node />"):
-        """Publish an mocked object."""
+        """Publish a mocked object."""
         self.object = Mock(__dbus_xml__=dedent(xml))
 
         # Raise AttributeError for default methods.
