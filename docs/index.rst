@@ -44,6 +44,7 @@ Or install the RPM package on Fedora 31+.
    :caption: Contents:
 
    Examples <examples>
+   Dasbus vs pydbus <pydbus>
    Public API <api/dasbus>
 
 Indices and tables
