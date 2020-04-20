@@ -1,8 +1,6 @@
 Public API
 ==========
 
-Let's look at the public API of the dasbus package.
-
 .. toctree::
    :maxdepth: 1
    :caption: Contents:

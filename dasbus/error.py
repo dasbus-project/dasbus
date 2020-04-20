@@ -41,6 +41,8 @@ def get_error_decorator(error_mapper):
 
     Definition of the decorator:
 
+    .. code-block:: python
+
         decorator(error_name, namespace=())
 
     The decorator accepts a name of the DBus error and optionally
@@ -48,6 +50,8 @@ def get_error_decorator(error_mapper):
     a prefix of the DBus name.
 
     Usage:
+
+    .. code-block:: python
 
         # Create an error mapper.
         error_mapper = ErrorMapper()

@@ -4,7 +4,8 @@ Welcome to dasbus's documentation!
 Dasbus is a DBus library written in Python 3, based on GLib and inspired by pydbus.
 The code used to be part of the `Anaconda Installer <https://github.com/rhinstaller/anaconda>`_
 project. It was based on the `pydbus <https://github.com/LEW21/pydbus>`_ library, but we replaced
-it with our own solution because of its inactivity. The dasbus library is a result of this effort.
+it with our own solution because its upstream development stalled. The dasbus library is a result
+of this effort.
 
 Requirements
 ____________
@@ -31,7 +32,7 @@ to install the required dependencies.
     pip3 install dasbus
 
 
-Or install the RPM package on Fedora.
+Or install the RPM package on Fedora 31+.
 
 ::
 

@@ -16,4 +16,4 @@ if __name__ == "__main__":
     )
 
     # Print the return value of the call.
-    print("The notification {} was send.".format(notification_id))
+    print("The notification {} was sent.".format(notification_id))

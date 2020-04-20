@@ -126,7 +126,7 @@ class DBusObserver(object):
         observer.service_unavailable.connect(callback2)
 
         # Connect to the service once it is available.
-        # observer.connect_once_available()
+        observer.connect_once_available()
 
         # Disconnect the observer.
         observer.disconnect()
