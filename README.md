@@ -1,10 +1,14 @@
 # dasbus
-This DBus library is written in Python 3, based on GLib and inspired by pydbus.
+This DBus library is written in Python 3, based on GLib and inspired by pydbus. Find out more in
+the [documentation](https://dasbus.readthedocs.io/en/latest/).
 
 The code used to be part of the [Anaconda Installer](https://github.com/rhinstaller/anaconda)
 project. It was based on the [pydbus](https://github.com/LEW21/pydbus) library, but we replaced
-it with our own solution because of its inactivity. The dasbus library is a result of this effort.
+it with our own solution because its upstream development stalled. The dasbus library is
+a result of this effort.
 
+[![Build Status](https://travis-ci.com/rhinstaller/dasbus.svg?branch=master)](https://travis-ci.com/rhinstaller/dasbus)
+[![Documentation Status](https://readthedocs.org/projects/dasbus/badge/?version=latest)](https://dasbus.readthedocs.io/en/latest/?badge=latest)
 [![codecov](https://codecov.io/gh/rhinstaller/dasbus/branch/master/graph/badge.svg)](https://codecov.io/gh/rhinstaller/dasbus)
 
 ## Requirements
@@ -29,7 +33,7 @@ to install the required dependencies.
 pip3 install dasbus
 ```
 
-Or install the RPM package on Fedora.
+Or install the RPM package on Fedora 31+.
 
 ```
 sudo dnf install python3-dasbus
@@ -68,7 +72,7 @@ id = proxy.Notify(
     [], {}, 0
 )
 
-print("The notification {} was send.".format(id))
+print("The notification {} was sent.".format(id))
 ```
 
 Handle a closed notification.
@@ -139,17 +143,17 @@ proxy = NETWORK_MANAGER.get_proxy()
 print(proxy.NetworkingEnabled)
 ```
 
-Use exceptions to propagate and handle DBus errors.
+Use exceptions to propagate and handle DBus errors. Create an error mapper and a decorator for
+mapping Python exception classes to DBus error names. The message bus will use the given error
+mapper to transform Python exceptions to DBus errors and back.
 
 ```python
-from dasbus.error import ErrorMapper
+from dasbus.error import ErrorMapper, DBusError, get_error_decorator
 error_mapper = ErrorMapper()
+dbus_error = get_error_decorator(error_mapper)
 
 from dasbus.connection import SessionMessageBus
 bus = SessionMessageBus(error_mapper=error_mapper)
-
-from dasbus.error import DBusError, get_error_decorator
-dbus_error = get_error_decorator(error_mapper)
 
 @dbus_error("org.freedesktop.DBus.Error.InvalidArgs")
 class InvalidArgs(DBusError):

@@ -40,7 +40,7 @@ Send a notification to the notification server.
         [], {}, 0
     )
 
-    print("The notification {} was send.".format(id))
+    print("The notification {} was sent.".format(id))
 
 Handle a closed notification.
 
@@ -111,11 +111,19 @@ Use constants to define DBus services and objects.
     proxy = NETWORK_MANAGER.get_proxy()
     print(proxy.NetworkingEnabled)
 
-Use exceptions to propagate and handle DBus errors.
+
+Use exceptions to propagate and handle DBus errors. Create an error mapper and a decorator for
+mapping Python exception classes to DBus error names. The message bus will use the given error
+mapper to transform Python exceptions to DBus errors and back.
 
 .. code-block:: python
 
-    from dasbus.error import dbus_error, DBusError
+    from dasbus.error import ErrorMapper, DBusError, get_error_decorator
+    error_mapper = ErrorMapper()
+    dbus_error = get_error_decorator(error_mapper)
+
+    from dasbus.connection import SessionMessageBus
+    bus = SessionMessageBus(error_mapper=error_mapper)
 
     @dbus_error("org.freedesktop.DBus.Error.InvalidArgs")
     class InvalidArgs(DBusError):
