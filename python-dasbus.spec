@@ -1,7 +1,7 @@
 %global srcname dasbus
 
 Name:           python-%{srcname}
-Version:        0.4
+Version:        1.0
 Release:        1%{?dist}
 Summary:        DBus library in Python 3
 
@@ -43,6 +43,14 @@ Requires:       python3-gobject-base
 %{python3_sitelib}/%{srcname}/
 
 %changelog
+* Tue May 05 2020 Vendula Poncova <vponcova@redhat.com> - 1.0-1
+- Fix the documentation (vponcova)
+- Fix minor typos (yurchor)
+- Enable Codecov (vponcova)
+- Test the documentation build (vponcova)
+- Extend the documentation (vponcova)
+- Add configuration files for Read the Docs and Conda (vponcova)
+- Fix all warnings from the generated documentation (vponcova)
 * Wed Apr 08 2020 Vendula Poncova <vponcova@redhat.com> - 0.4-1
 - Replace the error register with the error mapper (vponcova)
 - Propagate additional arguments for the client handler factory (vponcova)

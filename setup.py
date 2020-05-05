@@ -22,7 +22,7 @@ with open("README.md", "r") as f:
 
 setup(
     name="dasbus",
-    version="0.4",
+    version="1.0",
     author="Vendula Poncova",
     author_email="vponcova@redhat.com",
     description="DBus library in Python 3",
@@ -32,6 +32,7 @@ setup(
     url="https://github.com/rhinstaller/dasbus",
     packages=find_packages(include=['dasbus', 'dasbus.*']),
     classifiers=[
+        "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: GNU Lesser General"
         " Public License v2 or later (LGPLv2+)",
