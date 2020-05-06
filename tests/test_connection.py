@@ -42,12 +42,12 @@ class TestMessageBus(MessageBus):
     def _get_connection(self):
         return Mock()
 
-    def publish_object(self, *args, **kwargs):
+    def publish_object(self, *args, **kwargs):  # pylint: disable=signature-differs
         return super().publish_object(
             *args, **kwargs, server_factory=self._server_factory
         )
 
-    def get_proxy(self, *args, **kwargs):  # pylint: disable=arguments-differ
+    def get_proxy(self, *args, **kwargs):  # pylint: disable=signature-differs
         return super().get_proxy(
             *args, **kwargs, proxy_factory=self._proxy_factory
         )
