@@ -1,7 +1,7 @@
 %global srcname dasbus
 
 Name:           python-%{srcname}
-Version:        1.0
+Version:        1.1
 Release:        1%{?dist}
 Summary:        DBus library in Python 3
 
@@ -43,6 +43,9 @@ Requires:       python3-gobject-base
 %{python3_sitelib}/%{srcname}/
 
 %changelog
+* Thu May 14 2020 Vendula Poncova <vponcova@redhat.com> - 1.1-1
+- Include tests and examples in the source distribution (vponcova)
+- Fix the pylint warning signature-differs (vponcova)
 * Tue May 05 2020 Vendula Poncova <vponcova@redhat.com> - 1.0-1
 - Fix the documentation (vponcova)
 - Fix minor typos (yurchor)
