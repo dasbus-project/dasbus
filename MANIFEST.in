@@ -3,3 +3,9 @@ include *.md
 
 # Include the license file
 include LICENSE
+
+# Include the tests
+recursive-include tests *.py
+
+# Include the examples
+recursive-include examples *.py
