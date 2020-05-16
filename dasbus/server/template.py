@@ -18,7 +18,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
 #
-from abc import ABC
+from abc import ABCMeta
 
 from dasbus.server.property import PropertiesInterface
 
@@ -28,7 +28,7 @@ __all__ = [
 ]
 
 
-class BasicInterfaceTemplate(ABC):
+class BasicInterfaceTemplate(metaclass=ABCMeta):
     """Basic template for a DBus interface.
 
     This template uses a software design pattern called proxy.

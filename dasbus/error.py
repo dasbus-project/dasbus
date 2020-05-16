@@ -18,7 +18,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
 #
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 
 from dasbus.namespace import get_dbus_name
 
@@ -87,7 +87,7 @@ class DBusError(Exception):
     pass
 
 
-class AbstractErrorRule(ABC):
+class AbstractErrorRule(metaclass=ABCMeta):
     """Abstract rule for mapping a Python exception to a DBus error."""
 
     __slots__ = []

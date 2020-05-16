@@ -18,7 +18,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
 #
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 
 import gi
 gi.require_version("GLib", "2.0")
@@ -30,7 +30,7 @@ __all__ = [
 ]
 
 
-class AbstractEventLoop(ABC):
+class AbstractEventLoop(metaclass=ABCMeta):
     """The abstract representation of the event loop.
 
     It is necessary to run the event loop to handle emitted

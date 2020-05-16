@@ -20,7 +20,7 @@
 #
 import logging
 import threading
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 
 from dasbus.constants import DBUS_NAME_FLAG_ALLOW_REPLACEMENT, \
     DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER
@@ -81,7 +81,7 @@ class GLibConnection(object):
         )
 
 
-class AbstractMessageBus(ABC):
+class AbstractMessageBus(metaclass=ABCMeta):
     """Abstract representation of a message bus.
 
     The property connection represents a connection to the bus. You can
