@@ -24,7 +24,7 @@ from typing import Set
 from dasbus.typing import get_dbus_type, is_base_type, get_native, \
     get_variant, get_variant_type, Int, Int16, Int32, Int64, UInt16, UInt32, \
     UInt64, Bool, Byte, Str, Dict, List, Tuple, Variant, Double, ObjPath, \
-    File, unwrap_variant
+    File, unwrap_variant, get_type_name
 
 import gi
 gi.require_version("GLib", "2.0")
@@ -93,11 +93,13 @@ class DBusTypingTests(unittest.TestCase):
 
     def test_invalid(self):
         """Test the invalid types."""
+        msg = "Invalid DBus type of dictionary key: '{}'"
+
         with self.assertRaises(TypeError) as cm:
             get_dbus_type(Dict[List[Bool], Bool])
 
         self.assertEqual(
-            "Invalid DBus type of dictionary key: 'typing.List[bool]'",
+            msg.format(get_type_name(List[Bool])),
             str(cm.exception)
         )
 
@@ -105,7 +107,7 @@ class DBusTypingTests(unittest.TestCase):
             get_dbus_type(Dict[Variant, Int])
 
         self.assertEqual(
-            "Invalid DBus type of dictionary key: 'Variant'",
+            msg.format("Variant"),
             str(cm.exception)
         )
 
@@ -113,16 +115,18 @@ class DBusTypingTests(unittest.TestCase):
             get_dbus_type(Tuple[Int, Double, Dict[Tuple[Int, Int], Bool]])
 
         self.assertEqual(
-            "Invalid DBus type of dictionary key: 'typing.Tuple[int, int]'",
+            msg.format(get_type_name(Tuple[Int, Int])),
             str(cm.exception)
         )
+
+        msg = "Invalid DBus type '{}'."
 
         with self.assertRaises(TypeError) as cm:
             get_dbus_type(Set[Int])
 
         self.assertEqual(
-            "Invalid DBus type 'typing.Set[int]'.",
-            str(cm.exception)
+            msg.format(get_type_name(Set[Int])),
+            str(cm.exception),
         )
 
     def test_simple(self):
