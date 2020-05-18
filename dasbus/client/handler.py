@@ -18,7 +18,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
 #
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 from functools import partial
 
 from dasbus.client.property import PropertyProxy
@@ -161,7 +161,7 @@ class GLibClient(object):
         return message
 
 
-class AbstractClientObjectHandler(ABC):
+class AbstractClientObjectHandler(metaclass=ABCMeta):
     """The abstract handler of a remote DBus object."""
 
     __slots__ = [

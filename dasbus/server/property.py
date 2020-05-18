@@ -21,7 +21,7 @@
 # For more info about DBus specification see:
 # https://dbus.freedesktop.org/doc/dbus-specification.html#introspection-format
 #
-from abc import ABC
+from abc import ABCMeta
 from collections import defaultdict
 from functools import wraps
 from typing import Dict
@@ -143,7 +143,7 @@ class PropertiesChanges(object):
         self._properties_names.add(property_name)
 
 
-class PropertiesInterface(ABC):
+class PropertiesInterface(metaclass=ABCMeta):
     """Standard DBus interface org.freedesktop.DBus.Properties.
 
     DBus objects don't have to inherit this class, because the

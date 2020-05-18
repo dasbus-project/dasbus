@@ -19,7 +19,7 @@
 # USA
 #
 import inspect
-from abc import ABC
+from abc import ABCMeta
 from typing import get_type_hints
 
 from dasbus.typing import get_variant, get_type_arguments, unwrap_variant, \
@@ -185,7 +185,7 @@ class DBusDataListField(DBusField):
         return get_variant(self._type_hint, value)
 
 
-class DBusData(ABC):
+class DBusData(metaclass=ABCMeta):
     """Object representation of data in a DBus structure.
 
     Classes derived from this class should represent specific types

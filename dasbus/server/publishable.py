@@ -18,12 +18,12 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
 #
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 
 __all__ = ["Publishable"]
 
 
-class Publishable(ABC):
+class Publishable(metaclass=ABCMeta):
     """Abstract class for Python objects that can be published on DBus.
 
     Example:

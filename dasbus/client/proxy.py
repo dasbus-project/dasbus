@@ -18,7 +18,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
 #
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 from threading import Lock
 
 from dasbus.client.handler import ClientObjectHandler
@@ -65,7 +65,7 @@ def disconnect_proxy(proxy):
     handler.disconnect_members()
 
 
-class AbstractObjectProxy(ABC):
+class AbstractObjectProxy(metaclass=ABCMeta):
     """Abstract proxy of a remote DBus object."""
 
     __slots__ = [

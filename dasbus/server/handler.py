@@ -19,7 +19,7 @@
 # USA
 #
 import logging
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 from functools import partial
 
 from dasbus.error import ErrorMapper
@@ -138,7 +138,7 @@ class GLibServer(object):
         invocation.return_value(reply_value)
 
 
-class AbstractServerObjectHandler(ABC):
+class AbstractServerObjectHandler(metaclass=ABCMeta):
     """The abstract handler of a published object."""
 
     __slots__ = [
