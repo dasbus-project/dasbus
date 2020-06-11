@@ -144,28 +144,47 @@ class DBusServiceIdentifier(DBusObjectIdentifier):
         """Return the string representation."""
         return self.service_name
 
-    def _choose_object_path(self, object_path):
+    def _choose_object_path(self, object_id):
         """Choose an object path."""
-        if object_path is None:
+        if object_id is None:
             return self.object_path
 
-        if isinstance(object_path, DBusObjectIdentifier):
-            return object_path.object_path
+        if isinstance(object_id, DBusObjectIdentifier):
+            return object_id.object_path
 
-        return object_path
+        return object_id
 
-    def _choose_interface_names(self, object_path, interface_names):
-        """Choose interface names."""
-        if object_path is None and interface_names is None:
-            return [self.interface_name]
+    def _choose_interface_name(self, interface_id):
+        """Choose an interface name."""
+        if interface_id is None:
+            return None
 
-        return interface_names
+        if isinstance(interface_id, DBusInterfaceIdentifier):
+            return interface_id.interface_name
 
-    def get_proxy(self, object_path=None):
+        return interface_id
+
+    def get_proxy(self, object_path=None, interface_name=None,
+                  **bus_arguments):
         """Returns a proxy of the DBus object.
 
-        :param object_path: a DBus path an object or None
+        If no object path is specified, we will use the object path
+        of this DBus service.
+
+        If no interface name is specified, we will use none and create
+        a proxy from all interfaces of the DBus object.
+
+        :param object_path: an object identifier or a DBus path or None
+        :param interface_name: an interface identifier or a DBus name or None
+        :param bus_arguments: additional arguments for the message bus
         :return: a proxy object
         """
         object_path = self._choose_object_path(object_path)
-        return self._message_bus.get_proxy(self.service_name, object_path)
+        interface_name = self._choose_interface_name(interface_name)
+
+        return self._message_bus.get_proxy(
+            self.service_name,
+            object_path,
+            interface_name,
+            **bus_arguments
+        )

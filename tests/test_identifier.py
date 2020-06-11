@@ -163,9 +163,94 @@ class DBusServiceIdentifierTestCase(unittest.TestCase):
         )
 
         service.get_proxy()
-        bus.get_proxy.assert_called_with("a.b.c", "/a/b/c")
+        bus.get_proxy.assert_called_with(
+            "a.b.c",
+            "/a/b/c",
+            None
+        )
         bus.reset_mock()
 
-        service.get_proxy(obj.object_path)
-        bus.get_proxy.assert_called_with("a.b.c", "/a/b/c/object")
+        service.get_proxy("/a/b/c/object")
+        bus.get_proxy.assert_called_with(
+            "a.b.c",
+            "/a/b/c/object",
+            None
+        )
+        bus.reset_mock()
+
+        service.get_proxy(obj)
+        bus.get_proxy.assert_called_with(
+            "a.b.c",
+            "/a/b/c/object",
+            None
+        )
+        bus.reset_mock()
+
+    def test_get_proxy_for_interface(self):
+        """Test getting a proxy for an interface."""
+        bus = Mock()
+        namespace = ("a", "b", "c")
+
+        service = DBusServiceIdentifier(
+            namespace=namespace,
+            message_bus=bus
+        )
+
+        interface = DBusInterfaceIdentifier(
+            basename="interface",
+            namespace=namespace
+        )
+
+        service.get_proxy(
+            interface_name="a.b.c.interface"
+        )
+        bus.get_proxy.assert_called_with(
+            "a.b.c",
+            "/a/b/c",
+            "a.b.c.interface"
+        )
+        bus.reset_mock()
+
+        service.get_proxy(
+            interface_name=interface
+        )
+        bus.get_proxy.assert_called_with(
+            "a.b.c",
+            "/a/b/c",
+            "a.b.c.interface"
+        )
+        bus.reset_mock()
+
+    def test_get_proxy_with_bus_arguments(self):
+        """Test getting a proxy with an additional arguments."""
+        bus = Mock()
+        error_mapper = Mock()
+        namespace = ("a", "b", "c")
+
+        service = DBusServiceIdentifier(
+            namespace=namespace,
+            message_bus=bus
+        )
+
+        service.get_proxy(
+            error_mapper=error_mapper
+        )
+        bus.get_proxy.assert_called_with(
+            "a.b.c",
+            "/a/b/c",
+            None,
+            error_mapper=error_mapper
+        )
+        bus.reset_mock()
+
+        service.get_proxy(
+            interface_name=service,
+            error_mapper=error_mapper
+        )
+        bus.get_proxy.assert_called_with(
+            "a.b.c",
+            "/a/b/c",
+            "a.b.c",
+            error_mapper=error_mapper
+        )
         bus.reset_mock()
