@@ -21,7 +21,7 @@ from textwrap import dedent
 from unittest.mock import Mock
 
 from dasbus.client.handler import ClientObjectHandler, GLibClient
-from dasbus.client.proxy import ObjectProxy, disconnect_proxy
+from dasbus.client.proxy import ObjectProxy, disconnect_proxy, InterfaceProxy
 from dasbus.constants import DBUS_FLAG_NONE
 from dasbus.error import ErrorMapper, DBusError, ErrorRule
 from dasbus.signal import Signal
@@ -96,9 +96,9 @@ class DBusClientTestCase(unittest.TestCase):
         self.assertNotEqual(get_variant_type("b"), get_variant_type("i"))
         self.assertNotEqual(get_variant_type("s"), get_variant_type("u"))
 
-    def _create_proxy(self, xml, proxy_factory=ObjectProxy):
+    def _create_proxy(self, xml):
         """Create a proxy with a mocked message bus."""
-        self.proxy = proxy_factory(
+        self.proxy = ObjectProxy(
             self.message_bus,
             self.service_name,
             self.object_path,
@@ -563,3 +563,83 @@ class DBusClientTestCase(unittest.TestCase):
             GLibClient.get_remote_error_message(error),
             "My message."
         )
+
+    def _create_interface_proxy(self, xml, interface_name):
+        """Create an interface proxy with a mocked message bus."""
+        self.proxy = InterfaceProxy(
+            self.message_bus,
+            self.service_name,
+            self.object_path,
+            interface_name=interface_name,
+            error_mapper=self.error_mapper
+        )
+        self.handler = self.proxy._handler
+        self.handler._specification = DBusSpecification.from_xml(xml)
+
+    def test_interface_proxy(self):
+        """Test the interface proxy."""
+        xml = """
+        <node>
+            <interface name="Interface1">
+                <method name="Method1"/>
+            </interface>
+            <interface name="Interface2">
+                <method name="Method2"/>
+            </interface>
+            <interface name="Interface3">
+                <method name="Method1"/>
+                <method name="Method2"/>
+                <method name="Method3"/>
+            </interface>
+        </node>
+        """
+
+        # Test the first interface.
+        self._create_interface_proxy(xml, "Interface1")
+
+        # Test a valid method.
+        self._set_reply(self.NO_REPLY)
+        self.assertEqual(self.proxy.Method1(), None)
+        self._check_call("Interface1", "Method1")
+
+        # Test invalid methods.
+        with self.assertRaises(AttributeError):
+            self.proxy.Method2()
+
+        with self.assertRaises(AttributeError):
+            self.proxy.Method3()
+
+        # Test the second interface.
+        self._create_interface_proxy(xml, "Interface2")
+
+        # Test a valid method.
+        self._set_reply(self.NO_REPLY)
+        self.assertEqual(self.proxy.Method2(), None)
+        self._check_call("Interface2", "Method2")
+
+        # Test invalid methods.
+        with self.assertRaises(AttributeError):
+            self.proxy.Method1()
+
+        with self.assertRaises(AttributeError):
+            self.proxy.Method3()
+
+        # Test the third interface.
+        self._create_interface_proxy(xml, "Interface3")
+
+        # Test a valid method.
+        self._set_reply(self.NO_REPLY)
+        self.assertEqual(self.proxy.Method1(), None)
+        self._check_call("Interface3", "Method1")
+
+        self._set_reply(self.NO_REPLY)
+        self.assertEqual(self.proxy.Method2(), None)
+        self._check_call("Interface3", "Method2")
+
+        self._set_reply(self.NO_REPLY)
+        self.assertEqual(self.proxy.Method3(), None)
+        self._check_call("Interface3", "Method3")
+
+        # Test an invalid method.
+        with self.assertRaises(AttributeError):
+            self.proxy.Method4()
