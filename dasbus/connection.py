@@ -24,7 +24,7 @@ from abc import ABCMeta, abstractmethod
 
 from dasbus.constants import DBUS_NAME_FLAG_ALLOW_REPLACEMENT, \
     DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER
-from dasbus.client.proxy import ObjectProxy
+from dasbus.client.proxy import ObjectProxy, InterfaceProxy
 from dasbus.error import ErrorMapper
 from dasbus.server.handler import ServerObjectHandler
 
@@ -107,11 +107,13 @@ class AbstractMessageBus(metaclass=ABCMeta):
             return False
 
     @abstractmethod
-    def get_proxy(self, service_name, object_path, **kwargs):
+    def get_proxy(self, service_name, object_path, interface_name=None,
+                  **kwargs):
         """Returns a proxy of a remote DBus object.
 
         :param service_name: a DBus name of a service
-        :param object_path: a DBus path an object
+        :param object_path: a DBus path of an object
+        :param interface_name: a DBus name of an interface or None
         :return: a proxy object
         """
         pass
@@ -185,17 +187,32 @@ class MessageBus(AbstractMessageBus):
         return self._proxy
 
     # pylint: disable=arguments-differ
-    def get_proxy(self, service_name, object_path, proxy_factory=ObjectProxy,
-                  **proxy_arguments):
+    def get_proxy(self, service_name, object_path, interface_name=None,
+                  proxy_factory=None, **proxy_arguments):
         """Returns a proxy of a remote DBus object.
 
+        If the proxy factory is not specified, we will use a default
+        one. If the interface name is set, we will choose InterfaceProxy,
+        otherwise ObjectProxy.
+
+        If the interface name is set, we will add it to the additional
+        arguments for the proxy factory.
+
         :param service_name: a DBus name of a service
-        :param object_path: a DBus path an object
+        :param object_path: a DBus path of an object
+        :param interface_name: a DBus name of an interface or None
         :param proxy_factory: a factory of a DBus object proxy
         :param proxy_arguments: additional arguments for the proxy factory
         :return: a proxy object
         """
         self._check_service_access(service_name)
+
+        if not proxy_factory:
+            proxy_factory = InterfaceProxy if interface_name else ObjectProxy
+
+        if interface_name:
+            proxy_arguments["interface_name"] = interface_name
+
         return proxy_factory(
             self,
             service_name,

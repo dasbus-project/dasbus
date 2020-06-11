@@ -166,10 +166,11 @@ class DBusTestCase(unittest.TestCase):
         thread.daemon = True
         self.clients.append(thread)
 
-    def _get_proxy(self):
+    def _get_proxy(self, interface_name=None):
         return self.message_bus.get_proxy(
             "my.testing.Example",
-            "/my/testing/Example"
+            "/my/testing/Example",
+            interface_name=interface_name
         )
 
     def _run_test(self):
@@ -474,6 +475,7 @@ class DBusTestCase(unittest.TestCase):
         ])
 
     def test_properties_changed(self):
+        """Test the PropertiesChanged signal."""
         self._set_service(ExampleInterface())
         event = Event()
         callback = Mock()
@@ -497,3 +499,25 @@ class DBusTestCase(unittest.TestCase):
             {"Value": get_variant(Int, 10)},
             ["Name"]
         )
+
+    def test_interface(self):
+        """Use a specific DBus interface."""
+        self._set_service(ExampleInterface())
+
+        def test_1():
+            proxy = self._get_proxy(interface_name="my.testing.Example")
+            proxy.Knock()
+
+            with self.assertRaises(AttributeError):
+                proxy.Ping()
+
+        def test_2():
+            proxy = self._get_proxy(interface_name="org.freedesktop.DBus.Peer")
+            proxy.Ping()
+
+            with self.assertRaises(AttributeError):
+                proxy.Knock()
+
+        self._add_client(test_1)
+        self._add_client(test_2)
+        self._run_test()
