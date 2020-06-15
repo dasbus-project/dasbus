@@ -102,6 +102,10 @@ class DBusIdentifierTestCase(unittest.TestCase):
         self.assert_interface(obj, "a.b.c.d4")
         self.assert_object(obj, "/a/b/c/d2")
 
+    def assert_bus(self, obj, message_bus):
+        """Check the DBus service object."""
+        self.assertEqual(obj.message_bus, message_bus)
+
     def assert_service(self, obj, service_name):
         """Check the DBus service object."""
         self.assertEqual(obj.service_name, service_name)
@@ -117,6 +121,7 @@ class DBusIdentifierTestCase(unittest.TestCase):
         self.assert_interface(service, "a.b.c")
         self.assert_object(service, "/a/b/c")
         self.assert_service(service, "a.b.c")
+        self.assert_bus(service, bus)
 
         service = DBusServiceIdentifier(
             namespace=("a", "b", "c"),
@@ -129,6 +134,7 @@ class DBusIdentifierTestCase(unittest.TestCase):
         self.assert_interface(service, "a.b.c5")
         self.assert_object(service, "/a/b/c7")
         self.assert_service(service, "a.b.c3")
+        self.assert_bus(service, bus)
 
         service = DBusServiceIdentifier(
             basename="d",
@@ -142,6 +148,7 @@ class DBusIdentifierTestCase(unittest.TestCase):
         self.assert_interface(service, "a.b.c.d5")
         self.assert_object(service, "/a/b/c/d7")
         self.assert_service(service, "a.b.c.d3")
+        self.assert_bus(service, bus)
 
 
 class DBusServiceIdentifierTestCase(unittest.TestCase):

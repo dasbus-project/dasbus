@@ -136,6 +136,15 @@ class DBusServiceIdentifier(DBusObjectIdentifier):
         self._message_bus = message_bus
 
     @property
+    def message_bus(self):
+        """Message bus of the DBus service.
+
+        :return: a message bus
+        :rtype: an instance of the MessageBus class
+        """
+        return self._message_bus
+
+    @property
     def service_name(self):
         """Full name of a DBus service."""
         return self._name + self._version_to_string(self._service_version)
