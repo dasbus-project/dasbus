@@ -105,6 +105,24 @@ class DBusConnectionTestCase(unittest.TestCase):
 
         self.assertEqual(proxy, self.proxy_factory.return_value)
 
+    def test_interface_proxy(self):
+        """Test the interface proxy."""
+        proxy = self.message_bus.get_proxy(
+            "service.name",
+            "/object/path",
+            "interface.name"
+        )
+
+        self.proxy_factory.assert_called_once_with(
+            self.message_bus,
+            "service.name",
+            "/object/path",
+            interface_name="interface.name",
+            error_mapper=self.error_mapper
+        )
+
+        self.assertEqual(proxy, self.proxy_factory.return_value)
+
     def test_bus_proxy(self):
         """Test the bus proxy."""
         proxy = self.message_bus.proxy
