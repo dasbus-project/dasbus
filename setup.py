@@ -22,7 +22,7 @@ with open("README.md", "r") as f:
 
 setup(
     name="dasbus",
-    version="1.2",
+    version="1.3",
     author="Vendula Poncova",
     author_email="vponcova@redhat.com",
     description="DBus library in Python 3",

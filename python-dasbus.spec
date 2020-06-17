@@ -1,7 +1,7 @@
 %global srcname dasbus
 
 Name:           python-%{srcname}
-Version:        1.2
+Version:        1.3
 Release:        1%{?dist}
 Summary:        DBus library in Python 3
 
@@ -43,6 +43,13 @@ Requires:       python3-gobject-base
 %{python3_sitelib}/%{srcname}/
 
 %changelog
+* Wed Jun 17 2020 Vendula Poncova <vponcova@redhat.com> - 1.3-1
+- Document differences between dasbus and pydbus (vponcova)
+- Improve the support for interface proxies in the service identifier (vponcova)
+- Improve the support for interface proxies in the message bus (vponcova)
+- Test the interface proxies (vponcova)
+- Make the message bus of a service identifier accessible (vponcova)
+- Fix the testing environment for Fedora Rawhide (vponcova)
 * Mon May 18 2020 Vendula Poncova <vponcova@redhat.com> - 1.2-1
 - Replace ABC with ABCMeta (vponcova)
 - Fix typing tests (vponcova)
