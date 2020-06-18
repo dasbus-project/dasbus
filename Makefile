@@ -20,6 +20,8 @@ VERSION=$(shell awk '/Version:/ { print $$2 }' python-$(PKGNAME).spec)
 TAG=v$(VERSION)
 PYTHON?=python3
 COVERAGE?=coverage3
+# Arguments used for setup.py call for creating archive
+BUILD_ARGS ?= sdist bdist_wheel
 
 .PHONY: clean
 clean:
@@ -69,7 +71,7 @@ push:
 
 .PHONY: archive
 archive:
-	$(PYTHON) setup.py sdist bdist_wheel
+	$(PYTHON) setup.py ${BUILD_ARGS}
 	@echo "The archive is in dist/$(PKGNAME)-$(VERSION).tar.gz"
 
 .PHONY: upload
