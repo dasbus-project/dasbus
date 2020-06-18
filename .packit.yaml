@@ -1,2 +1,9 @@
 specfile_path: python-dasbus.spec
 downstream_package_name: python-dasbus
+actions:
+  get-current-version:
+    - "python3 ./setup.py --version"
+  create-archive:
+    - "make BUILD_ARGS=sdist archive"
+    - 'bash -c "cp dist/*.tar.gz ."'
+    - 'bash -c "ls *.tar.gz"'
