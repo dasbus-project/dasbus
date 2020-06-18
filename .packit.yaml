@@ -7,3 +7,9 @@ actions:
     - "make BUILD_ARGS=sdist archive"
     - 'bash -c "cp dist/*.tar.gz ."'
     - 'bash -c "ls *.tar.gz"'
+jobs:
+- job: tests
+  trigger: pull_request
+  metadata:
+    targets:
+    - fedora-all
