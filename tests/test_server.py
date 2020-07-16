@@ -94,7 +94,10 @@ class DBusServerTestCase(unittest.TestCase):
                 parameters
             )
 
-        invocation.return_dbus_error(error_name, error_message)
+        invocation.return_dbus_error.assert_called_once_with(
+            error_name,
+            error_message
+        )
         invocation.return_value.assert_not_called()
 
     def test_register(self):
@@ -171,8 +174,8 @@ class DBusServerTestCase(unittest.TestCase):
             "Interface",
             "MethodInvalid",
             error_name="not.known.Error.DBusSpecificationError",
-            error_message="Unknown member MethodInvalid of "
-                          "the interface Interface."
+            error_message="DBus specification has no member "
+                          "'Interface.MethodInvalid'."
         )
 
         self.error_mapper.add_rule(ErrorRule(
@@ -238,8 +241,9 @@ class DBusServerTestCase(unittest.TestCase):
                 "Property2",
                 get_variant("s", "World")
             )),
-            error_name="not.known.AttributeError",
-            error_message="Property2 of Interface is not writable."
+            error_name="not.known.Error.AttributeError",
+            error_message="The property Interface.Property2 "
+                          "is not writable."
         )
         self.assertEqual(self.object.Property2, "Hello")
 
@@ -250,8 +254,9 @@ class DBusServerTestCase(unittest.TestCase):
                 "Interface",
                 "Property3"
             )),
-            error_name="not.known.AttributeError",
-            error_message="Property3 of Interface is not readable."
+            error_name="not.known.Error.AttributeError",
+            error_message="The property Interface.Property3 "
+                          "is not readable."
         )
         self._call_method(
             "org.freedesktop.DBus.Properties", "Set",
