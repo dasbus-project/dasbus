@@ -472,10 +472,9 @@ class ClientObjectHandler(AbstractClientObjectHandler):
         """
         try:
             result = call(*args, **kwargs)
+            return self._handle_method_result(result)
         except Exception as error:  # pylint: disable=broad-except
             return self._handle_method_error(error)
-        else:
-            return self._handle_method_result(result)
 
     def _handle_method_error(self, error):
         """Handle an error of a DBus call.

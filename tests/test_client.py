@@ -256,6 +256,22 @@ class DBusClientTestCase(unittest.TestCase):
             str(cm.exception)
         )
 
+    def test_invalid_method_result(self):
+        """Test a method proxy with an invalid result."""
+        self._create_proxy("""
+        <node>
+            <interface name="Interface">
+                <method name="Method">
+                    <arg direction="out" name="return" type="t"/>
+                </method>
+            </interface>
+        </node>
+        """)
+
+        self._set_reply(get_variant("i", -1))
+        with self.assertRaises(TypeError):
+            self.proxy.Method()
+
     def _set_reply(self, reply_value):
         """Set the reply of the DBus call."""
         self.connection.call_sync.reset_mock()

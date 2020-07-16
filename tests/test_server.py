@@ -82,8 +82,8 @@ class DBusServerTestCase(unittest.TestCase):
 
     def _call_method_with_error(self, interface, method,
                                 parameters=NO_PARAMETERS,
-                                error_name="",
-                                error_message=""):
+                                error_name=None,
+                                error_message=None):
         invocation = Mock()
 
         with self.assertLogs(level='WARN'):
@@ -94,11 +94,16 @@ class DBusServerTestCase(unittest.TestCase):
                 parameters
             )
 
-        invocation.return_dbus_error.assert_called_once_with(
-            error_name,
-            error_message
-        )
+        invocation.return_dbus_error.assert_called_once()
         invocation.return_value.assert_not_called()
+
+        (name, msg), kwargs = invocation.return_dbus_error.call_args
+
+        self.assertEqual(kwargs, {})
+        self.assertEqual(name, error_name, "Unexpected error name.")
+
+        if error_message is not None:
+            self.assertEqual(msg, error_message, "Unexpected error message.")
 
     def test_register(self):
         """Test the object registration."""
@@ -191,6 +196,25 @@ class DBusServerTestCase(unittest.TestCase):
             "Method1",
             error_name="MethodFailed",
             error_message="The method has failed."
+        )
+
+    def test_invalid_method_result(self):
+        """Test a method with an invalid result."""
+        self._publish_object("""
+        <node>
+            <interface name="Interface">
+                <method name="Method">
+                    <arg direction="out" name="return" type="t"/>
+                </method>
+            </interface>
+        </node>
+        """)
+
+        self.object.Method.return_value = -1
+        self._call_method_with_error(
+            "Interface",
+            "Method",
+            error_name="not.known.Error.OverflowError"
         )
 
     def test_property(self):
