@@ -420,18 +420,17 @@ class ServerObjectHandler(AbstractServerObjectHandler):
                 method_name,
                 *unwrap_variant(parameters)
             )
+            self._handle_method_result(
+                invocation,
+                member,
+                result
+            )
         except Exception as error:  # pylint: disable=broad-except
             self._handle_method_error(
                 invocation,
                 interface_name,
                 method_name,
                 error
-            )
-        else:
-            self._handle_method_result(
-                invocation,
-                member,
-                result
             )
 
     def _handle_method_error(self, invocation, interface_name, method_name,
