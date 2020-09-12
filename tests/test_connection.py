@@ -31,7 +31,7 @@ gi.require_version("Gio", "2.0")
 from gi.repository import Gio
 
 
-class TestMessageBus(MessageBus):
+class MockMessageBus(MessageBus):
     """Message bus for testing."""
 
     def __init__(self, *args, **kwargs):
@@ -57,7 +57,7 @@ class DBusConnectionTestCase(unittest.TestCase):
     """Test DBus connection."""
 
     def setUp(self):
-        self.message_bus = TestMessageBus()
+        self.message_bus = MockMessageBus()
         self.error_mapper = self.message_bus._error_mapper
         self.proxy_factory = self.message_bus._proxy_factory
         self.server_factory = self.message_bus._server_factory
@@ -82,10 +82,10 @@ class DBusConnectionTestCase(unittest.TestCase):
         """Test the error mapper."""
         error_mapper = ErrorMapper()
 
-        message_bus = TestMessageBus(error_mapper=error_mapper)
+        message_bus = MockMessageBus(error_mapper=error_mapper)
         self.assertEqual(message_bus._error_mapper, error_mapper)
 
-        message_bus = TestMessageBus()
+        message_bus = MockMessageBus()
         self.assertNotEqual(message_bus._error_mapper, error_mapper)
         self.assertIsInstance(message_bus._error_mapper, ErrorMapper)
 
