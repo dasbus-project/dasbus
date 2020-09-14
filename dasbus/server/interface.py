@@ -474,7 +474,7 @@ class DBusSpecificationGenerator(object):
         except ValueError:
             raise DBusSpecificationError(
                 "Undefined type of DBus property '{}'.".format(member_name)
-            )
+            ) from None
 
         # Property has both.
         if member.fget and member.fset:
