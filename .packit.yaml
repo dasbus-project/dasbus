@@ -8,7 +8,7 @@ actions:
     - 'bash -c "cp dist/*.tar.gz ."'
     - 'bash -c "ls *.tar.gz"'
 jobs:
-- job: tests
+- job: copr_build
   trigger: pull_request
   metadata:
     targets:
