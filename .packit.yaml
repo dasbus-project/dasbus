@@ -8,9 +8,22 @@ actions:
     - 'bash -c "cp dist/*.tar.gz ."'
     - 'bash -c "ls *.tar.gz"'
 jobs:
-- job: copr_build
-  trigger: pull_request
-  metadata:
-    targets:
-    - fedora-all
-    - fedora-eln
+  - job: copr_build
+    trigger: pull_request
+    metadata:
+      targets:
+      - fedora-all
+      - fedora-eln
+
+  - job: copr_build
+    trigger: commit
+    metadata:
+      targets:
+        - fedora-rawhide
+        - fedora-eln
+      branch: master
+      owner: "@rhinstaller"
+      project: Anaconda
+      preserve_project: True
+      additional_repos:
+        - "copr://@storage/blivet-daily"
