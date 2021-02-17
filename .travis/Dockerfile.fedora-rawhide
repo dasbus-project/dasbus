@@ -1,4 +1,4 @@
-FROM fedora:rawhide
+FROM registry.fedoraproject.org/fedora:rawhide
 ENV LANG C.utf8
 
 RUN dnf -y install \
