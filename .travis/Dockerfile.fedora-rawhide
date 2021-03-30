@@ -13,8 +13,8 @@ RUN dnf -y update; \
     dnf clean all
 
 RUN dnf -y install koji && \
-    koji download-build --arch=x86_64 pygobject3-3.40.0-1.fc35 && \
-    dnf -y install ./python3-gobject-base-3.40.0-1.fc35.x86_64.rpm; \
+    koji download-build --arch=x86_64 pygobject3-3.40.1-1.fc35 && \
+    dnf -y install ./python3-gobject-base-3.40.1-1.fc35.x86_64.rpm; \
     dnf clean all
 
 RUN pip3 install \
