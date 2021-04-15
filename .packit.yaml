@@ -30,7 +30,7 @@ jobs:
     trigger: commit
     metadata:
       targets:
-        - fedora-34
+        - fedora-latest
       branch: master
       owner: "@rhinstaller"
       project: Anaconda-devel
