@@ -10,6 +10,10 @@ before_install:
   # Create a docker image called "myimage".
   - docker build -t myimage -f "$DOCKER_FILE" .
 
+install:
+  # Install CI dependencies.
+  pip install --user codecov
+
 before_script:
   # Create a docker container from the image, mount the current working
   # directory to /app inside the container and let the container running
@@ -26,7 +30,7 @@ script:
 after_success:
   # Analyze the code coverage.
   - docker exec "$(cat container_id)" coverage3 xml -i
-  - bash <(curl -s https://codecov.io/bash)
+  - codecov
 
 after_script:
   # Stop the container.
