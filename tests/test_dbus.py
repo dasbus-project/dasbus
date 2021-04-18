@@ -25,7 +25,8 @@ from dasbus.client.proxy import disconnect_proxy
 from dasbus.connection import AddressedMessageBus
 from dasbus.error import ErrorMapper, get_error_decorator
 from dasbus.loop import EventLoop
-from dasbus.server.interface import dbus_interface, dbus_signal
+from dasbus.server.interface import dbus_interface, dbus_signal, \
+    accepts_additional_arguments
 from dasbus.typing import get_variant, Str, Int, Dict, Variant, List
 
 import gi
@@ -130,6 +131,10 @@ class ExampleInterface(object):
     def PropertiesChanged(self, interface: Str, changed: Dict[Str, Variant],
                           invalid: List[Str]):
         pass
+
+    @accepts_additional_arguments
+    def GetInfo(self, arg: Str, *, call_info) -> Str:
+        return "{}: {}".format(arg, call_info)
 
 
 class DBusTestCase(unittest.TestCase):
@@ -520,4 +525,26 @@ class DBusTestCase(unittest.TestCase):
 
         self._add_client(test_1)
         self._add_client(test_2)
+        self._run_test()
+
+    def test_additional_arguments(self):
+        """Call a DBus method."""
+        self._set_service(ExampleInterface())
+
+        def test1():
+            proxy = self._get_proxy()
+            self.assertEqual(
+                proxy.GetInfo("Foo"),
+                "Foo: {'sender': ':1.0'}"
+            )
+
+        def test2():
+            proxy = self._get_proxy()
+            self.assertEqual(
+                proxy.GetInfo("Bar"),
+                "Bar: {'sender': ':1.0'}"
+            )
+
+        self._add_client(test1)
+        self._add_client(test2)
         self._run_test()

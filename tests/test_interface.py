@@ -20,7 +20,8 @@ import unittest
 
 from dasbus.typing import Int, Str, List, Double, File, Tuple, Bool
 from dasbus.server.interface import dbus_interface, dbus_class, dbus_signal, \
-    get_xml, DBusSpecificationGenerator, DBusSpecificationError
+    get_xml, DBusSpecificationGenerator, DBusSpecificationError, \
+    accepts_additional_arguments
 from dasbus.xml import XMLGenerator
 
 
@@ -721,3 +722,43 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
         '''
 
         self._compare(ClassWithStandard, expected_xml)
+
+    def test_additional_arguments(self):
+        """Test interface methods with additional arguments."""
+
+        @dbus_interface("my.example.Interface")
+        class AdditionalArgumentsClass(object):
+
+            @accepts_additional_arguments
+            def Method1(self, **info):
+                pass
+
+            @accepts_additional_arguments
+            def Method2(self, x: Int, **info):
+                pass
+
+            @accepts_additional_arguments
+            def Method3(self, *, call_info):
+                pass
+
+            @accepts_additional_arguments
+            def Method4(self, x: Int, *, call_info):
+                pass
+
+        expected_xml = '''
+        <node>
+            <!--Specifies AdditionalArgumentsClass-->
+            <interface name="my.example.Interface">
+                <method name="Method1"/>
+                <method name="Method2">
+                    <arg direction="in" name="x" type="i"/>
+                </method>
+                <method name="Method3"/>
+                <method name="Method4">
+                    <arg direction="in" name="x" type="i"/>
+                </method>
+            </interface>
+        </node>
+        '''
+
+        self._compare(AdditionalArgumentsClass, expected_xml)
