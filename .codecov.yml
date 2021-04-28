@@ -1,0 +1,18 @@
+codecov:
+  # Don't wait for all other statuses to pass.
+  require_ci_to_pass: false
+
+coverage:
+  status:
+    project:
+      # Show a strict status for the code.
+      default:
+        paths:
+          - "dasbus/"
+    patch:
+      # Show an informational status for the patch.
+      default:
+        informational: true
+
+# Disable the pull request comment.
+comment: false
