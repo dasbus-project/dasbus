@@ -13,7 +13,7 @@ jobs:
     metadata:
       targets:
       - fedora-all
-      - fedora-eln
+      # - fedora-eln
 
   - job: copr_build
     trigger: commit
