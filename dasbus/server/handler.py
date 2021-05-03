@@ -24,7 +24,7 @@ from functools import partial
 
 from dasbus.error import ErrorMapper
 from dasbus.signal import Signal
-from dasbus.server.interface import get_xml
+from dasbus.server.interface import get_xml, are_additional_arguments_supported
 from dasbus.specification import DBusSpecification, DBusSpecificationError
 from dasbus.typing import get_variant, unwrap_variant
 
@@ -111,6 +111,23 @@ class GLibServer(object):
             parameters,
             *callback_args
         )
+
+    @classmethod
+    def get_call_info(cls, invocation):
+        """Get information about the DBus call.
+
+        Supported items:
+
+            sender str: The bus name that invoked the method
+
+        There can be more supported items in the future.
+
+        :param invocation: an invocation of a DBus call
+        :return: a dictionary of information about the DBus call
+        """
+        return {
+            "sender": invocation.get_sender()
+        }
 
     @classmethod
     def set_call_error(cls, invocation, error_name, error_message):
@@ -222,16 +239,23 @@ class AbstractServerObjectHandler(metaclass=ABCMeta):
         """
         pass
 
-    def _handle_call(self, interface_name, method_name, *parameters):
+    def _handle_call(self, interface_name, method_name, *parameters,
+                     **additional_args):
         """Handle a DBus call.
 
         :param interface_name: a name of the interface
         :param method_name: a name of the called method
         :param parameters: parameters of the call
+        :param additional_args: additional arguments of the call
         :return: a result of the DBus call
         """
         handler = self._find_handler(interface_name, method_name)
-        return handler(*parameters)
+
+        # Drop the extra args if the handler doesn't support them.
+        if not are_additional_arguments_supported(handler):
+            additional_args = {}
+
+        return handler(*parameters, **additional_args)
 
     def _find_member_spec(self, interface_name, member_name):
         """Find a specification of the DBus member.
@@ -411,6 +435,12 @@ class ServerObjectHandler(AbstractServerObjectHandler):
         :param parameters: a variant of DBus arguments
         """
         try:
+            additional_args = self._get_additional_arguments(
+                invocation,
+                interface_name,
+                method_name,
+                parameters
+            )
             member = self._find_member_spec(
                 interface_name,
                 method_name
@@ -418,7 +448,8 @@ class ServerObjectHandler(AbstractServerObjectHandler):
             result = self._handle_call(
                 interface_name,
                 method_name,
-                *unwrap_variant(parameters)
+                *unwrap_variant(parameters),
+                **additional_args
             )
             self._handle_method_result(
                 invocation,
@@ -432,6 +463,28 @@ class ServerObjectHandler(AbstractServerObjectHandler):
                 method_name,
                 error
             )
+
+    def _get_additional_arguments(self, invocation, interface_name,
+                                  method_name, parameters):
+        """Get additional arguments of a DBus call.
+
+        Supported items:
+
+            call_info dict: Information about the DBus call
+
+        This method is useful for customizations. It shouldn't be changed
+        in this library unless we make sure that the change won't break
+        the existing use cases.
+
+        :param invocation: an invocation of the DBus call
+        :param interface_name: a DBus interface name
+        :param method_name: a DBus method name
+        :param parameters: a variant of DBus arguments
+        :return: a dictionary of additional info
+        """
+        return {
+            "call_info": self._server.get_call_info(invocation)
+        }
 
     def _handle_method_error(self, invocation, interface_name, method_name,
                              error):

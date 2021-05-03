@@ -22,6 +22,7 @@ from unittest.mock import Mock
 
 from dasbus.error import ErrorMapper, ErrorRule
 from dasbus.server.handler import ServerObjectHandler, GLibServer
+from dasbus.server.interface import accepts_additional_arguments
 from dasbus.signal import Signal
 from dasbus.specification import DBusSpecificationError
 from dasbus.typing import get_variant
@@ -72,6 +73,8 @@ class DBusServerTestCase(unittest.TestCase):
     def _call_method(self, interface, method, parameters=NO_PARAMETERS,
                      reply=None):
         invocation = Mock()
+        invocation.get_sender.return_value = ":1.0"
+
         GLibServer._object_callback(
             self.connection, Mock(), self.object_path, interface, method,
             parameters, invocation, (self.handler._method_callback, ())
@@ -349,4 +352,32 @@ class DBusServerTestCase(unittest.TestCase):
             "Interface",
             "Signal2",
             get_variant("(is)", (1, "Test"))
+        )
+
+    def test_call_info(self):
+        self._publish_object("""
+        <node>
+            <interface name="Interface">
+                <method name="Method1"/>
+                <method name="Method2">
+                    <arg direction="in" name="x" type="i"/>
+                </method>
+            </interface>
+        </node>
+        """)
+
+        accepts_additional_arguments(self.object.Method1)
+        self._call_method("Interface", "Method1")
+        self.object.Method1.assert_called_once_with(
+            call_info={"sender": ":1.0"}
+        )
+
+        accepts_additional_arguments(self.object.Method2)
+        self._call_method(
+            "Interface",
+            "Method2",
+            parameters=get_variant("(i)", (1, ))
+        )
+        self.object.Method2.assert_called_once_with(
+            1, call_info={"sender": ":1.0"}
         )
