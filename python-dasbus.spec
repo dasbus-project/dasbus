@@ -1,7 +1,7 @@
 %global srcname dasbus
 
 Name:           python-%{srcname}
-Version:        1.4
+Version:        1.5
 Release:        1%{?dist}
 Summary:        DBus library in Python 3
 
@@ -43,6 +43,18 @@ Requires:       python3-gobject-base
 %{python3_sitelib}/%{srcname}/
 
 %changelog
+* Mon May 03 2021 Vendula Poncova <vponcova@redhat.com> - 1.5-1
+- Disable builds for Fedora ELN on pull requests (vponcova)
+- Provide additional info about the DBus call (vponcova)
+- Run the codecov uploader from a package (vponcova)
+- Switch to packit new fedora-latest alias (jkonecny)
+- Add daily builds for our Fedora-devel COPR repository (jkonecny)
+- Use Fedora container registry instead of Dockerhub (jkonecny)
+- Migrate daily COPR builds to Packit (jkonecny)
+- Switch Packit tests to copr builds instead (jkonecny)
+- Enable Packit build in ELN chroot (jkonecny)
+- Rename TestMessageBus class to silence pytest warning (luca)
+- Fix the raise-missing-from warning (vponcova)
 * Fri Jul 24 2020 Vendula Poncova <vponcova@redhat.com> - 1.4-1
 - Handle all errors of the DBus call (vponcova)
 - Fix tests for handling DBus errors on the server side (vponcova)
