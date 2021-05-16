@@ -51,6 +51,7 @@ __all__ = [
     "get_native",
     "get_variant",
     "get_variant_type",
+    "is_tuple_of_one",
     "unwrap_variant",
     "is_base_type",
     "get_type_arguments",
@@ -136,6 +137,16 @@ def get_variant_type(type_hint):
         type_string = get_dbus_type(type_hint)
 
     return VariantType.new(type_string)
+
+
+def is_tuple_of_one(type_hint):
+    """Is the type hint a tuple of one item?
+
+    :param type_hint: a type hint or a type string
+    :return: True or False
+    """
+    variant_type = get_variant_type(type_hint)
+    return variant_type.is_tuple() and variant_type.n_items() == 1
 
 
 def get_native(value):

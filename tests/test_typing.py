@@ -24,7 +24,7 @@ from typing import Set
 from dasbus.typing import get_dbus_type, is_base_type, get_native, \
     get_variant, get_variant_type, Int, Int16, Int32, Int64, UInt16, UInt32, \
     UInt64, Bool, Byte, Str, Dict, List, Tuple, Variant, Double, ObjPath, \
-    File, unwrap_variant, get_type_name
+    File, unwrap_variant, get_type_name, is_tuple_of_one, get_type_arguments
 
 import gi
 gi.require_version("GLib", "2.0")
@@ -52,6 +52,16 @@ class DBusTypingTests(unittest.TestCase):
         variant_type = get_variant_type(expected_string)
         self.assertIsInstance(variant_type, GLib.VariantType)
         self.assertTrue(expected_type.equal(variant_type))
+
+        # Test the is_tuple_of_one function.
+        expected_value = is_base_type(type_hint, Tuple) \
+            and len(get_type_arguments(type_hint)) == 1
+
+        self.assertEqual(is_tuple_of_one(type_hint), expected_value)
+        self.assertEqual(is_tuple_of_one(expected_string), expected_value)
+
+        self.assertTrue(is_tuple_of_one(Tuple[type_hint]))
+        self.assertTrue(is_tuple_of_one("({})".format(expected_string)))
 
     def test_unknown(self):
         """Test the unknown type."""
