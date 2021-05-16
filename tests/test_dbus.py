@@ -26,8 +26,10 @@ from dasbus.connection import AddressedMessageBus
 from dasbus.error import ErrorMapper, get_error_decorator
 from dasbus.loop import EventLoop
 from dasbus.server.interface import dbus_interface, dbus_signal, \
-    accepts_additional_arguments
-from dasbus.typing import get_variant, Str, Int, Dict, Variant, List
+    accepts_additional_arguments, returns_multiple_arguments
+from dasbus.typing import get_variant, Str, Int, Dict, Variant, List, \
+    Tuple, Bool
+from dasbus.xml import XMLGenerator
 
 import gi
 gi.require_version("Gio", "2.0")
@@ -136,6 +138,10 @@ class ExampleInterface(object):
     def GetInfo(self, arg: Str, *, call_info) -> Str:
         return "{}: {}".format(arg, call_info)
 
+    @returns_multiple_arguments
+    def ReturnArgs(self) -> Tuple[Int, Bool, Str]:
+        return 0, False, "zero"
+
 
 class DBusTestCase(unittest.TestCase):
     """Test DBus support with a real DBus connection."""
@@ -152,6 +158,7 @@ class DBusTestCase(unittest.TestCase):
 
         self.service = None
         self.clients = []
+        self.maxDiff = None
 
     def tearDown(self):
         self.message_bus.disconnect()
@@ -165,6 +172,49 @@ class DBusTestCase(unittest.TestCase):
 
     def _set_service(self, service):
         self.service = service
+
+    def test_xml_specification(self):
+        """Test the generated specification."""
+        self._set_service(ExampleInterface())
+
+        expected_xml = '''
+        <node>
+          <!--Specifies ExampleInterface-->
+          <interface name="my.testing.Example">
+            <method name="GetInfo">
+              <arg direction="in" name="arg" type="s"></arg>
+              <arg direction="out" name="return" type="s"></arg>
+            </method>
+            <method name="Hello">
+              <arg direction="in" name="name" type="s"></arg>
+              <arg direction="out" name="return" type="s"></arg>
+            </method>
+            <method name="Knock"></method>
+            <signal name="Knocked"></signal>
+            <property access="read" name="Name" type="s"></property>
+            <method name="Raise">
+              <arg direction="in" name="message" type="s"></arg>
+            </method>
+            <method name="ReturnArgs">
+              <arg direction="out" name="return_0" type="i"></arg>
+              <arg direction="out" name="return_1" type="b"></arg>
+              <arg direction="out" name="return_2" type="s"></arg>
+            </method>
+            <property access="write" name="Secret" type="s"></property>
+            <property access="readwrite" name="Value" type="i"></property>
+            <signal name="Visited">
+              <arg direction="out" name="name" type="s"></arg>
+            </signal>
+          </interface>
+        </node>
+        '''
+
+        generated_xml = self.service.__dbus_xml__
+
+        self.assertEqual(
+            XMLGenerator.prettify_xml(expected_xml),
+            XMLGenerator.prettify_xml(generated_xml)
+        )
 
     def _add_client(self, client_test):
         thread = Thread(None, client_test)
@@ -547,4 +597,18 @@ class DBusTestCase(unittest.TestCase):
 
         self._add_client(test1)
         self._add_client(test2)
+        self._run_test()
+
+    def test_multiple_output_arguments(self):
+        """Call a DBus method with multiple output arguments."""
+        self._set_service(ExampleInterface())
+
+        def test1():
+            proxy = self._get_proxy()
+            self.assertEqual(
+                proxy.ReturnArgs(),
+                (0, False, "zero")
+            )
+
+        self._add_client(test1)
         self._run_test()
