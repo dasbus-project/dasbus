@@ -145,6 +145,10 @@ class DBusServerTestCase(unittest.TestCase):
                     <arg direction="in" name="y" type="o"/>
                     <arg direction="out" name="return" type="(ib)"/>
                 </method>
+                <method name="Method5">
+                    <arg direction="out" name="return" type="i"/>
+                    <arg direction="out" name="return" type="b"/>
+                </method>
             </interface>
         </node>
         """)
@@ -177,6 +181,14 @@ class DBusServerTestCase(unittest.TestCase):
             reply=get_variant("((ib))", ((1, True), ))
         )
         self.object.Method4.assert_called_once_with([1.2, 2.3], "/my/path")
+
+        self.object.Method5.return_value = (1, True)
+        self._call_method(
+            "Interface",
+            "Method5",
+            reply=get_variant("(ib)", (1, True))
+        )
+        self.object.Method5.assert_called_once_with()
 
         self._call_method_with_error(
             "Interface",

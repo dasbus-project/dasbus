@@ -26,7 +26,7 @@ from dasbus.error import ErrorMapper
 from dasbus.signal import Signal
 from dasbus.server.interface import get_xml, are_additional_arguments_supported
 from dasbus.specification import DBusSpecification, DBusSpecificationError
-from dasbus.typing import get_variant, unwrap_variant
+from dasbus.typing import get_variant, unwrap_variant, is_tuple_of_one
 
 import gi
 gi.require_version("Gio", "2.0")
@@ -147,12 +147,19 @@ class GLibServer(object):
         :param out_type: a type of the reply
         :param out_value: a value of the reply
         """
-        reply_value = None
-
-        if out_type is not None:
-            reply_value = get_variant(out_type, (out_value, ))
-
+        reply_value = cls._get_reply_value(out_type, out_value)
         invocation.return_value(reply_value)
+
+    @classmethod
+    def _get_reply_value(cls, out_type, out_value):
+        """Get the reply value of the DBus call."""
+        if out_type is None:
+            return None
+
+        if is_tuple_of_one(out_type):
+            out_value = (out_value, )
+
+        return get_variant(out_type, out_value)
 
 
 class AbstractServerObjectHandler(metaclass=ABCMeta):

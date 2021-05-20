@@ -18,10 +18,10 @@
 #
 import unittest
 
-from dasbus.typing import Int, Str, List, Double, File, Tuple, Bool
+from dasbus.typing import Int, Str, List, Double, File, Tuple, Bool, Dict
 from dasbus.server.interface import dbus_interface, dbus_class, dbus_signal, \
     get_xml, DBusSpecificationGenerator, DBusSpecificationError, \
-    accepts_additional_arguments
+    accepts_additional_arguments, returns_multiple_arguments
 from dasbus.xml import XMLGenerator
 
 
@@ -762,3 +762,87 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
         '''
 
         self._compare(AdditionalArgumentsClass, expected_xml)
+
+    def test_multiple_output_arguments(self):
+        """Test interface methods with multiple output arguments."""
+
+        @dbus_interface("my.example.Interface")
+        class MultipleOutputArgumentsClass(object):
+
+            @returns_multiple_arguments
+            def Method1(self):
+                pass
+
+            @returns_multiple_arguments
+            def Method2(self) -> None:
+                pass
+
+            @returns_multiple_arguments
+            def Method3(self) -> Tuple[Int, Bool, Str]:
+                pass
+
+            @returns_multiple_arguments
+            def Method4(self) -> Tuple[Tuple[Int], List[Str]]:
+                pass
+
+        expected_xml = '''
+        <node>
+            <!--Specifies MultipleOutputArgumentsClass-->
+            <interface name="my.example.Interface">
+                <method name="Method1"/>
+                <method name="Method2"/>
+                <method name="Method3">
+                    <arg direction="out" name="return_0" type="i"/>
+                    <arg direction="out" name="return_1" type="b"/>
+                    <arg direction="out" name="return_2" type="s"/>
+                </method>
+                <method name="Method4">
+                    <arg direction="out" name="return_0" type="(i)"/>
+                    <arg direction="out" name="return_1" type="as"/>
+                </method>
+            </interface>
+        </node>
+        '''
+
+        self._compare(MultipleOutputArgumentsClass, expected_xml)
+
+    def test_invalid_multiple_output_arguments(self):
+        """Test interface methods with invalid output arguments."""
+
+        class InvalidOutputArgumentsClass(object):
+
+            @returns_multiple_arguments
+            def Method1(self) -> Int:
+                pass
+
+            @returns_multiple_arguments
+            def Method2(self) -> List[Bool]:
+                pass
+
+            @returns_multiple_arguments
+            def Method3(self) -> Dict[Str, Bool]:
+                pass
+
+            @returns_multiple_arguments
+            def Method4(self) -> Tuple[Int]:
+                pass
+
+        self._check_invalid_method(
+            InvalidOutputArgumentsClass.Method1,
+            "Expected a tuple of multiple arguments."
+        )
+
+        self._check_invalid_method(
+            InvalidOutputArgumentsClass.Method2,
+            "Expected a tuple of multiple arguments."
+        )
+
+        self._check_invalid_method(
+            InvalidOutputArgumentsClass.Method3,
+            "Expected a tuple of multiple arguments."
+        )
+
+        self._check_invalid_method(
+            InvalidOutputArgumentsClass.Method4,
+            "Expected a tuple of more than one argument."
+        )
