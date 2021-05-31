@@ -1,7 +1,7 @@
 %global srcname dasbus
 
 Name:           python-%{srcname}
-Version:        1.5
+Version:        1.6
 Release:        1%{?dist}
 Summary:        DBus library in Python 3
 
@@ -51,6 +51,12 @@ Requires:       python3-gobject-base
 %{python3_sitelib}/%{srcname}/
 
 %changelog
+* Mon May 31 2021 Vendula Poncova <vponcova@redhat.com> - 1.6-1
+- Add support for SUSE packaging in spec file (christopher.m.cantalupo)
+- Allow to generate multiple output arguments (vponcova)
+- Support multiple output arguments (vponcova)
+- Add the is_tuple_of_one function (vponcova)
+- Configure the codecov tool (vponcova)
 * Mon May 03 2021 Vendula Poncova <vponcova@redhat.com> - 1.5-1
 - Disable builds for Fedora ELN on pull requests (vponcova)
 - Provide additional info about the DBus call (vponcova)
