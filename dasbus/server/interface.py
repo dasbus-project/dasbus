@@ -235,6 +235,13 @@ def dbus_interface(interface_name, namespace=()):
 
         Interface.__dbus_xml__
 
+    It is conventional for member names on DBus to consist
+    of capitalized words with no punctuation. The generator
+    of the XML specification enforces this convention to
+    prevent unintended changes in the specification. You can
+    provide the XML specification yourself, or override the
+    generator class to work around these constraints.
+
     :param interface_name: a DBus name of the interface
     :param namespace: a sequence of strings
     """
