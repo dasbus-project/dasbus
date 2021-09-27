@@ -420,10 +420,10 @@ def generate_string_from_data(obj, skip=None, add=None):
     for field in get_fields(obj).values():
         dictionary[field.data_name] = field.get_data(obj)
 
-    for name in skip or list():
+    for name in skip or []:
         dictionary.pop(name, None)
 
-    for name in add or dict():
+    for name in add or {}:
         dictionary[name] = add[name]
 
     attributes = sorted([

@@ -94,7 +94,7 @@ class AbstractObjectProxy(metaclass=ABCMeta):
             object_path,
             **handler_arguments
         )
-        self._members = dict()
+        self._members = {}
         self._lock = Lock()
 
     @abstractmethod

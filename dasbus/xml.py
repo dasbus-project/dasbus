@@ -84,7 +84,7 @@ class XMLParser(object):
     @staticmethod
     def get_interfaces_from_node(node_element):
         """Return a dictionary of interfaces defined in a node element."""
-        interfaces = dict()
+        interfaces = {}
 
         for element in node_element.iterfind("interface"):
             interfaces[element.attrib["name"]] = element

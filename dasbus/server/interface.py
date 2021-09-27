@@ -361,7 +361,7 @@ class DBusSpecificationGenerator(object):
         :param interface_cls: a class object
         :return: a dictionary of implemented interfaces
         """
-        interfaces = dict()
+        interfaces = {}
 
         # Visit interface_cls and base classes in reversed order.
         for member in reversed(inspect.getmro(interface_cls)):
