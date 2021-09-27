@@ -128,6 +128,10 @@ class ExampleInterface(object):
             self._files[i].append(ifile)
         self._names.append(i)
         self.Visited(i)
+        # ignore R1732 for this line. The file object is being held
+        # purposefully to validate the return value and will be cleaned
+        # up by CleanUpFDs later
+        # pylint: disable=consider-using-with
         o = tempfile.TemporaryFile(mode="wb", buffering=0, prefix=i)
         self._files[i].append(o)
         o.write(f"Hello, {i}!".encode("utf-8"))
