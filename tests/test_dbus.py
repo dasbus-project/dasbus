@@ -28,8 +28,11 @@ from dasbus.loop import EventLoop
 from dasbus.server.interface import dbus_interface, dbus_signal, \
     accepts_additional_arguments, returns_multiple_arguments
 from dasbus.typing import get_variant, Str, Int, Dict, Variant, List, \
-    Tuple, Bool
+    Tuple, Bool, UnixFD
 from dasbus.xml import XMLGenerator
+
+import tempfile
+import os
 
 import gi
 gi.require_version("Gio", "2.0")
@@ -84,6 +87,7 @@ class ExampleInterface(object):
     def __init__(self):
         self._knocked = False
         self._names = []
+        self._files = {}
         self._values = [0]
         self._secrets = []
 
@@ -116,7 +120,24 @@ class ExampleInterface(object):
     def Hello(self, name: Str) -> Str:
         self._names.append(name)
         self.Visited(name)
-        return "Hello, {}!".format(name)
+        return f"Hello, {name}!"
+
+    def HelloFD(self, name: UnixFD) -> UnixFD:
+        with open(os.dup(name), "rb", closefd=True) as ifile:
+            i = ifile.read().decode("utf-8")
+            self._files[i].append(ifile)
+        self._names.append(i)
+        self.Visited(i)
+        o = tempfile.TemporaryFile(mode="wb", buffering=0, prefix=i)
+        self._files[i].append(o)
+        o.write(f"Hello, {i}!".encode("utf-8"))
+        o.seek(0)
+        return o.fileno()
+
+    def CleanUpFDs(self, name: Str):
+        while len(self._files[name]) != 0:
+            self._files[name][0].close()
+            self._files[name] = self._files[name][1:]
 
     @dbus_signal
     def Knocked(self):
@@ -136,7 +157,7 @@ class ExampleInterface(object):
 
     @accepts_additional_arguments
     def GetInfo(self, arg: Str, *, call_info) -> Str:
-        return "{}: {}".format(arg, call_info)
+        return f"{arg}: {call_info}"
 
     @returns_multiple_arguments
     def ReturnArgs(self) -> Tuple[Int, Bool, Str]:
@@ -181,6 +202,9 @@ class DBusTestCase(unittest.TestCase):
         <node>
           <!--Specifies ExampleInterface-->
           <interface name="my.testing.Example">
+            <method name="CleanUpFDs">
+              <arg direction="in" name="name" type="s"></arg>
+            </method>
             <method name="GetInfo">
               <arg direction="in" name="arg" type="s"></arg>
               <arg direction="out" name="return" type="s"></arg>
@@ -188,6 +212,10 @@ class DBusTestCase(unittest.TestCase):
             <method name="Hello">
               <arg direction="in" name="name" type="s"></arg>
               <arg direction="out" name="return" type="s"></arg>
+            </method>
+            <method name="HelloFD">
+              <arg direction="in" name="name" type="h"></arg>
+              <arg direction="out" name="return" type="h"></arg>
             </method>
             <method name="Knock"></method>
             <signal name="Knocked"></signal>
@@ -277,11 +305,39 @@ class DBusTestCase(unittest.TestCase):
             proxy = self._get_proxy()
             self.assertEqual("Hello, Bar!", proxy.Hello("Bar"))
 
+        def fdtest(n):
+
+            def fun():
+                proxy = self._get_proxy()
+                self.service._files[n] = []
+                with tempfile.TemporaryFile(mode="wb",
+                                            buffering=0,
+                                            prefix=n) as otmp:
+                    otmp.write(n.encode("utf-8"))
+                    otmp.seek(0)
+                    with open(os.dup(otmp.fileno()), "rb", closefd=True) as o:
+                        i = proxy.HelloFD(UnixFD(o.fileno()))
+                        with open(os.dup(i), "rb", closefd=True) as ifile:
+                            buf = ifile.read()
+                            self.assertEqual(f"Hello, {n}!",
+                                             buf.decode("utf-8"))
+
+                        proxy.CleanUpFDs(n)
+                        o.close()
+            return fun
+
+        test3 = fdtest("FooFD")
+
+        test4 = fdtest("BarFD")
+
         self._add_client(test1)
         self._add_client(test2)
+        self._add_client(test3)
+        self._add_client(test4)
         self._run_test()
 
-        self.assertEqual(sorted(self.service._names), ["Bar", "Foo"])
+        self.assertEqual(sorted(self.service._names),
+                         ["Bar", "BarFD", "Foo", "FooFD"])
 
     def test_name(self):
         """Use a DBus read-only property."""
@@ -415,7 +471,7 @@ class DBusTestCase(unittest.TestCase):
         visited = Mock()
 
         def callback(name):
-            visited("Visited by {}.".format(name))
+            visited(f"Visited by {name}.")
 
         def test1():
             proxy = self._get_proxy()

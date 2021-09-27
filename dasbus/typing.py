@@ -22,7 +22,7 @@
 # https://dbus.freedesktop.org/doc/dbus-specification.html#type-system.
 #
 
-from typing import Tuple, Dict, List, NewType, IO
+from typing import Tuple, Dict, List, NewType
 
 import gi
 gi.require_version("GLib", "2.0")
@@ -40,7 +40,7 @@ __all__ = [
     "UInt32",
     "Int64",
     "UInt64",
-    "File",
+    "UnixFD",
     "ObjPath",
     "Variant",
     "VariantType",
@@ -74,9 +74,7 @@ Int32 = NewType('Int32', int)
 UInt32 = NewType('UInt32', int)
 Int64 = NewType('Int64', int)
 UInt64 = NewType('UInt64', int)
-
-# Type of a file handler.
-File = IO
+UnixFD = NewType('UnixFD', int)
 
 # Type of an object path.
 ObjPath = NewType('ObjPath', str)
@@ -285,7 +283,7 @@ class DBusType(object):
         Int64:      "x",
         UInt64:     "t",
         # Other basic types.
-        File:       "h",
+        UnixFD:     "h",
         ObjPath:    "o",
         Variant:    "v"
     }
