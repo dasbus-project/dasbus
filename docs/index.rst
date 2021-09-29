@@ -43,9 +43,10 @@ Or install the RPM package on Fedora 31+.
    :maxdepth: 1
    :caption: Contents:
 
-   Examples <examples>
+   Development and testing <development>
    Dasbus vs pydbus <pydbus>
    Public API <api/dasbus>
+   Examples <examples>
 
 Indices and tables
 ==================
