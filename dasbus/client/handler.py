@@ -27,6 +27,8 @@ from dasbus.signal import Signal
 from dasbus.constants import DBUS_FLAG_NONE
 from dasbus.specification import DBusSpecification
 from dasbus.typing import get_variant, get_variant_type, unwrap_variant
+from dasbus.typing import variant_handles_to_indices
+from dasbus.typing import variant_indices_to_handles
 
 import gi
 gi.require_version("Gio", "2.0")
@@ -54,17 +56,37 @@ class GLibClient(object):
 
         :return: a result of the DBus call
         """
-        return connection.call_sync(
-            service_name,
-            object_path,
-            interface_name,
-            method_name,
-            parameters,
-            reply_type,
-            flags,
-            timeout,
-            None
-        )
+        if parameters:
+            params, fdlist = variant_handles_to_indices(parameters,
+                                                        Gio.UnixFDList())
+        else:
+            fdlist = Gio.UnixFDList()
+        if fdlist.get_length() > 0:
+            ret =  connection.call_with_unix_fd_list_sync(
+                service_name,
+                object_path,
+                interface_name,
+                method_name,
+                params,
+                reply_type,
+                flags,
+                timeout,
+                fdlist,
+                None
+            )
+            return ret
+        else:
+            return connection.call_sync(
+                service_name,
+                object_path,
+                interface_name,
+                method_name,
+                parameters,
+                reply_type,
+                flags,
+                timeout,
+                None
+            )
 
     @classmethod
     def async_call(cls, connection, service_name, object_path, interface_name,
@@ -72,18 +94,38 @@ class GLibClient(object):
                    callback_args=(), flags=DBUS_FLAG_NONE,
                    timeout=DBUS_TIMEOUT_NONE):
         """Asynchronously call a DBus method."""
-        connection.call(
-            service_name,
-            object_path,
-            interface_name,
-            method_name,
-            parameters,
-            reply_type,
-            flags,
-            timeout,
-            callback=cls._async_call_finish,
-            user_data=(callback, callback_args)
-        )
+        if parameters:
+            params, fdlist = variant_handles_to_indices(parameters,
+                                                        Gio.UnixFDList())
+        else:
+            fdlist = Gio.UnixFDList()
+        if fdlist.get_length() > 0:
+            connection.call_with_fd_list(
+                service_name,
+                object_path,
+                interface_name,
+                method_name,
+                params,
+                reply_type,
+                flags,
+                timeout,
+                fdlist,
+                callback=cls._async_call_finish,
+                user_data=(callback, callback_args)
+            )
+        else:
+            connection.call(
+                service_name,
+                object_path,
+                interface_name,
+                method_name,
+                parameters,
+                reply_type,
+                flags,
+                timeout,
+                callback=cls._async_call_finish,
+                user_data=(callback, callback_args)
+            )
 
     @classmethod
     def _async_call_finish(cls, source_object, result_object, user_data):
@@ -502,7 +544,10 @@ class ClientObjectHandler(AbstractClientObjectHandler):
         :param result: a variant tuple
         """
         # Unwrap a variant tuple.
-        values = unwrap_variant(result)
+        if type(result) != gi.overrides.GLib.Variant:
+            values = unwrap_variant(variant_indices_to_handles(*result))
+        else:
+            values = unwrap_variant(result)
 
         # Return None if there are no values.
         if not values:

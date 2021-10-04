@@ -375,3 +375,22 @@ class DBusType(object):
                 "Invalid DBus type of dictionary key: "
                 "'{}'".format(get_type_name(key))
             )
+
+def variant_handles_to_indices(v, fdlist):
+    typelist = v.split_signature(v.get_type_string())
+    unwrapped = list(unwrap_variant(v))
+    for i, e in enumerate(unwrapped):
+        if typelist[i] == 'h':
+            l = fdlist.get_length()
+            fdlist.append(e)
+            unwrapped[i] = l
+    return get_variant(v.get_type_string(), unwrapped), fdlist
+
+def variant_indices_to_handles(v, fdlist):
+    typelist = v.split_signature(v.get_type_string())
+    unwrapped = list(unwrap_variant(v))
+    # pylint: disable=consider-using-enumerate
+    for i in range(len(unwrapped)):
+        if typelist[i] == 'h':
+            unwrapped[i] = fdlist.get(unwrapped[i])
+    return get_variant(v.get_type_string(), unwrapped)

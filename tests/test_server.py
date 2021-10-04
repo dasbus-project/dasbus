@@ -79,7 +79,6 @@ class DBusServerTestCase(unittest.TestCase):
             self.connection, Mock(), self.object_path, interface, method,
             parameters, invocation, (self.handler._method_callback, ())
         )
-
         invocation.return_dbus_error.assert_not_called()
         invocation.return_value.assert_called_once_with(reply)
 
