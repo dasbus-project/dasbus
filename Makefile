@@ -20,6 +20,12 @@ VERSION=$(shell awk '/Version:/ { print $$2 }' python-$(PKGNAME).spec)
 TAG=v$(VERSION)
 PYTHON?=python3
 COVERAGE?=coverage3
+
+# Container-related
+CI_CONTAINER_NAME=dasbus-ci
+CI_CONTAINER_FILE?=.travis/Dockerfile.fedora-rawhide
+CI_CMD?=make ci
+
 # Arguments used for setup.py call for creating archive
 BUILD_ARGS ?= sdist bdist_wheel
 
@@ -27,13 +33,24 @@ BUILD_ARGS ?= sdist bdist_wheel
 clean:
 	git clean -fdx
 
+.PHONY: container-ci
+container-ci:
+	podman build --tag $(CI_CONTAINER_NAME) --file $(CI_CONTAINER_FILE)
+	podman run --volume .:/dasbus:Z --workdir /dasbus $(CI_CONTAINER_NAME) $(CI_CMD)
+
+.PHONY: ci
+ci:
+	$(MAKE) check
+	$(MAKE) test
+	$(MAKE) docs
+
 .PHONY: check
 check:
 	@echo "*** Running pylint ***"
 	$(PYTHON) -m pylint dasbus/ tests/
 
-.PHONY: coverage
-coverage:
+.PHONY: test
+test:
 	@echo "*** Running unittests with $(COVERAGE) ***"
 	PYTHONPATH=. $(COVERAGE) run --branch -m unittest discover -v -s tests/
 	$(COVERAGE) report -m --include="dasbus/*" | tee coverage-report.log
