@@ -17,7 +17,6 @@
 # USA
 #
 import unittest
-from threading import Thread, Event
 from unittest import mock
 from unittest.mock import Mock
 
@@ -28,8 +27,13 @@ from dasbus.loop import EventLoop
 from dasbus.server.interface import dbus_interface, dbus_signal, \
     accepts_additional_arguments, returns_multiple_arguments
 from dasbus.typing import get_variant, Str, Int, Dict, Variant, List, \
-    Tuple, Bool
+    Tuple, Bool, UnixFD
 from dasbus.xml import XMLGenerator
+from threading import Thread, Event
+from multiprocessing import Process, Pipe
+
+import tempfile
+import os
 
 import gi
 gi.require_version("Gio", "2.0")
@@ -116,7 +120,17 @@ class ExampleInterface(object):
     def Hello(self, name: Str) -> Str:
         self._names.append(name)
         self.Visited(name)
-        return "Hello, {}!".format(name)
+        return "Hello, {0}!".format(name)
+
+    def HelloFD(self, name: UnixFD) -> UnixFD:
+        with open(os.dup(name), "rb", closefd=True) as ifile:
+            i = ifile.read().decode("utf-8")
+        self._names.append(i)
+        with tempfile.TemporaryFile(mode="wb", buffering=0, prefix=i) as o:
+            o.write("Hello, {0}!".format(i).encode("utf-8"))
+            o.seek(0)
+            out = os.dup(o.fileno())
+        return out
 
     @dbus_signal
     def Knocked(self):
@@ -136,12 +150,11 @@ class ExampleInterface(object):
 
     @accepts_additional_arguments
     def GetInfo(self, arg: Str, *, call_info) -> Str:
-        return "{}: {}".format(arg, call_info)
+        return "{0}: {1}".format(arg, call_info)
 
     @returns_multiple_arguments
     def ReturnArgs(self) -> Tuple[Int, Bool, Str]:
         return 0, False, "zero"
-
 
 class DBusTestCase(unittest.TestCase):
     """Test DBus support with a real DBus connection."""
@@ -149,77 +162,19 @@ class DBusTestCase(unittest.TestCase):
     TIMEOUT = 3
 
     def setUp(self):
-        self.bus = Gio.TestDBus()
-        self.bus.up()
-        self.message_bus = AddressedMessageBus(
-            self.bus.get_bus_address(),
-            error_mapper=error_mapper
-        )
-
+        self.bus = None
+        self.message_bus = None
         self.service = None
         self.clients = []
         self.maxDiff = None
 
     def tearDown(self):
-        self.message_bus.disconnect()
+        if self.message_bus:
+            self.message_bus.disconnect()
         self.bus.down()
-
-    def test_message_bus(self):
-        """Test the message bus."""
-        self.assertTrue(self.message_bus.check_connection())
-        self.assertEqual(self.message_bus.address, self.bus.get_bus_address())
-        self.assertEqual(self.message_bus.proxy.Ping(), None)
 
     def _set_service(self, service):
         self.service = service
-
-    def test_xml_specification(self):
-        """Test the generated specification."""
-        self._set_service(ExampleInterface())
-
-        expected_xml = '''
-        <node>
-          <!--Specifies ExampleInterface-->
-          <interface name="my.testing.Example">
-            <method name="GetInfo">
-              <arg direction="in" name="arg" type="s"></arg>
-              <arg direction="out" name="return" type="s"></arg>
-            </method>
-            <method name="Hello">
-              <arg direction="in" name="name" type="s"></arg>
-              <arg direction="out" name="return" type="s"></arg>
-            </method>
-            <method name="Knock"></method>
-            <signal name="Knocked"></signal>
-            <property access="read" name="Name" type="s"></property>
-            <method name="Raise">
-              <arg direction="in" name="message" type="s"></arg>
-            </method>
-            <method name="ReturnArgs">
-              <arg direction="out" name="return_0" type="i"></arg>
-              <arg direction="out" name="return_1" type="b"></arg>
-              <arg direction="out" name="return_2" type="s"></arg>
-            </method>
-            <property access="write" name="Secret" type="s"></property>
-            <property access="readwrite" name="Value" type="i"></property>
-            <signal name="Visited">
-              <arg direction="out" name="name" type="s"></arg>
-            </signal>
-          </interface>
-        </node>
-        '''
-
-        generated_xml = self.service.__dbus_xml__
-
-        self.assertEqual(
-            XMLGenerator.prettify_xml(expected_xml),
-            XMLGenerator.prettify_xml(generated_xml)
-        )
-
-    def _add_client(self, client_test):
-        thread = Thread(None, client_test)
-        thread.daemon = True
-        self.clients.append(thread)
 
     def _get_proxy(self, interface_name=None):
         return self.message_bus.get_proxy(
@@ -249,6 +204,78 @@ class DBusTestCase(unittest.TestCase):
     @run_in_glib(TIMEOUT)
     def _run_service(self):
         return True
+
+class DBusThreadedTestCase(DBusTestCase):
+    """Test DBus support with a real DBus connection."""
+
+    def setUp(self):
+        super().setUp()
+        self.bus = Gio.TestDBus()
+        self.bus.up()
+        self.message_bus = AddressedMessageBus(
+            self.bus.get_bus_address(),
+            error_mapper=error_mapper
+        )
+
+    def _add_client(self, client_test):
+        thread = Thread(None, client_test)
+        thread.daemon = True
+        self.clients.append(thread)
+
+    def test_message_bus(self):
+        """Test the message bus."""
+        self.assertTrue(self.message_bus.check_connection())
+        self.assertEqual(self.message_bus.address, self.bus.get_bus_address())
+        self.assertEqual(self.message_bus.proxy.Ping(), None)
+
+    def test_xml_specification(self):
+        """Test the generated specification."""
+        self._set_service(ExampleInterface())
+
+        expected_xml = '''
+        <node>
+          <!--Specifies ExampleInterface-->
+          <interface name="my.testing.Example">
+            <method name="GetInfo">
+              <arg direction="in" name="arg" type="s"></arg>
+              <arg direction="out" name="return" type="s"></arg>
+            </method>
+            <method name="Hello">
+              <arg direction="in" name="name" type="s"></arg>
+              <arg direction="out" name="return" type="s"></arg>
+            </method>
+            <method name="HelloFD">
+              <arg direction="in" name="name" type="h"></arg>
+              <arg direction="out" name="return" type="h"></arg>
+            </method>
+            <method name="Knock"></method>
+            <signal name="Knocked"></signal>
+            <property access="read" name="Name" type="s"></property>
+            <method name="Raise">
+              <arg direction="in" name="message" type="s"></arg>
+            </method>
+            <method name="ReturnArgs">
+              <arg direction="out" name="return_0" type="i"></arg>
+              <arg direction="out" name="return_1" type="b"></arg>
+              <arg direction="out" name="return_2" type="s"></arg>
+            </method>
+            <property access="write" name="Secret" type="s"></property>
+            <property access="readwrite" name="Value" type="i"></property>
+            <signal name="Visited">
+              <arg direction="out" name="name" type="s"></arg>
+            </signal>
+          </interface>
+        </node>
+        '''
+
+        generated_xml = self.service.__dbus_xml__
+
+        self.assertEqual(
+            XMLGenerator.prettify_xml(expected_xml),
+            XMLGenerator.prettify_xml(generated_xml)
+        )
+
+
 
     def test_knock(self):
         """Call a simple DBus method."""
@@ -281,7 +308,8 @@ class DBusTestCase(unittest.TestCase):
         self._add_client(test2)
         self._run_test()
 
-        self.assertEqual(sorted(self.service._names), ["Bar", "Foo"])
+        self.assertEqual(sorted(self.service._names),
+                         ["Bar", "Foo"])
 
     def test_name(self):
         """Use a DBus read-only property."""
@@ -415,7 +443,7 @@ class DBusTestCase(unittest.TestCase):
         visited = Mock()
 
         def callback(name):
-            visited("Visited by {}.".format(name))
+            visited("Visited by {0}.".format(name))
 
         def test1():
             proxy = self._get_proxy()
@@ -612,3 +640,132 @@ class DBusTestCase(unittest.TestCase):
 
         self._add_client(test1)
         self._run_test()
+
+class DBusForkedTestCase(DBusTestCase):
+    """Test DBus support with a real DBus connection."""
+
+    def _add_client(self, client_test):
+
+        def ct(conn):
+            addr = conn.recv()
+            self.message_bus = AddressedMessageBus(
+                addr,
+                error_mapper=error_mapper
+            )
+
+            conn.send(client_test())
+            self.message_bus.disconnect()
+
+        pipe = Pipe()
+
+        process = Process(None, ct, args=(pipe[0],))
+        process.daemon = True
+        self.clients.append((process,pipe[1]))
+
+    def _run_test(self):
+        for client in self.clients:
+            client[0].start()
+
+        self.bus = Gio.TestDBus()
+        self.bus.up()
+
+        busaddr = self.bus.get_bus_address()
+
+        self.message_bus = AddressedMessageBus(
+            busaddr,
+            error_mapper=error_mapper
+        )
+
+        self.message_bus.publish_object(
+            "/my/testing/Example",
+            self.service
+        )
+
+        self.message_bus.register_service(
+            "my.testing.Example"
+        )
+
+
+        for client in self.clients:
+            client[1].send(busaddr)
+
+        self.assertTrue(self._run_service())
+
+        for client in self.clients:
+            self.assertTrue(client[1].recv())
+
+        for client in self.clients:
+            client[0].join()
+
+    def test_hello_fd(self):
+        """Call a DBus method, passing and returning UnixFD handles"""
+        self._set_service(ExampleInterface())
+        self.assertEqual(self.service._names, [])
+
+        def fdtest(n):
+
+            def fun():
+                proxy = self._get_proxy()
+                with tempfile.TemporaryFile(mode="wb",
+                                            buffering=0,
+                                            prefix=n) as otmp:
+                    otmp.write(n.encode("utf-8"))
+                    otmp.seek(0)
+
+                    #closefd=False here because passing a
+                    #file descriptor to dbus closes it
+                    with open(os.dup(otmp.fileno()), "rb", closefd=False) as o:
+                        i = proxy.HelloFD(UnixFD(o.fileno()))
+                        with open(os.dup(i), "rb", closefd=True) as ifile:
+                            buf = ifile.read()
+                            #can't use an assert here, because we're in
+                            #another address space, so return a boolean to get
+                            #communicated back to the server
+                            a = "Hello, {0}!".format(n)
+                            b = buf.decode("utf-8")
+                            return a == b
+            return fun
+
+        def fdtest_async(n):
+            def fun():
+                result = [False]
+                def callback(fd):
+                    with open(os.dup(fd()), "rb", closefd=True) as ifile:
+                        buf = ifile.read()
+                        #can't use an assert here, because we're in
+                        #another address space, so return a boolean to get
+                        #communicated back to the server
+                        r = "Hello, {0}!".format(n) == buf.decode("utf-8")
+                        result[0] = r
+
+                proxy = self._get_proxy()
+                with tempfile.TemporaryFile(mode="wb",
+                                            buffering=0,
+                                            prefix=n) as otmp:
+                    otmp.write(n.encode("utf-8"))
+                    otmp.seek(0)
+
+                    #closefd=False here because passing a
+                    #file descriptor to dbus closes it
+                    with open(os.dup(otmp.fileno()), "rb", closefd=False) as o:
+                        proxy.HelloFD(UnixFD(o.fileno()), callback=callback)
+                        self._run_service()
+                        return result[0]
+            return fun
+
+        test1 = fdtest("FooFD")
+
+        test2 = fdtest("BarFD")
+
+        test3 = fdtest_async("FooAsyncFD")
+
+        test4 = fdtest_async("BarAsyncFD")
+
+        self._add_client(test1)
+        self._add_client(test2)
+        self._add_client(test3)
+        self._add_client(test4)
+        self._run_test()
+
+        self.assertEqual(sorted(self.service._names),
+                         ["BarAsyncFD", "BarFD", "FooAsyncFD", "FooFD"])
