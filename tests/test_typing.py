@@ -24,7 +24,7 @@ from typing import Set
 from dasbus.typing import get_dbus_type, is_base_type, get_native, \
     get_variant, get_variant_type, Int, Int16, Int32, Int64, UInt16, UInt32, \
     UInt64, Bool, Byte, Str, Dict, List, Tuple, Variant, Double, ObjPath, \
-    File, unwrap_variant, get_type_name, is_tuple_of_one, get_type_arguments
+    UnixFD, unwrap_variant, get_type_name, is_tuple_of_one, get_type_arguments
 
 import gi
 gi.require_version("GLib", "2.0")
@@ -153,7 +153,7 @@ class DBusTypingTests(unittest.TestCase):
         self._compare(Double, "d")
         self._compare(Str, "s")
         self._compare(ObjPath, "o")
-        self._compare(File, "h")
+        self._compare(UnixFD, "h")
         self._compare(Variant, "v")
 
     def test_int(self):
@@ -170,11 +170,11 @@ class DBusTypingTests(unittest.TestCase):
         """Test container types."""
         self._compare(Tuple[Bool], "(b)")
         self._compare(Tuple[Int, Str], "(is)")
-        self._compare(Tuple[File, Variant, Double], "(hvd)")
+        self._compare(Tuple[UnixFD, Variant, Double], "(hvd)")
 
         self._compare(List[Int], "ai")
         self._compare(List[Bool], "ab")
-        self._compare(List[File], "ah")
+        self._compare(List[UnixFD], "ah")
         self._compare(List[ObjPath], "ao")
 
         self._compare(Dict[Str, Int], "a{si}")
@@ -193,7 +193,7 @@ class DBusTypingTests(unittest.TestCase):
 
         self._compare(List[List[List[Int]]], "aaai")
         self._compare(List[Tuple[Dict[Str, Int]]], "a(a{si})")
-        self._compare(List[Dict[Str, Tuple[File, Variant]]], "aa{s(hv)}")
+        self._compare(List[Dict[Str, Tuple[UnixFD, Variant]]], "aa{s(hv)}")
 
         self._compare(Dict[Str, List[Bool]], "a{sab}")
         self._compare(Dict[Str, Tuple[Int, Int, Double]], "a{s(iid)}")

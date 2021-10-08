@@ -18,7 +18,7 @@
 #
 import unittest
 
-from dasbus.typing import Int, Str, List, Double, File, Tuple, Bool, Dict
+from dasbus.typing import Int, Str, List, Double, UnixFD, Tuple, Bool, Dict
 from dasbus.server.interface import dbus_interface, dbus_class, dbus_signal, \
     get_xml, DBusSpecificationGenerator, DBusSpecificationError, \
     accepts_additional_arguments, returns_multiple_arguments
@@ -184,7 +184,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
             def Method3(self) -> Int:
                 pass
 
-            def Method4(self, x: List[Double], y: File) -> Tuple[Int, Bool]:
+            def Method4(self, x: List[Double], y: UnixFD) -> Tuple[Int, Bool]:
                 return 0, True
 
         expected_xml = '''
