@@ -154,7 +154,7 @@ class DBusConnectionTestCase(unittest.TestCase):
         )
 
         self.assertIn("my.service", self.message_bus._requested_names)
-        callback = self.message_bus._registrations[-1]
+        callback = self.message_bus._registrations["my.service"]
         self.assertTrue(callable(callback))
 
         self.message_bus.disconnect()
@@ -208,7 +208,7 @@ class DBusConnectionTestCase(unittest.TestCase):
             error_mapper=self.error_mapper
         )
 
-        callback = self.message_bus._registrations[-1]
+        callback = self.message_bus._registrations["/my/object"]
         self.assertTrue(callable(callback))
 
         self.message_bus.disconnect()
@@ -222,12 +222,12 @@ class DBusConnectionTestCase(unittest.TestCase):
         # Create registrations.
         callbacks = defaultdict(Mock)
 
-        self.message_bus._registrations = [
-            callbacks["my.service.1"],
-            callbacks["my.service.2"],
-            callbacks["/my/object/1"],
-            callbacks["/my/object/2"],
-        ]
+        self.message_bus._registrations = {
+            "my.service.1": callbacks["my.service.1"],
+            "my.service.2": callbacks["my.service.2"],
+            "/my/object/1": callbacks["/my/object/1"],
+            "/my/object/2": callbacks["/my/object/2"],
+        }
 
         self.message_bus._requested_names = {
             "my.service.1",
@@ -237,7 +237,7 @@ class DBusConnectionTestCase(unittest.TestCase):
         # Disconnect.
         self.message_bus.disconnect()
         self.assertEqual(self.message_bus._connection, None)
-        self.assertEqual(self.message_bus._registrations, [])
+        self.assertEqual(self.message_bus._registrations, {})
         self.assertEqual(self.message_bus._requested_names, set())
 
         for callback in callbacks.values():
@@ -245,6 +245,37 @@ class DBusConnectionTestCase(unittest.TestCase):
 
         # Do nothing by default.
         self.message_bus.disconnect()
+
+    def test_remove_single_object(self):
+        """Test the disconnection."""
+        # Set up the connection.
+        self.assertIsNotNone(self.message_bus.connection)
+
+        # Create registrations.
+        callbacks = defaultdict(Mock)
+
+        self.message_bus._registrations = {
+            "my.service.1": callbacks["my.service.1"],
+            "my.service.2": callbacks["my.service.2"],
+            "/my/object/1": callbacks["/my/object/1"],
+            "/my/object/2": callbacks["/my/object/2"],
+        }
+
+        self.message_bus._requested_names = {
+            "my.service.1",
+            "my.service.2"
+        }
+
+        # Disconnect.
+        self.message_bus.unregister_service("my.service.1")
+        self.assertEqual(len(self.message_bus._registrations), 3)
+
+        # Disconnect.
+        self.message_bus.unpublish_object("/my/object/2")
+        self.assertEqual(len(self.message_bus._registrations), 2)
+
+        callbacks["my.service.1"].assert_called_once_with()
+        callbacks["/my/object/2"].assert_called_once_with()
 
     @patch("dasbus.connection.Gio.bus_get_sync")
     def test_system_bus(self, getter):

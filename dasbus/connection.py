@@ -159,7 +159,7 @@ class MessageBus(AbstractMessageBus):
         self._error_mapper = error_mapper or ErrorMapper()
         self._connection = None
         self._proxy = None
-        self._registrations = []
+        self._registrations = {}
         self._requested_names = set()
 
     @property
@@ -264,7 +264,7 @@ class MessageBus(AbstractMessageBus):
         self._requested_names.add(
             service_name
         )
-        self._registrations.append(
+        self._registrations[service_name] = (
             lambda: self.proxy.ReleaseName(service_name)
         )
 
@@ -286,14 +286,29 @@ class MessageBus(AbstractMessageBus):
         )
         object_handler.connect_object()
 
-        self._registrations.append(object_handler.disconnect_object)
+        self._registrations[object_path] = object_handler.disconnect_object
+
+    def _unregister(self, object_path):
+        """Remove Object from DBus."""
+
+        if object_path in self._registrations:
+            callback = self._registrations.pop(object_path)
+            callback()
+
+    def unpublish_object(self, object_path):
+        log.debug("Removing object %s from the bus.", object_path)
+        self._unregister(object_path)
+
+    def unregister_service(self, object_path):
+        log.debug("Removing service %s from the bus.", object_path)
+        self._unregister(object_path)
 
     def disconnect(self):
         """Disconnect from DBus."""
         log.debug("Disconnecting from the bus.")
 
         while self._registrations:
-            callback = self._registrations.pop()
+            _, callback = self._registrations.popitem()
             callback()
 
         self._connection = None
