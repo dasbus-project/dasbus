@@ -408,7 +408,7 @@ def array_replace_handles_with_fdlist_indices(e, typestring, fdlist):
     if typestring[1] == '{':
         nv, fdlist = variant_replace_handles_with_fdlist_indices(
             get_variant(typestring, e), fdlist)
-        return unwrap_variant(nv)
+        return unwrap_variant(nv), fdlist
     else:
         newlist = e.copy()
         for j, f in enumerate(newlist):
@@ -422,7 +422,7 @@ def array_replace_handles_with_fdlist_indices(e, typestring, fdlist):
                     nv, fdlist)
                 nnv, fdlist = p
                 newlist[j] = unwrap_variant(nnv)
-        return newlist
+        return newlist, fdlist
 
 
 def variant_replace_handles_with_fdlist_indices(v, fdlist=None):
@@ -442,8 +442,14 @@ def variant_replace_handles_with_fdlist_indices(v, fdlist=None):
             return v, fdlist
 
     typestring = v.get_type_string()
-    if typestring.startswith('a{'):
-        return dictionary_replace_handles_with_fdlist_indices(v, fdlist)
+
+    if typestring.startswith('a'):
+        if typestring.startswith('a{'):
+            return dictionary_replace_handles_with_fdlist_indices(v, fdlist)
+        a, fdlist = array_replace_handles_with_fdlist_indices(
+            unwrap_variant(v), typestring, fdlist)
+        return get_variant(typestring, a), fdlist
+
 
     typelist = v.split_signature(typestring)
     unwrapped = list(unwrap_variant(v))
@@ -453,7 +459,7 @@ def variant_replace_handles_with_fdlist_indices(v, fdlist=None):
             fdlist.append(e)
             unwrapped[i] = l
         elif typelist[i][0] == 'a':
-            unwrapped[i] = array_replace_handles_with_fdlist_indices(
+            unwrapped[i], fdlist = array_replace_handles_with_fdlist_indices(
                 e, typelist[i], fdlist)
         elif typelist[i] == 'v':
             unwrapped[i], fdlist = variant_replace_handles_with_fdlist_indices(
@@ -523,8 +529,12 @@ def variant_replace_fdlist_indices_with_handles(v, fdlist):
 
     typestring = v.get_type_string()
 
-    if typestring.startswith('a{'):
-        return dictionary_replace_fdlist_indices_with_handles(v, fdlist)
+    if typestring.startswith('a'):
+        if typestring.startswith('a{'):
+            return dictionary_replace_fdlist_indices_with_handles(v, fdlist)
+        return get_variant(typestring,
+                           array_replace_fdlist_indices_with_handles(
+                               unwrap_variant(v), typestring, fdlist))
 
     typelist = v.split_signature(v.get_type_string())
     unwrapped = list(unwrap_variant(v))

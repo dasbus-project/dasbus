@@ -329,6 +329,33 @@ class DBusTypingTests(unittest.TestCase):
         os.close(r)
         os.close(w)
 
+        r, w = os.pipe()
+
+        var_fd = get_variant("a{saa{sv}}",
+                             {"fds": [{"read":get_variant('h', r),
+                                       "write":get_variant('h', w)}],
+                              "not-fds": [{"one":get_variant('d', 1.0),
+                                           "two":get_variant('d', 2.0)}]})
+        replaced, fdlist = variant_replace_handles_with_fdlist_indices(var_fd)
+        self.assertEqual(len(fdlist), 2)
+        self.assertEqual(fdlist[replaced['fds'][0]['read']], r)
+        self.assertEqual(fdlist[replaced['fds'][0]['write']], w)
+
+        var_fd = get_variant("a{saa{sv}}",
+                             {"fds": [{"read":get_variant('h', 0),
+                                       "write":get_variant('h', 1)}],
+                              "not-fds": [{"one":get_variant('d', 1.0),
+                                           "two":get_variant('d', 2.0)}]})
+        fdlist = [r, w]
+        replaced = variant_replace_fdlist_indices_with_handles(var_fd, fdlist)
+
+        self.assertEqual(replaced['fds'][0]['read'], r)
+        self.assertEqual(replaced['fds'][0]['write'], w)
+
+        os.close(r)
+        os.close(w)
+
+
     def test_handle_null_replacement(self):
         """Test handle replacement (with UnixFDList indices)
         for variants that don't have any"""
