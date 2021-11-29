@@ -183,40 +183,7 @@ def unwrap_variant(variant):
     :param variant: a variant
     :return: a value
     """
-    type_string = variant.get_type_string()
-
-    # tuple - unwrap items
-    if type_string.startswith('('):
-        return tuple(
-            unwrap_variant(variant.get_child_value(i))
-            for i in range(variant.n_children())
-        )
-
-    # dictionary - unpack keys and unwrap values.
-    if type_string.startswith('a{'):
-        result = {}
-
-        for i in range(variant.n_children()):
-            entry = variant.get_child_value(i)
-            key = entry.get_child_value(0)
-            value = entry.get_child_value(1)
-            result[key.unpack()] = unwrap_variant(value)
-
-        return result
-
-    # array - unwrap values
-    if type_string.startswith('a'):
-        return list(
-            unwrap_variant(variant.get_child_value(i))
-            for i in range(variant.n_children())
-        )
-
-    # variant - unbox a variant
-    if type_string.startswith('v'):
-        return variant.get_variant()
-
-    # basic - unpack a value
-    return variant.unpack()
+    return VariantUnwrapper.apply(variant)
 
 
 def is_base_type(type_hint, base_type):
@@ -375,6 +342,109 @@ class DBusType(object):
                 "Invalid DBus type of dictionary key: "
                 "'{}'".format(get_type_name(key))
             )
+
+
+class VariantUnpacking(object):
+    """Set of functions of unpacking a variant.
+
+    This class is doing the same as the unpack method
+    of the Variant class, but it allows to reuse the code
+    for other variant modifications.
+    """
+
+    @classmethod
+    def _process_variant(cls, variant, *extras):
+        """Process a variant."""
+        type_string = variant.get_type_string()
+
+        if type_string.startswith('('):
+            return cls._handle_tuple(variant, *extras)
+
+        if type_string.startswith('a{'):
+            return cls._handle_dictionary(variant, *extras)
+
+        if type_string.startswith('a'):
+            return cls._handle_array(variant, *extras)
+
+        if type_string.startswith('v'):
+            return cls._handle_variant(variant, *extras)
+
+        return cls._handle_value(variant, *extras)
+
+    @classmethod
+    def _handle_tuple(cls, variant, *extras):
+        """Handle a tuple."""
+        return tuple(
+            cls._process_variant(variant.get_child_value(i), *extras)
+            for i in range(variant.n_children())
+        )
+
+    @classmethod
+    def _handle_dictionary(cls, variant, *extras):
+        """Handle a dictionary."""
+        result = {}
+
+        for i in range(variant.n_children()):
+            entry = variant.get_child_value(i)
+            key = cls._process_variant(entry.get_child_value(0), *extras)
+            value = cls._process_variant(entry.get_child_value(1), *extras)
+            result[key] = value
+
+        return result
+
+    @classmethod
+    def _handle_array(cls, variant, *extras):
+        """Handle an array."""
+        return list(
+            cls._process_variant(variant.get_child_value(i), *extras)
+            for i in range(variant.n_children())
+        )
+
+    @classmethod
+    def _handle_variant(cls, variant, *extras):
+        """Handle a variant."""
+        return cls._process_variant(variant.get_variant(), *extras)
+
+    @classmethod
+    def _handle_value(cls, variant, *extras):
+        """Handle a basic value."""
+        return variant.unpack()
+
+
+class VariantUnpacker(VariantUnpacking):
+    """Class for unpacking variants."""
+
+    @classmethod
+    def apply(cls, variant):
+        """Unpack the specified variant.
+
+        :param variant: a variant to unpack
+        :return: an unpacked value
+        """
+        return cls._process_variant(variant)
+
+
+class VariantUnwrapper(VariantUnpacking):
+    """Class for unwrapping variants."""
+
+    @classmethod
+    def apply(cls, variant):
+        """Unwrap the specified variant.
+
+        :param variant: a variant to unwrap
+        :return: a unwrapped value
+        """
+        return cls._process_variant(variant)
+
+    @classmethod
+    def _handle_variant(cls, variant, *extras):
+        """Handle a variant.
+
+        Don't recursively unpack all variants.
+        Unpack only the topmost variant.
+        """
+        return variant.get_variant()
+
 
 def dictionary_replace_handles_with_fdlist_indices(v, fdlist):
     typestring = v.get_type_string()

@@ -24,8 +24,8 @@ from typing import Set
 from dasbus.typing import get_dbus_type, is_base_type, get_native, \
     get_variant, get_variant_type, Int, Int16, Int32, Int64, UInt16, UInt32, \
     UInt64, Bool, Byte, Str, Dict, List, Tuple, Variant, Double, ObjPath, \
-    UnixFD, unwrap_variant, get_type_name, \
-    is_tuple_of_one, get_type_arguments
+    UnixFD, unwrap_variant, get_type_name, is_tuple_of_one, \
+    get_type_arguments, VariantUnpacker, VariantUnwrapper
 
 import gi
 gi.require_version("GLib", "2.0")
@@ -262,9 +262,16 @@ class DBusTypingVariantTests(unittest.TestCase):
         v1 = get_variant(type_hint, value)
         self.assertTrue(isinstance(v1, Variant))
         self.assertEqual(v1.format_string, expected_string)
-        self.assertEqual(v1.unpack(), value)
-        self.assertEqual(unwrap_variant(v1), value)
 
+        # Check unpacking.
+        self.assertEqual(v1.unpack(), value)
+        self.assertEqual(VariantUnpacker.apply(v1), value)
+
+        # Check unwrapping.
+        self.assertEqual(unwrap_variant(v1), value)
+        self.assertEqual(VariantUnwrapper.apply(v1), value)
+
+        # Create a variant from a type string.
         v2 = Variant(expected_string, value)
         self.assertTrue(v2.equal(v1))
 
