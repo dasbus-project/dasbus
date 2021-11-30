@@ -106,7 +106,7 @@ class GLibClient(object):
         :return: a callback to unsubscribe
         """
         subscription_id = connection.signal_subscribe(
-            service_name,
+            None,
             interface_name,
             signal_name,
             object_path,
