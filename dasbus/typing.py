@@ -375,3 +375,182 @@ class DBusType(object):
                 "Invalid DBus type of dictionary key: "
                 "'{}'".format(get_type_name(key))
             )
+
+def dictionary_replace_handles_with_fdlist_indices(v, fdlist):
+    typestring = v.get_type_string()
+    newdict = {}
+    keytype=typestring[2]
+    valuetype=typestring[3:-1]
+    e = unwrap_variant(v)
+    for key, value in e.items():
+        #according to the spec, the key is a basic type.
+        #we have to handle the crazy case where somebody
+        #uses a file descriptor as a dictionary key
+        if keytype == 'h':
+            l = len(fdlist)
+            fdlist.append(key)
+            key = l
+        if valuetype == 'h':
+            l = len(fdlist)
+            fdlist.append(value)
+            value = l
+        elif valuetype == 'v':
+            value, fdlist = variant_replace_handles_with_fdlist_indices(
+                value, fdlist)
+        elif not DBusType._is_basic_type(valuetype):
+            value, fdlist = variant_replace_handles_with_fdlist_indices(
+                get_variant(valuetype, value), fdlist)
+            value = unwrap_variant(value)
+        newdict[key] = value
+    return get_variant(typestring, newdict), fdlist
+
+def array_replace_handles_with_fdlist_indices(e, typestring, fdlist):
+    if typestring[1] == '{':
+        nv, fdlist = variant_replace_handles_with_fdlist_indices(
+            get_variant(typestring, e), fdlist)
+        return unwrap_variant(nv), fdlist
+    else:
+        newlist = e.copy()
+        for j, f in enumerate(newlist):
+            if typestring[1] == 'v':
+                p = variant_replace_handles_with_fdlist_indices(
+                    f, fdlist)
+                newlist[j], fdlist = p
+            else:
+                nv = get_variant(typestring[1:], f)
+                p = variant_replace_handles_with_fdlist_indices(
+                    nv, fdlist)
+                nnv, fdlist = p
+                newlist[j] = unwrap_variant(nnv)
+        return newlist, fdlist
+
+
+def variant_replace_handles_with_fdlist_indices(v, fdlist=None):
+    """Given a variant, return a new variant
+    with all 'h' handles replaced with FDlist indices,
+    adding extracted handles to the fdlist passed as an argument"""
+    if fdlist is None:
+        fdlist = []
+
+    if v.get_type().is_basic():
+        if v.get_type_string() == 'h':
+            l = len(fdlist)
+            fd = unwrap_variant(v)
+            fdlist.append(fd)
+            return get_variant('h', l), fdlist
+        else:
+            return v, fdlist
+
+    typestring = v.get_type_string()
+
+    if typestring.startswith('a'):
+        if typestring.startswith('a{'):
+            return dictionary_replace_handles_with_fdlist_indices(v, fdlist)
+        a, fdlist = array_replace_handles_with_fdlist_indices(
+            unwrap_variant(v), typestring, fdlist)
+        return get_variant(typestring, a), fdlist
+
+
+    typelist = v.split_signature(typestring)
+    unwrapped = list(unwrap_variant(v))
+    for i, e in enumerate(unwrapped):
+        if typelist[i] == 'h':
+            l = len(fdlist)
+            fdlist.append(e)
+            unwrapped[i] = l
+        elif typelist[i][0] == 'a':
+            unwrapped[i], fdlist = array_replace_handles_with_fdlist_indices(
+                e, typelist[i], fdlist)
+        elif typelist[i] == 'v':
+            unwrapped[i], fdlist = variant_replace_handles_with_fdlist_indices(
+                e, fdlist)
+        else:
+            nv = get_variant(typelist[i], e)
+            nnv, fdlist = variant_replace_handles_with_fdlist_indices(
+                nv, fdlist)
+            unwrapped[i] = unwrap_variant(nnv)
+    return get_variant(typestring, unwrapped), fdlist
+
+def dictionary_replace_fdlist_indices_with_handles(v, fdlist):
+    typestring = v.get_type_string()
+
+    newdict = {}
+    keytype=typestring[2]
+    valuetype=typestring[3:-1]
+    e = unwrap_variant(v)
+    for key, value in e.items():
+        #according to the spec, the key is a basic type.
+        #we have to handle the crazy case where somebody
+        #uses a file descriptor as a dictionary key
+        if keytype == 'h':
+            key = fdlist[key]
+        if valuetype == 'h':
+            value = fdlist[value]
+        elif valuetype == 'v':
+            value = variant_replace_fdlist_indices_with_handles(
+                value, fdlist)
+        elif not DBusType._is_basic_type(valuetype):
+            value = variant_replace_fdlist_indices_with_handles(
+                get_variant(valuetype, value), fdlist)
+            value = unwrap_variant(value)
+        newdict[key] = value
+
+    return get_variant(typestring, newdict)
+
+def array_replace_fdlist_indices_with_handles(e, typestring, fdlist):
+    if typestring[1] == '{':
+        nv = variant_replace_fdlist_indices_with_handles(
+            get_variant(typestring, e), fdlist)
+        return unwrap_variant(nv)
+    else:
+        newlist = e.copy()
+        for j, f in enumerate(newlist):
+            if typestring[1] == 'v':
+                p = variant_replace_fdlist_indices_with_handles(
+                    f, fdlist)
+                newlist[j] = p
+            else:
+                nv = get_variant(typestring[1:], f)
+                nnv = variant_replace_fdlist_indices_with_handles(
+                    nv, fdlist)
+                newlist[j] = unwrap_variant(nnv)
+        return newlist
+
+def variant_replace_fdlist_indices_with_handles(v, fdlist):
+    """Given a varaint and an fdlist, find any 'h' handle instances
+    and replace them with file descriptors that they represent"""
+
+    if v.get_type().is_basic():
+        if v.get_type_string() == 'h':
+            idx = unwrap_variant(v)
+            return get_variant('h', fdlist[idx])
+        else:
+            return v
+
+    typestring = v.get_type_string()
+
+    if typestring.startswith('a'):
+        if typestring.startswith('a{'):
+            return dictionary_replace_fdlist_indices_with_handles(v, fdlist)
+        return get_variant(typestring,
+                           array_replace_fdlist_indices_with_handles(
+                               unwrap_variant(v), typestring, fdlist))
+
+    typelist = v.split_signature(v.get_type_string())
+    unwrapped = list(unwrap_variant(v))
+    # pylint: disable=consider-using-enumerate
+    for i, e in enumerate(unwrapped):
+
+        if typelist[i] == 'h':
+            unwrapped[i] = fdlist[unwrapped[i]]
+        elif typelist[i][0] == 'a':
+            unwrapped[i] = array_replace_fdlist_indices_with_handles(
+                e, typelist[i], fdlist)
+        elif typelist[i] == 'v':
+            unwrapped[i] = variant_replace_fdlist_indices_with_handles(
+                e, fdlist)
+        else:
+            nv = get_variant(typelist[i], e)
+            nnv = variant_replace_fdlist_indices_with_handles(nv, fdlist)
+            unwrapped[i] = unwrap_variant(nnv)
+    return get_variant(v.get_type_string(), unwrapped)

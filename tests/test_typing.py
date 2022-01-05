@@ -24,7 +24,8 @@ from typing import Set
 from dasbus.typing import get_dbus_type, is_base_type, get_native, \
     get_variant, get_variant_type, Int, Int16, Int32, Int64, UInt16, UInt32, \
     UInt64, Bool, Byte, Str, Dict, List, Tuple, Variant, Double, ObjPath, \
-    UnixFD, unwrap_variant, get_type_name, is_tuple_of_one, get_type_arguments
+    UnixFD, unwrap_variant, get_type_name, \
+    is_tuple_of_one, get_type_arguments
 
 import gi
 gi.require_version("GLib", "2.0")
