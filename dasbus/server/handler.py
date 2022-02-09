@@ -470,6 +470,8 @@ class ServerObjectHandler(AbstractServerObjectHandler):
                 method_name,
                 error
             )
+        finally:
+            invocation._unref()
 
     def _get_additional_arguments(self, invocation, interface_name,
                                   method_name, parameters):
