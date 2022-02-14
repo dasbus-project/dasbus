@@ -37,6 +37,7 @@ from gi.repository import Gio, GLib
 
 __all__ = [
     "GLibClient",
+    "GLibClientUnix",
     "AbstractClientObjectHandler",
     "ClientObjectHandler"
 ]
@@ -56,37 +57,17 @@ class GLibClient(object):
 
         :return: a result of the DBus call
         """
-        if parameters:
-            params, fdlist = variant_replace_handles_with_fdlist_indices(
-                parameters)
-        else:
-            fdlist = []
-        if len(fdlist) > 0:
-            ret =  connection.call_with_unix_fd_list_sync(
-                service_name,
-                object_path,
-                interface_name,
-                method_name,
-                params,
-                reply_type,
-                flags,
-                timeout,
-                Gio.UnixFDList.new_from_array(fdlist),
-                None
-            )
-            return ret
-        else:
-            return (connection.call_sync(
-                service_name,
-                object_path,
-                interface_name,
-                method_name,
-                parameters,
-                reply_type,
-                flags,
-                timeout,
-                None
-            ),)
+        return (connection.call_sync(
+            service_name,
+            object_path,
+            interface_name,
+            method_name,
+            parameters,
+            reply_type,
+            flags,
+            timeout,
+            None
+        ),)
 
     @classmethod
     def async_call(cls, connection, service_name, object_path, interface_name,
@@ -94,38 +75,18 @@ class GLibClient(object):
                    callback_args=(), flags=DBUS_FLAG_NONE,
                    timeout=DBUS_TIMEOUT_NONE):
         """Asynchronously call a DBus method."""
-        if parameters:
-            params, fdlist = variant_replace_handles_with_fdlist_indices(
-                parameters)
-        else:
-            fdlist = []
-        if len(fdlist) > 0:
-            connection.call_with_unix_fd_list(
-                service_name,
-                object_path,
-                interface_name,
-                method_name,
-                params,
-                reply_type,
-                flags,
-                timeout,
-                Gio.UnixFDList.new_from_array(fdlist),
-                callback=cls._async_call_finish,
-                user_data=(callback, callback_args)
-            )
-        else:
-            connection.call(
-                service_name,
-                object_path,
-                interface_name,
-                method_name,
-                parameters,
-                reply_type,
-                flags,
-                timeout,
-                callback=cls._async_call_finish,
-                user_data=(callback, callback_args)
-            )
+        connection.call(
+            service_name,
+            object_path,
+            interface_name,
+            method_name,
+            parameters,
+            reply_type,
+            flags,
+            timeout,
+            callback=cls._async_call_finish,
+            user_data=(callback, callback_args)
+        )
 
     @classmethod
     def _async_call_finish(cls, source_object, result_object, user_data):
@@ -201,6 +162,100 @@ class GLibClient(object):
             return message[len(prefix):]
 
         return message
+
+class GLibClientUnix(GLibClient):
+    """The low-level DBus client library based on GLib."""
+
+    @classmethod
+    def sync_call(cls, connection, service_name, object_path, interface_name,
+                  method_name, parameters, reply_type, flags=DBUS_FLAG_NONE,
+                  timeout=GLibClient.DBUS_TIMEOUT_NONE):
+        """Synchronously call a DBus method.
+
+        :return: a result of the DBus call
+        """
+        if parameters:
+            params, fdlist = variant_replace_handles_with_fdlist_indices(
+                parameters)
+        else:
+            fdlist = []
+        if len(fdlist) > 0:
+            ret =  connection.call_with_unix_fd_list_sync(
+                service_name,
+                object_path,
+                interface_name,
+                method_name,
+                params,
+                reply_type,
+                flags,
+                timeout,
+                Gio.UnixFDList.new_from_array(fdlist),
+                None
+            )
+            return ret
+        else:
+            return (connection.call_sync(
+                service_name,
+                object_path,
+                interface_name,
+                method_name,
+                parameters,
+                reply_type,
+                flags,
+                timeout,
+                None
+            ),)
+
+    @classmethod
+    def async_call(cls, connection, service_name, object_path, interface_name,
+                   method_name, parameters, reply_type, callback,
+                   callback_args=(), flags=DBUS_FLAG_NONE,
+                   timeout=GLibClient.DBUS_TIMEOUT_NONE):
+        """Asynchronously call a DBus method."""
+        if parameters:
+            params, fdlist = variant_replace_handles_with_fdlist_indices(
+                parameters)
+        else:
+            fdlist = []
+        if len(fdlist) > 0:
+            connection.call_with_unix_fd_list(
+                service_name,
+                object_path,
+                interface_name,
+                method_name,
+                params,
+                reply_type,
+                flags,
+                timeout,
+                Gio.UnixFDList.new_from_array(fdlist),
+                callback=cls._async_call_finish,
+                user_data=(callback, callback_args)
+            )
+        else:
+            connection.call(
+                service_name,
+                object_path,
+                interface_name,
+                method_name,
+                parameters,
+                reply_type,
+                flags,
+                timeout,
+                callback=cls._async_call_finish,
+                user_data=(callback, callback_args)
+            )
+
+    @classmethod
+    def _async_call_finish(cls, source_object, result_object, user_data):
+        """Finish an asynchronous DBus method call."""
+        # Prepare the user's callback.
+        callback, callback_args = user_data
+
+        # Call user's callback.
+        callback(
+            lambda: source_object.call_with_unix_fd_list_finish(result_object),
+            *callback_args
+        )
 
 
 class AbstractClientObjectHandler(metaclass=ABCMeta):

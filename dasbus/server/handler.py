@@ -38,6 +38,7 @@ log = logging.getLogger(__name__)
 
 __all__ = [
     "GLibServer",
+    "GLibServerUnix",
     "AbstractServerObjectHandler",
     "ServerObjectHandler"
 ]
@@ -105,10 +106,6 @@ class GLibServer(object):
         # Prepare the user's callback.
         callback, callback_args = user_data
 
-        fdlist = invocation.get_message().get_unix_fd_list()
-        if fdlist is not None:
-            parameters = variant_replace_fdlist_indices_with_handles(
-                parameters, fdlist.peek_fds())
         # Call user's callback.
         callback(
             invocation,
@@ -154,6 +151,31 @@ class GLibServer(object):
         :param out_value: a value of the reply
         """
         reply_value = cls._get_reply_value(out_type, out_value)
+        invocation.return_value(reply_value)
+
+    @classmethod
+    def _get_reply_value(cls, out_type, out_value):
+        """Get the reply value of the DBus call."""
+        if out_type is None:
+            return None
+
+        if is_tuple_of_one(out_type):
+            out_value = (out_value, )
+
+        return get_variant(out_type, out_value)
+
+class GLibServerUnix(GLibServer):
+    """The low-level DBus server library based on GLib. Adds Unix FD Support to base class"""
+
+    @classmethod
+    def set_call_reply(cls, invocation, out_type, out_value):
+        """Set the reply of the DBus call.
+
+        :param invocation: an invocation of a DBus call
+        :param out_type: a type of the reply
+        :param out_value: a value of the reply
+        """
+        reply_value = cls._get_reply_value(out_type, out_value)
         if reply_value is None:
             invocation.return_value(reply_value)
         else:
@@ -166,15 +188,24 @@ class GLibServer(object):
                 invocation.return_value(reply_value)
 
     @classmethod
-    def _get_reply_value(cls, out_type, out_value):
-        """Get the reply value of the DBus call."""
-        if out_type is None:
-            return None
+    def _object_callback(cls, connection, sender, object_path,
+                         interface_name, method_name, parameters,
+                         invocation, user_data):
+        # Prepare the user's callback.
+        callback, callback_args = user_data
 
-        if is_tuple_of_one(out_type):
-            out_value = (out_value, )
-
-        return get_variant(out_type, out_value)
+        fdlist = invocation.get_message().get_unix_fd_list()
+        if fdlist is not None:
+            parameters = variant_replace_fdlist_indices_with_handles(
+                parameters, fdlist.peek_fds())
+        # Call user's callback.
+        callback(
+            invocation,
+            interface_name,
+            method_name,
+            parameters,
+            *callback_args
+        )
 
 
 class AbstractServerObjectHandler(metaclass=ABCMeta):

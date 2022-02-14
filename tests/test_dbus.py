@@ -31,6 +31,9 @@ from dasbus.typing import get_variant, Str, Int, Dict, Variant, List, \
 from dasbus.xml import XMLGenerator
 from threading import Thread, Event
 from multiprocessing import Process, Pipe
+from dasbus.server.handler import GLibServerUnix
+from dasbus.client.handler import GLibClientUnix
+
 
 import tempfile
 import os
@@ -161,12 +164,14 @@ class DBusTestCase(unittest.TestCase):
 
     TIMEOUT = 3
 
-    def setUp(self):
+    def setUp(self, proxy_args={}, server_args={}):
         self.bus = None
         self.message_bus = None
         self.service = None
         self.clients = []
         self.maxDiff = None
+        self.proxy_args = proxy_args
+        self.server_args = server_args
 
     def tearDown(self):
         if self.message_bus:
@@ -180,7 +185,8 @@ class DBusTestCase(unittest.TestCase):
         return self.message_bus.get_proxy(
             "my.testing.Example",
             "/my/testing/Example",
-            interface_name=interface_name
+            interface_name=interface_name,
+            **self.proxy_args
         )
 
     def _run_test(self):
@@ -644,6 +650,10 @@ class DBusThreadedTestCase(DBusTestCase):
 class DBusForkedTestCase(DBusTestCase):
     """Test DBus support with a real DBus connection."""
 
+    def setUp(self):
+        super().setUp(server_args={"server": GLibServerUnix},
+                      proxy_args={"client": GLibClientUnix})
+
     def _add_client(self, client_test):
 
         def ct(conn):
@@ -678,7 +688,8 @@ class DBusForkedTestCase(DBusTestCase):
 
         self.message_bus.publish_object(
             "/my/testing/Example",
-            self.service
+            self.service,
+            **self.server_args
         )
 
         self.message_bus.register_service(
