@@ -39,7 +39,7 @@ Or install the RPM package on Fedora 31+.
 sudo dnf install python3-dasbus
 ```
 
-Or install the DEB package on Ubuntu 22.04+.
+Or install the DEB package on Ubuntu 22.04+ and Debian 11+.
 
 ```
 sudo apt install python3-dasbus
