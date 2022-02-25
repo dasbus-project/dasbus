@@ -52,7 +52,8 @@ check:
 .PHONY: test
 test:
 	@echo "*** Running unittests with $(COVERAGE) ***"
-	PYTHONPATH=. $(COVERAGE) run --branch -m unittest discover -v -s tests/
+	PYTHONPATH=. $(COVERAGE) run --rcfile=.coveragerc -m unittest discover -v -s tests/
+	$(COVERAGE) combine
 	$(COVERAGE) report -m --include="dasbus/*" | tee coverage-report.log
 
 .PHONY: docs
