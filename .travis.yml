@@ -1,22 +1,42 @@
+# Configuration file for the Travis CI
+# See: https://docs.travis-ci.com/
 language: minimal
 dist: focal
-services: docker
-sudo: required
 
-env:
-  - DOCKER_FILE=".travis/Dockerfile.fedora-rawhide"
-  - DOCKER_FILE=".travis/Dockerfile.centos-stream-8"
-  - DOCKER_FILE=".travis/Dockerfile.centos-stream-9"
-  - DOCKER_FILE=".travis/Dockerfile.debian-latest"
-  - DOCKER_FILE=".travis/Dockerfile.ubuntu-devel"
+services:
+  # Enable Docker.
+  - docker
+
+jobs:
+  # Specify individual jobs for the build matrix.
+  include:
+    # Fedora Rawhide
+    - os: linux
+      env: DOCKER_FILE=".travis/Dockerfile.fedora-rawhide"
+    # CentOS Stream 8
+    - os: linux
+      env: DOCKER_FILE=".travis/Dockerfile.centos-stream-8"
+    # CentOS Stream 9
+    - os: linux
+      env: DOCKER_FILE=".travis/Dockerfile.centos-stream-9"
+    # Latest Debian
+    - os: linux
+      env: DOCKER_FILE=".travis/Dockerfile.debian-latest"
+    # Devel Ubuntu
+    - os: linux
+      env: DOCKER_FILE=".travis/Dockerfile.ubuntu-devel"
+    # Windows Server 1809
+    - os: windows
+      language: bash
+      env: DOCKER_FILE=".travis/Dockerfile.windows-server"
 
 before_install:
   # Create a docker image called "myimage".
   - docker build -t myimage -f "$DOCKER_FILE" .
 
-install:
-  # Install CI dependencies.
-  pip install --user codecov
+#install:
+#  # Install CI dependencies.
+#  pip install --user codecov
 
 before_script:
   # Create a docker container from the image, mount the current working
@@ -29,10 +49,10 @@ script:
   # Run tests in the running container.
   - docker exec "$(cat container_id)" make ci
 
-after_success:
-  # Analyze the code coverage.
-  - docker exec "$(cat container_id)" coverage3 xml -i
-  - codecov
+#after_success:
+#  # Analyze the code coverage.
+#  - docker exec "$(cat container_id)" coverage3 xml -i
+#  - codecov
 
 after_script:
   # Stop the container.

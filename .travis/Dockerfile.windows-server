@@ -1,0 +1,28 @@
+FROM mcr.microsoft.com/windows/servercore:1809
+ENV LANG C.utf8
+
+# Install MSYS2. See: https://www.msys2.org/docs/ci/
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+
+RUN [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
+    Invoke-WebRequest -UseBasicParsing -uri "https://github.com/msys2/msys2-installer/releases/download/nightly-x86_64/msys2-base-x86_64-latest.sfx.exe" -OutFile msys2.exe; \
+    .\msys2.exe -y -oC:\; \
+    Remove-Item msys2.exe ; \
+    C:\msys64\usr\bin\bash -lc ' '; \
+    C:\msys64\usr\bin\bash -lc 'pacman --noconfirm -Syuu'; \
+    C:\msys64\usr\bin\bash -lc 'pacman --noconfirm -Syuu'; \
+    C:\msys64\usr\bin\bash -lc 'pacman --noconfirm -Scc';
+
+# Install dasbus dependencies.
+RUN C:\msys64\usr\bin\bash -lc 'pacman --noconfirm -S \
+    base-devel \
+    mingw-w64-x86_64-toolchain \
+    mingw-w64-x86_64-python3 \
+    mingw-w64-x86_64-python3-pip \
+    mingw-w64-x86_64-python3-gobject';
+
+RUN C:\msys64\usr\bin\env MSYSTEM=MINGW64 /usr/bin/bash -lc 'pip3 install \
+    sphinx \
+    sphinx_rtd_theme \
+    coverage \
+    pylint';
