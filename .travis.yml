@@ -5,7 +5,7 @@ sudo: required
 
 env:
   - DOCKER_FILE=".travis/Dockerfile.fedora-rawhide"
-  - DOCKER_FILE=".travis/Dockerfile.centos-latest"
+  - DOCKER_FILE=".travis/Dockerfile.centos-stream-8"
 
 before_install:
   # Create a docker image called "myimage".
