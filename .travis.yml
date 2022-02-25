@@ -7,6 +7,7 @@ env:
   - DOCKER_FILE=".travis/Dockerfile.fedora-rawhide"
   - DOCKER_FILE=".travis/Dockerfile.centos-stream-8"
   - DOCKER_FILE=".travis/Dockerfile.centos-stream-9"
+  - DOCKER_FILE=".travis/Dockerfile.ubuntu-devel"
 
 before_install:
   # Create a docker image called "myimage".
