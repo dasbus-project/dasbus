@@ -83,17 +83,17 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
         class IsMethodClass(object):
 
             def Test1(self, a: Int):
-                pass
+                pass  # pragma: no cover
 
             Test2 = None
 
             @property
             def Test3(self):
-                return None
+                return None  # pragma: no cover
 
             @dbus_signal
             def Test4(self):
-                pass
+                pass  # pragma: no cover
 
         self.assertTrue(self.generator._is_method(IsMethodClass.Test1))
         self.assertFalse(self.generator._is_method(IsMethodClass.Test2))
@@ -106,28 +106,28 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
         class InvalidMethodClass(object):
 
             def Test1(self, a):
-                pass
+                pass  # pragma: no cover
 
             def Test2(self, a=None):
-                pass
+                pass  # pragma: no cover
 
             def Test3(self, a, b):
-                pass
+                pass  # pragma: no cover
 
             def Test4(self, a: Int, b: Str, c):
-                pass
+                pass  # pragma: no cover
 
             def Test5(self, a: Int, b: Str, c) -> Int:
-                pass
+                pass  # pragma: no cover
 
             def Test6(self, *arg):
-                pass
+                pass  # pragma: no cover
 
             def Test7(self, **kwargs):
-                pass
+                pass  # pragma: no cover
 
             def Test8(self, a: Int, b: Double, *, c, d=None):
-                pass
+                pass  # pragma: no cover
 
         self._check_invalid_method(
             InvalidMethodClass.Test1,
@@ -176,16 +176,16 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
         class MethodClass(object):
 
             def Method1(self):
-                pass
+                pass  # pragma: no cover
 
             def Method2(self, x: Int):
-                pass
+                pass  # pragma: no cover
 
             def Method3(self) -> Int:
-                pass
+                pass  # pragma: no cover
 
             def Method4(self, x: List[Double], y: UnixFD) -> Tuple[Int, Bool]:
-                return 0, True
+                return 0, True  # pragma: no cover
 
         expected_xml = '''
         <node>
@@ -216,19 +216,19 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
 
             @property
             def Property1(self) -> Int:
-                return 1
+                return 1  # pragma: no cover
 
             def _get_property2(self):
-                return 2
+                return 2  # pragma: no cover
 
             Property2 = property(fget=_get_property2)
 
             def Property3(self) -> Int:
-                return 3
+                return 3  # pragma: no cover
 
             @dbus_signal
             def Property4(self):
-                pass
+                pass  # pragma: no cover
 
         self.assertTrue(self.generator._is_property(
             IsPropertyClass.Property1
@@ -250,15 +250,15 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
         class ReadWritePropertyClass(object):
 
             def __init__(self):
-                self._property = 0
+                self._property = 0  # pragma: no cover
 
             @property
             def Property(self) -> Int:
-                return self._property
+                return self._property  # pragma: no cover
 
             @Property.setter
             def Property(self, value: Int):
-                self._property = value
+                self._property = value  # pragma: no cover
 
         expected_xml = '''
         <node>
@@ -280,7 +280,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
 
             @property
             def NoHintProperty(self):
-                return 1
+                return 1  # pragma: no cover
 
         with self.assertRaises(DBusSpecificationError) as cm:
             self.generator._generate_property(
@@ -311,11 +311,11 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
         class ReadonlyPropertyClass(object):
 
             def __init__(self):
-                self._property = 0
+                self._property = 0  # pragma: no cover
 
             @property
             def Property(self) -> Int:
-                return self._property
+                return self._property  # pragma: no cover
 
         expected_xml = '''
         <node>
@@ -335,10 +335,10 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
         class WriteonlyPropertyClass(object):
 
             def __init__(self):
-                self._property = 0
+                self._property = 0  # pragma: no cover
 
             def set_property(self, x: Int):
-                self._property = x
+                self._property = x  # pragma: no cover
 
             Property = property(fset=set_property)
 
@@ -360,20 +360,20 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
 
             @dbus_signal
             def Signal1(self):
-                pass
+                pass  # pragma: no cover
 
             @dbus_signal
             def Signal2(self, x: Int, y: Double):
-                pass
+                pass  # pragma: no cover
 
             Signal3 = dbus_signal()
 
             def Signal4(self):
-                pass
+                pass  # pragma: no cover
 
             @property
             def Signal5(self):
-                return None
+                return None  # pragma: no cover
 
             Signal6 = None
 
@@ -411,7 +411,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
             @dbus_signal
             def SomethingHappened(self):
                 """Signal that something happened."""
-                pass
+                pass  # pragma: no cover
 
             @dbus_signal
             def SignalSomething(self, x: Int, y: Str):
@@ -421,9 +421,9 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
                 :param x: Parameter x.
                 :param y: Parameter y
                 """
-                pass
+                pass  # pragma: no cover
 
-            def _emit_signals(self):
+            def _emit_signals(self):  # pragma: no cover
                 self.SomethingHappened.emit()  # pylint: disable=no-member
                 self.SignalSomething.emit(0, "Something!")
 
@@ -449,11 +449,11 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
 
             @dbus_signal
             def Signal1(self, x):
-                pass
+                pass  # pragma: no cover
 
             @dbus_signal
             def Signal2(self) -> Int:
-                return 1
+                return 1  # pragma: no cover
 
         with self.assertRaises(DBusSpecificationError) as cm:
             self.generator._generate_signal(
@@ -484,42 +484,42 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
         class AClass(object):
 
             def MethodA1(self, x: Int) -> Double:
-                return x + 1.0
+                return x + 1.0  # pragma: no cover
 
             def MethodA2(self) -> Bool:
-                return False
+                return False  # pragma: no cover
 
             def MethodA3(self, x: List[Int]):
-                pass
+                pass  # pragma: no cover
 
         class BClass(AClass):
 
             def MethodA1(self, x: Int) -> Double:
-                return x + 2.0
+                return x + 2.0  # pragma: no cover
 
             def MethodB1(self) -> Str:
-                return ""
+                return ""  # pragma: no cover
 
         @dbus_interface("C")
         class CClass(object):
 
             def MethodC1(self) -> Tuple[Int, Int]:
-                return 1, 2
+                return 1, 2  # pragma: no cover
 
             def MethodC2(self, x: Double):
-                pass
+                pass  # pragma: no cover
 
         @dbus_interface("D")
         class DClass(BClass, CClass):
 
             def MethodD1(self) -> Tuple[Int, Str]:
-                return 0, ""
+                return 0, ""  # pragma: no cover
 
             def MethodA3(self, x: List[Int]):
-                pass
+                pass  # pragma: no cover
 
             def MethodC2(self, x: Double):
-                pass
+                pass  # pragma: no cover
 
         expected_xml = '''
         <node>
@@ -564,21 +564,21 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
         class ComplexClassA(object):
 
             def __init__(self):
-                self.a = 1
+                self.a = 1  # pragma: no cover
 
             @dbus_signal
             def SignalA(self, x: Int):
-                pass
+                pass  # pragma: no cover
 
             @property
             def PropertyA(self) -> Double:
-                return self.a + 2.5
+                return self.a + 2.5  # pragma: no cover
 
             def MethodA(self) -> Int:
-                return self.a
+                return self.a  # pragma: no cover
 
             def _methodA(self):
-                return None
+                return None  # pragma: no cover
 
         expected_xml = '''
         <node>
@@ -600,26 +600,26 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
         @dbus_interface("ComplexB")
         class ComplexClassB(ComplexClassA):
 
-            def __init__(self):
+            def __init__(self):  # pragma: no cover
                 super().__init__()
                 self.b = 2.0
 
             @dbus_signal
             def SignalB(self, x: Bool, y: Double, z: Tuple[Int, Int]):
-                pass
+                pass  # pragma: no cover
 
             @property
             def PropertyB(self) -> Double:
-                return self.b
+                return self.b  # pragma: no cover
 
             def MethodA(self) -> Int:
-                return int(self.b)
+                return int(self.b)  # pragma: no cover
 
             def MethodB(self, a: Str, b: List[Double], c: Int) -> Int:
-                return int(self.b)
+                return int(self.b)  # pragma: no cover
 
             def _methodB(self, x: Bool):
-                pass
+                pass  # pragma: no cover
 
         expected_xml = '''
         <node>
@@ -656,7 +656,7 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
         class ComplexClassC(ComplexClassB):
 
             def MethodB(self, a: Str, b: List[Double], c: Int) -> Int:
-                return 1
+                return 1  # pragma: no cover
 
         expected_xml = '''
         <node>
@@ -697,19 +697,19 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
 
             @property
             def Property(self) -> Int:
-                return 1
+                return 1  # pragma: no cover
 
             def Method(self):
-                pass
+                pass  # pragma: no cover
 
             def Ping(self):
                 # This method shouldn't be part of the interface
-                pass
+                pass  # pragma: no cover
 
             @dbus_signal
             def PropertiesChanged(self, a, b, c):
                 # This signal shouldn't be part of the interface
-                pass
+                pass  # pragma: no cover
 
         expected_xml = '''
         <node>
@@ -731,19 +731,19 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
 
             @accepts_additional_arguments
             def Method1(self, **info):
-                pass
+                pass  # pragma: no cover
 
             @accepts_additional_arguments
             def Method2(self, x: Int, **info):
-                pass
+                pass  # pragma: no cover
 
             @accepts_additional_arguments
             def Method3(self, *, call_info):
-                pass
+                pass  # pragma: no cover
 
             @accepts_additional_arguments
             def Method4(self, x: Int, *, call_info):
-                pass
+                pass  # pragma: no cover
 
         expected_xml = '''
         <node>
@@ -771,19 +771,19 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
 
             @returns_multiple_arguments
             def Method1(self):
-                pass
+                pass  # pragma: no cover
 
             @returns_multiple_arguments
             def Method2(self) -> None:
-                pass
+                pass  # pragma: no cover
 
             @returns_multiple_arguments
             def Method3(self) -> Tuple[Int, Bool, Str]:
-                pass
+                pass  # pragma: no cover
 
             @returns_multiple_arguments
             def Method4(self) -> Tuple[Tuple[Int], List[Str]]:
-                pass
+                pass  # pragma: no cover
 
         expected_xml = '''
         <node>
@@ -813,19 +813,19 @@ class InterfaceGeneratorTestCase(unittest.TestCase):
 
             @returns_multiple_arguments
             def Method1(self) -> Int:
-                pass
+                pass  # pragma: no cover
 
             @returns_multiple_arguments
             def Method2(self) -> List[Bool]:
-                pass
+                pass  # pragma: no cover
 
             @returns_multiple_arguments
             def Method3(self) -> Dict[Str, Bool]:
-                pass
+                pass  # pragma: no cover
 
             @returns_multiple_arguments
             def Method4(self) -> Tuple[Int]:
-                pass
+                pass  # pragma: no cover
 
         self._check_invalid_method(
             InvalidOutputArgumentsClass.Method1,
