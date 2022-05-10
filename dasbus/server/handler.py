@@ -165,7 +165,9 @@ class GLibServer(object):
         return get_variant(out_type, out_value)
 
 class GLibServerUnix(GLibServer):
-    """The low-level DBus server library based on GLib. Adds Unix FD Support to base class"""
+    """The low-level DBus server library based on GLib.
+
+    Adds Unix FD Support to base class"""
 
     @classmethod
     def set_call_reply(cls, invocation, out_type, out_value):

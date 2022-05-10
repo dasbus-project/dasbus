@@ -164,14 +164,14 @@ class DBusTestCase(unittest.TestCase):
 
     TIMEOUT = 3
 
-    def setUp(self, proxy_args={}, server_args={}):
+    def setUp(self, proxy_args=None, server_args=None):
         self.bus = None
         self.message_bus = None
         self.service = None
         self.clients = []
         self.maxDiff = None
-        self.proxy_args = proxy_args
-        self.server_args = server_args
+        self.proxy_args = {} if proxy_args is None else proxy_args
+        self.server_args = {} if server_args is None else server_args
 
     def tearDown(self):
         if self.message_bus:
