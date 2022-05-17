@@ -752,8 +752,9 @@ class DBusForkedTestCase(DBusTestCase):
         def fdtest_async(n):
             def fun():
                 result = [False]
-                def callback(fd):
-                    with open(os.dup(fd()), "rb", closefd=True) as ifile:
+                def callback(fd_getter):
+                    fd = fd_getter()
+                    with open(os.dup(fd), "rb", closefd=True) as ifile:
                         buf = ifile.read()
                         #can't use an assert here, because we're in
                         #another address space, so return a boolean to get
@@ -811,16 +812,15 @@ class DBusForkedTestCase(DBusTestCase):
 
                     a = 'Goodbye, {0}!'.format(n)
                     b = buf.decode(encoding='utf-8')
-
                     return a == b
             return fun
 
         def fd_test_async(n):
             def fun():
-                result = False
+                result = [False]
                 proxy = self._get_proxy()
-
-                def complete(fd):
+                def complete(fd_getter):
+                    fd = fd_getter()
                     self.assertGreater(fd, 0)
                     with open(os.dup(fd), 'rb', closefd=True) as rfd:
                         buf = rfd.read()
@@ -828,9 +828,10 @@ class DBusForkedTestCase(DBusTestCase):
                         a = 'Goodbye, {0}!'.format(n)
                         b = buf.decode(encoding='utf-8')
 
-                        result = a == b
+                        result[0] = a == b
 
                 proxy.GoodbyeFD(n, callback=complete)
+
                 self._run_service()
 
                 return result
@@ -844,4 +845,3 @@ class DBusForkedTestCase(DBusTestCase):
         for test in tests:
             self._add_client(test)
         self._run_test()
-
