@@ -135,6 +135,13 @@ class ExampleInterface(object):
             out = os.dup(o.fileno())
         return out
 
+    def GoodbyeFD(self, name: Str) -> UnixFD:
+        with tempfile.TemporaryFile(mode='wb', buffering=0, prefix=name) as o:
+            o.write('Goodbye, {0}!'.format(name).encode('utf-8'))
+            o.seek(0)
+            out = os.dup(o.fileno())
+        return out
+
     @dbus_signal
     def Knocked(self):
         pass
@@ -245,6 +252,10 @@ class DBusThreadedTestCase(DBusTestCase):
             <method name="GetInfo">
               <arg direction="in" name="arg" type="s"></arg>
               <arg direction="out" name="return" type="s"></arg>
+            </method>
+            <method name="GoodbyeFD">
+              <arg direction="in" name="name" type="s"></arg>
+              <arg direction="out" name="return" type="h"></arg>
             </method>
             <method name="Hello">
               <arg direction="in" name="name" type="s"></arg>
@@ -712,6 +723,7 @@ class DBusForkedTestCase(DBusTestCase):
         """Call a DBus method, passing and returning UnixFD handles"""
         self._set_service(ExampleInterface())
         self.assertEqual(self.service._names, [])
+        self.assertEqual(self.clients, [])
 
         def fdtest(n):
 
@@ -780,3 +792,56 @@ class DBusForkedTestCase(DBusTestCase):
 
         self.assertEqual(sorted(self.service._names),
                          ["BarAsyncFD", "BarFD", "FooAsyncFD", "FooFD"])
+
+    def test_goodbye_fd(self):
+        """Test that a valid UnixFD can be returned when not also passing one"""
+
+        self._set_service(ExampleInterface())
+        self.assertEqual(self.service._names, [])
+
+        def fd_test(n):
+            def fun():
+                proxy = self._get_proxy()
+
+                fd = proxy.GoodbyeFD(n)
+                self.assertGreater(fd, 0)
+
+                with open(os.dup(fd), "rb", closefd=True) as rfd:
+                    buf = rfd.read()
+
+                    a = 'Goodbye, {0}!'.format(n)
+                    b = buf.decode(encoding='utf-8')
+
+                    return a == b
+            return fun
+
+        def fd_test_async(n):
+            def fun():
+                result = False
+                proxy = self._get_proxy()
+
+                def complete(fd):
+                    self.assertGreater(fd, 0)
+                    with open(os.dup(fd), 'rb', closefd=True) as rfd:
+                        buf = rfd.read()
+
+                        a = 'Goodbye, {0}!'.format(n)
+                        b = buf.decode(encoding='utf-8')
+
+                        result = a == b
+
+                proxy.GoodbyeFD(n, callback=complete)
+                self._run_service()
+
+                return result
+            return fun
+
+        tests = [ fd_test('FooFD'),
+                  fd_test('BarFD'),
+                  fd_test_async('AsyncFooFD'),
+                  fd_test_async('AsyncBarFD')]
+
+        for test in tests:
+            self._add_client(test)
+        self._run_test()
+
