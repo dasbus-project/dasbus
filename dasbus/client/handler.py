@@ -57,7 +57,7 @@ class GLibClient(object):
 
         :return: a result of the DBus call
         """
-        return (connection.call_sync(
+        return connection.call_sync(
             service_name,
             object_path,
             interface_name,
@@ -67,7 +67,7 @@ class GLibClient(object):
             flags,
             timeout,
             None
-        ),)
+        )
 
     @classmethod
     def async_call(cls, connection, service_name, object_path, interface_name,
@@ -174,37 +174,27 @@ class GLibClientUnix(GLibClient):
 
         :return: a result of the DBus call
         """
+        params = parameters
+        fds = None
         if parameters:
             params, fdlist = variant_replace_handles_with_fdlist_indices(
                 parameters)
-        else:
-            fdlist = []
-        if len(fdlist) > 0:
-            ret =  connection.call_with_unix_fd_list_sync(
-                service_name,
-                object_path,
-                interface_name,
-                method_name,
-                params,
-                reply_type,
-                flags,
-                timeout,
-                Gio.UnixFDList.new_from_array(fdlist),
-                None
-            )
-            return ret
-        else:
-            return (connection.call_sync(
-                service_name,
-                object_path,
-                interface_name,
-                method_name,
-                parameters,
-                reply_type,
-                flags,
-                timeout,
-                None
-            ),)
+            if fdlist:
+                fds = Gio.UnixFDList.new_from_array(fdlist)
+
+        ret = connection.call_with_unix_fd_list_sync(
+            service_name,
+            object_path,
+            interface_name,
+            method_name,
+            params,
+            reply_type,
+            flags,
+            timeout,
+            fds,
+            None
+        )
+        return ret
 
     @classmethod
     def async_call(cls, connection, service_name, object_path, interface_name,
@@ -212,38 +202,28 @@ class GLibClientUnix(GLibClient):
                    callback_args=(), flags=DBUS_FLAG_NONE,
                    timeout=GLibClient.DBUS_TIMEOUT_NONE):
         """Asynchronously call a DBus method."""
+        params = parameters
+        fds = None
         if parameters:
             params, fdlist = variant_replace_handles_with_fdlist_indices(
                 parameters)
-        else:
-            fdlist = []
-        if len(fdlist) > 0:
-            connection.call_with_unix_fd_list(
-                service_name,
-                object_path,
-                interface_name,
-                method_name,
-                params,
-                reply_type,
-                flags,
-                timeout,
-                Gio.UnixFDList.new_from_array(fdlist),
-                callback=cls._async_call_finish,
-                user_data=(callback, callback_args)
-            )
-        else:
-            connection.call(
-                service_name,
-                object_path,
-                interface_name,
-                method_name,
-                parameters,
-                reply_type,
-                flags,
-                timeout,
-                callback=cls._async_call_finish,
-                user_data=(callback, callback_args)
-            )
+
+            if fdlist:
+                fds = Gio.UnixFDList.new_from_array(fdlist)
+
+        connection.call_with_unix_fd_list(
+            service_name,
+            object_path,
+            interface_name,
+            method_name,
+            params,
+            reply_type,
+            flags,
+            timeout,
+            fds,
+            callback=cls._async_call_finish,
+            user_data=(callback, callback_args)
+        )
 
     @classmethod
     def _async_call_finish(cls, source_object, result_object, user_data):
@@ -569,6 +549,9 @@ class ClientObjectHandler(AbstractClientObjectHandler):
         """
         try:
             result = call(*args, **kwargs)
+            if type(result) == GLib.Variant:
+                return self._handle_method_result(result)
+
             return self._handle_method_result(*result)
         except Exception as error:  # pylint: disable=broad-except
             return self._handle_method_error(error)
