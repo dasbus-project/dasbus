@@ -1,5 +1,5 @@
 FROM debian:latest
-ENV LANG C.utf8
+ENV LANG=C.utf8
 
 RUN apt-get update && \
     apt-get install -y \

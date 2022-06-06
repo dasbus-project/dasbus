@@ -1,5 +1,5 @@
 FROM registry.fedoraproject.org/fedora:rawhide
-ENV LANG C.utf8
+ENV LANG=C.utf8
 
 RUN dnf -y update; \
     dnf -y install \
