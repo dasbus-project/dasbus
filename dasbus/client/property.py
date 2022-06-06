@@ -40,7 +40,7 @@ class PropertyProxy(object):
 
     def get(self):
         """Get the value of the DBus property."""
-        return self.__get__(None, None)
+        return self.__get__(None, None)  # pylint: disable=unnecessary-dunder-call
 
     def __get__(self, instance, owner):
         if instance is None and owner:
@@ -55,7 +55,7 @@ class PropertyProxy(object):
 
     def set(self, value):
         """Set the value of the DBus property."""
-        return self.__set__(None, value)
+        return self.__set__(None, value)  # pylint: disable=unnecessary-dunder-call
 
     def __set__(self, instance, value):
         if not self._setter:

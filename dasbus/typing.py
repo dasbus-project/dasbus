@@ -415,7 +415,7 @@ def array_replace_handles_with_fdlist_indices(e, typestring, fdlist):
             if typestring[1] == 'v':
                 p = variant_replace_handles_with_fdlist_indices(
                     f, fdlist)
-                newlist[j], fdlist = p
+                newlist[j], fdlist = p  # pylint: disable=unnecessary-list-index-lookup
             else:
                 nv = get_variant(typestring[1:], f)
                 p = variant_replace_handles_with_fdlist_indices(
