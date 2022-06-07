@@ -1,5 +1,5 @@
 FROM quay.io/centos/centos:stream9
-ENV LANG C.utf8
+ENV LANG=C.utf8
 
 RUN yum -y update; \
     yum -y install \

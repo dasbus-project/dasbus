@@ -1,5 +1,8 @@
 FROM quay.io/centos/centos:stream8
-ENV LANG C.utf8
+ENV LANG=C.utf8
+
+# The pylintrc file is no longer compatible with older pylint.
+ENV CHECK_ARGS="--disable=no-self-use,bad-option-value"
 
 RUN yum -y update; \
     yum -y install \

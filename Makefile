@@ -29,6 +29,9 @@ CI_CMD?=make ci
 # Arguments used for setup.py call for creating archive
 BUILD_ARGS ?= sdist bdist_wheel
 
+# Arguments used by pylint for checking the code.
+CHECK_ARGS ?=
+
 .PHONY: clean
 clean:
 	git clean -fdx
@@ -47,7 +50,7 @@ ci:
 .PHONY: check
 check:
 	@echo "*** Running pylint ***"
-	$(PYTHON) -m pylint dasbus/ tests/
+	$(PYTHON) -m pylint $(CHECK_ARGS) dasbus/ tests/
 
 .PHONY: test
 test:
