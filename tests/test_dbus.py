@@ -283,6 +283,27 @@ class DBusTestCase(unittest.TestCase):
 
         self.assertEqual(sorted(self.service._names), ["Bar", "Foo"])
 
+    def test_timeout(self):
+        """Call a DBus method with a timeout."""
+        self._set_service(ExampleInterface())
+        self.assertEqual(self.service._names, [])
+
+        def test1():
+            proxy = self._get_proxy()
+            proxy.Hello("Foo", timeout=1000)
+
+        def test2():
+            proxy = self._get_proxy()
+
+            with self.assertRaises(TimeoutError):
+                proxy.Hello("Bar", timeout=0)
+
+        self._add_client(test1)
+        self._add_client(test2)
+        self._run_test()
+
+        self.assertEqual(sorted(self.service._names), ["Bar", "Foo"])
+
     def test_name(self):
         """Use a DBus read-only property."""
         self._set_service(ExampleInterface())

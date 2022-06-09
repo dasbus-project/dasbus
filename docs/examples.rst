@@ -129,6 +129,17 @@ mapper to transform Python exceptions to DBus errors and back.
     class InvalidArgs(DBusError):
         pass
 
+Call DBus methods with a timeout (specified in milliseconds).
+
+.. code-block:: python
+
+    proxy = NETWORK_MANAGER.get_proxy()
+
+    try:
+        proxy.CheckConnectivity(timeout=3)
+    except TimeoutError:
+        print("The call timed out!")
+
 Call DBus methods asynchronously.
 
 .. code-block:: python
