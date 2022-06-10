@@ -87,6 +87,3 @@ What is the same (for now)
 * No support for org.freedesktop.DBus.ObjectManager: There is no support for object managers,
   however the :class:`DBus containers <dasbus.server.container.DBusContainer>` could be a good
   starting point.
-
-* No support for Unix file descriptors: It is not possible to send or receive Unix file
-  descriptors.
