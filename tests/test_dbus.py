@@ -157,14 +157,14 @@ class DBusTestCase(unittest.TestCase):
 
     TIMEOUT = 3
 
-    def setUp(self, proxy_args=None, server_args=None):
+    def setUp(self):
         self.bus = None
         self.message_bus = None
         self.service = None
         self.clients = []
         self.maxDiff = None
-        self.proxy_args = {} if proxy_args is None else proxy_args
-        self.server_args = {} if server_args is None else server_args
+        self.server_args = {}
+        self.client_args = {}
 
     def tearDown(self):
         if self.message_bus:
@@ -180,7 +180,7 @@ class DBusTestCase(unittest.TestCase):
             "my.testing.Example",
             "/my/testing/Example",
             interface_name=interface_name,
-            **self.proxy_args
+            **self.client_args
         )
 
     def _run_test(self):
@@ -695,8 +695,9 @@ class DBusForkedTestCase(DBusTestCase):
     """Test DBus support with a real DBus connection."""
 
     def setUp(self):
-        super().setUp(server_args={"server": GLibServerUnix},
-                      proxy_args={"client": GLibClientUnix})
+        super().setUp()
+        self.server_args = {"server": GLibServerUnix}
+        self.client_args = {"client": GLibClientUnix}
 
     def test_xml_specification(self):
         """Test the generated specification."""
