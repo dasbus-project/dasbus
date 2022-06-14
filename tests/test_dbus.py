@@ -17,6 +17,7 @@
 # USA
 #
 import unittest
+from textwrap import dedent
 from unittest import mock
 from unittest.mock import Mock
 
@@ -167,6 +168,7 @@ class ExampleInterface(object):
     def ReturnArgs(self) -> Tuple[Int, Bool, Str]:
         return 0, False, "zero"
 
+
 class DBusTestCase(unittest.TestCase):
     """Test DBus support with a real DBus connection."""
 
@@ -219,6 +221,7 @@ class DBusTestCase(unittest.TestCase):
     @run_in_glib(TIMEOUT)
     def _run_service(self):
         return True
+
 
 class DBusThreadedTestCase(DBusTestCase):
     """Test DBus support with a real DBus connection."""
@@ -294,8 +297,6 @@ class DBusThreadedTestCase(DBusTestCase):
             XMLGenerator.prettify_xml(generated_xml)
         )
 
-
-
     def test_knock(self):
         """Call a simple DBus method."""
         self._set_service(ExampleInterface())
@@ -327,8 +328,7 @@ class DBusThreadedTestCase(DBusTestCase):
         self._add_client(test2)
         self._run_test()
 
-        self.assertEqual(sorted(self.service._names),
-                         ["Bar", "Foo"])
+        self.assertEqual(sorted(self.service._names), ["Bar", "Foo"])
 
     def test_timeout(self):
         """Call a DBus method with a timeout."""
@@ -681,6 +681,7 @@ class DBusThreadedTestCase(DBusTestCase):
         self._add_client(test1)
         self._run_test()
 
+
 class DBusForkedTestCase(DBusTestCase):
     """Test DBus support with a real DBus connection."""
 
@@ -694,16 +695,18 @@ class DBusForkedTestCase(DBusTestCase):
     def _run_test(self):
         proc = []
         for func, name in self.clients:
-            cmd = f"""
-from tests.test_dbus import {func}
-import sys
-addr=sys.stdin.readline()
-exit({func}(addr, "{name}"))
-"""
+            cmd = dedent(f"""
+            from tests.test_dbus import {func}
+            import sys
+            addr=sys.stdin.readline()
+            exit({func}(addr, "{name}"))
+            """)
+
             # pylint: disable=R1732
             proc.append(subprocess.Popen(
                 [sys.executable, "-u", "-c", cmd],
                 stdin=subprocess.PIPE))
+
         self.bus = Gio.TestDBus()
         self.bus.up()
 
@@ -724,19 +727,19 @@ exit({func}(addr, "{name}"))
             "my.testing.Example"
         )
 
-
         for client in proc:
             client.stdin.write(bytes(busaddr + "\n", "utf-8"))
             client.stdin.close()
+
         self.assertTrue(self._run_service())
 
         for client in proc:
             client.wait(4)
+
         self.message_bus.disconnect()
         self.message_bus = None
         self.bus.down()
         self.bus = None
-
 
     def test_hello_fd(self):
         """Call a DBus method, passing and returning UnixFD handles"""
@@ -745,11 +748,8 @@ exit({func}(addr, "{name}"))
         self.assertEqual(self.clients, [])
 
         test1 = ("_hello_fdtest", "FooFD")
-
         test2 = ("_hello_fdtest", "BarFD")
-
         test3 = ("_hello_fdtest_async", "FooAsyncFD")
-
         test4 = ("_hello_fdtest_async", "BarAsyncFD")
 
         self._add_client(*test1)
@@ -758,24 +758,27 @@ exit({func}(addr, "{name}"))
         self._add_client(*test4)
         self._run_test()
 
-        self.assertEqual(sorted(self.service._names),
-                         ["BarAsyncFD", "BarFD", "FooAsyncFD", "FooFD"])
+        self.assertEqual(
+            sorted(self.service._names),
+            ["BarAsyncFD", "BarFD", "FooAsyncFD", "FooFD"]
+        )
 
     def test_goodbye_fd(self):
-        """
-Test that a valid UnixFD can be
-returned when not also passing one"""
-
+        """Test that a valid UnixFD can be
+        returned when not also passing one."""
         self._set_service(ExampleInterface())
         self.assertEqual(self.service._names, [])
 
-        tests = [ ("_goodbye_fd_test", 'FooFD'),
-                  ("_goodbye_fd_test", 'BarFD'),
-                  ("_goodbye_fd_test_async", 'AsyncFooFD'),
-                  ("_goodbye_fd_test_async", 'AsyncBarFD')]
+        tests = [
+            ("_goodbye_fd_test", 'FooFD'),
+            ("_goodbye_fd_test", 'BarFD'),
+            ("_goodbye_fd_test_async", 'AsyncFooFD'),
+            ("_goodbye_fd_test_async", 'AsyncBarFD')
+        ]
 
         for test in tests:
             self._add_client(*test)
+
         self._run_test()
 
 
@@ -799,6 +802,7 @@ def _goodbye_fd_test(addr, n):
         b = buf.decode(encoding='utf-8')
         return a == b
 
+
 def _goodbye_fd_test_async(addr, n):
     result = [False]
     message_bus = AddressedMessageBus(
@@ -811,6 +815,7 @@ def _goodbye_fd_test_async(addr, n):
         interface_name="my.testing.Example",
         client=GLibClientUnix
     )
+
     def complete(fd_getter):
         fd = fd_getter()
         with open(os.dup(fd), 'rb', closefd=True) as rfd:
@@ -822,11 +827,8 @@ def _goodbye_fd_test_async(addr, n):
             result[0] = a == b
 
     proxy.GoodbyeFD(n, callback=complete)
-
     loop = EventLoop()
-
     GLib.timeout_add_seconds(3, lambda x: loop.quit(), loop)
-
     loop.run()
     return result
 
@@ -849,18 +851,20 @@ def _hello_fdtest(addr, n):
         otmp.write(n.encode("utf-8"))
         otmp.seek(0)
 
-        #closefd=False here because passing a
-        #file descriptor to dbus closes it
+        # closefd=False here because passing a
+        # file descriptor to dbus closes it
         with open(os.dup(otmp.fileno()), "rb", closefd=False) as o:
             i = proxy.HelloFD(UnixFD(o.fileno()))
+
             with open(os.dup(i), "rb", closefd=True) as ifile:
                 buf = ifile.read()
-                #can't use an assert here, because we're in
-                #another address space, so return a boolean to get
-                #communicated back to the server
+                # can't use an assert here, because we're in
+                # another address space, so return a boolean to get
+                # communicated back to the server
                 a = "Hello, {0}!".format(n)
                 b = buf.decode("utf-8")
                 return a == b
+
 
 def _hello_fdtest_async(addr, n):
     result = [False]
@@ -874,13 +878,14 @@ def _hello_fdtest_async(addr, n):
         interface_name="my.testing.Example",
         client=GLibClientUnix
     )
+
     def callback(fd_getter):
         fd = fd_getter()
         with open(os.dup(fd), "rb", closefd=True) as ifile:
             buf = ifile.read()
-            #can't use an assert here, because we're in
-            #another address space, so return a boolean to get
-            #communicated back to the server
+            # can't use an assert here, because we're in
+            # another address space, so return a boolean to get
+            # communicated back to the server
             r = "Hello, {0}!".format(n) == buf.decode("utf-8")
             result[0] = r
 
@@ -890,8 +895,8 @@ def _hello_fdtest_async(addr, n):
         otmp.write(n.encode("utf-8"))
         otmp.seek(0)
 
-        #closefd=False here because passing a
-        #file descriptor to dbus closes it
+        # closefd=False here because passing a
+        # file descriptor to dbus closes it
         with open(os.dup(otmp.fileno()), "rb", closefd=False) as o:
             proxy.HelloFD(UnixFD(o.fileno()), callback=callback)
             loop = EventLoop()
