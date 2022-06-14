@@ -271,12 +271,13 @@ class MessageBus(AbstractMessageBus):
     # pylint: disable=arguments-differ
     def publish_object(self, object_path, obj,
                        server_factory=ServerObjectHandler,
-                       **server_factory_kwargs):
+                       **server_arguments):
         """Publish an object on DBus.
 
         :param object_path: a DBus path of an object
         :param obj: an instance of @dbus_interface or @dbus_class
         :param server_factory: a factory of a DBus server object handler
+        :param server_arguments: additional arguments for the server factory
         """
         log.debug("Publishing an object at %s.", object_path)
         object_handler = server_factory(
@@ -284,7 +285,7 @@ class MessageBus(AbstractMessageBus):
             object_path,
             obj,
             error_mapper=self._error_mapper,
-            **server_factory_kwargs
+            **server_arguments
         )
         object_handler.connect_object()
 
