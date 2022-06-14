@@ -408,13 +408,13 @@ class DBusClientTestCase(unittest.TestCase):
             if isinstance(result_object, Exception):
                 raise result_object
 
-            return (result_object,)
+            return result_object
 
         def _callback(finish, *args):
             callback(finish(), *args)
 
         GLibClient._async_call_finish(
-            source_object=Mock(call_with_unix_fd_list_finish=_call_finish),
+            source_object=Mock(call_finish=_call_finish),
             result_object=result,
             user_data=(
                 self.handler._method_callback,

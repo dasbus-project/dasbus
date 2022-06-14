@@ -96,7 +96,7 @@ class GLibClient(object):
 
         # Call user's callback.
         callback(
-            lambda: source_object.call_with_unix_fd_list_finish(result_object),
+            lambda: source_object.call_finish(result_object),
             *callback_args
         )
 
