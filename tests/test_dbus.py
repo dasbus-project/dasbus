@@ -127,23 +127,6 @@ class ExampleInterface(object):
         self.Visited(name)
         return "Hello, {0}!".format(name)
 
-    def HelloFD(self, name: UnixFD) -> UnixFD:
-        with open(os.dup(name), "rb", closefd=True) as ifile:
-            i = ifile.read().decode("utf-8")
-        self._names.append(i)
-        with tempfile.TemporaryFile(mode="wb", buffering=0, prefix=i) as o:
-            o.write("Hello, {0}!".format(i).encode("utf-8"))
-            o.seek(0)
-            out = os.dup(o.fileno())
-        return out
-
-    def GoodbyeFD(self, name: Str) -> UnixFD:
-        with tempfile.TemporaryFile(mode='wb', buffering=0, prefix=name) as o:
-            o.write('Goodbye, {0}!'.format(name).encode('utf-8'))
-            o.seek(0)
-            out = os.dup(o.fileno())
-        return out
-
     @dbus_signal
     def Knocked(self):
         pass
@@ -258,17 +241,9 @@ class DBusThreadedTestCase(DBusTestCase):
               <arg direction="in" name="arg" type="s"></arg>
               <arg direction="out" name="return" type="s"></arg>
             </method>
-            <method name="GoodbyeFD">
-              <arg direction="in" name="name" type="s"></arg>
-              <arg direction="out" name="return" type="h"></arg>
-            </method>
             <method name="Hello">
               <arg direction="in" name="name" type="s"></arg>
               <arg direction="out" name="return" type="s"></arg>
-            </method>
-            <method name="HelloFD">
-              <arg direction="in" name="name" type="h"></arg>
-              <arg direction="out" name="return" type="h"></arg>
             </method>
             <method name="Knock"></method>
             <signal name="Knocked"></signal>
@@ -682,12 +657,73 @@ class DBusThreadedTestCase(DBusTestCase):
         self._run_test()
 
 
+def read_name(fd):
+    """Read a name from the given file descriptor."""
+    with open(os.dup(fd), "rb", closefd=True) as ifile:
+        name = ifile.read().decode("utf-8")
+
+    return name
+
+
+def write_hello(pattern, name):
+    """Write a greeting to the given file descriptor."""
+    with tempfile.TemporaryFile(mode="wb", buffering=0, prefix=name) as o:
+        o.write(pattern.format(name).encode("utf-8"))
+        o.seek(0)
+        out = os.dup(o.fileno())
+
+    return UnixFD(out)
+
+
+@dbus_interface("my.testing.UnixExample")
+class UnixExampleInterface(object):
+    """A DBus interface with UnixFD types."""
+
+    def __init__(self):
+        self._names = []
+
+    def HelloFD(self, name_fd: UnixFD) -> UnixFD:
+        name = read_name(name_fd)
+        self._names.append(name)
+        return write_hello("Hello, {0}!", name)
+
+    def GoodbyeFD(self, name: Str) -> UnixFD:
+        return write_hello("Goodbye, {0}!", name)
+
+
 class DBusForkedTestCase(DBusTestCase):
     """Test DBus support with a real DBus connection."""
 
     def setUp(self):
         super().setUp(server_args={"server": GLibServerUnix},
                       proxy_args={"client": GLibClientUnix})
+
+    def test_xml_specification(self):
+        """Test the generated specification."""
+        self._set_service(UnixExampleInterface())
+
+        expected_xml = '''
+        <node>
+          <!--Specifies UnixExampleInterface-->
+          <interface name="my.testing.UnixExample">
+            <method name="GoodbyeFD">
+              <arg direction="in" name="name" type="s"></arg>
+              <arg direction="out" name="return" type="h"></arg>
+            </method>
+            <method name="HelloFD">
+              <arg direction="in" name="name_fd" type="h"></arg>
+              <arg direction="out" name="return" type="h"></arg>
+            </method>
+          </interface>
+        </node>
+        '''
+
+        generated_xml = self.service.__dbus_xml__
+
+        self.assertEqual(
+            XMLGenerator.prettify_xml(expected_xml),
+            XMLGenerator.prettify_xml(generated_xml)
+        )
 
     def _add_client(self, test_name, test_string):
         self.clients.append([test_name, test_string])
@@ -743,7 +779,7 @@ class DBusForkedTestCase(DBusTestCase):
 
     def test_hello_fd(self):
         """Call a DBus method, passing and returning UnixFD handles"""
-        self._set_service(ExampleInterface())
+        self._set_service(UnixExampleInterface())
         self.assertEqual(self.service._names, [])
         self.assertEqual(self.clients, [])
 
@@ -766,7 +802,7 @@ class DBusForkedTestCase(DBusTestCase):
     def test_goodbye_fd(self):
         """Test that a valid UnixFD can be
         returned when not also passing one."""
-        self._set_service(ExampleInterface())
+        self._set_service(UnixExampleInterface())
         self.assertEqual(self.service._names, [])
 
         tests = [
@@ -790,7 +826,6 @@ def _goodbye_fd_test(addr, n):
     proxy = message_bus.get_proxy(
         "my.testing.Example",
         "/my/testing/Example",
-        interface_name="my.testing.Example",
         client=GLibClientUnix
     )
 
@@ -812,7 +847,6 @@ def _goodbye_fd_test_async(addr, n):
     proxy = message_bus.get_proxy(
         "my.testing.Example",
         "/my/testing/Example",
-        interface_name="my.testing.Example",
         client=GLibClientUnix
     )
 
@@ -841,7 +875,6 @@ def _hello_fdtest(addr, n):
     proxy = message_bus.get_proxy(
         "my.testing.Example",
         "/my/testing/Example",
-        interface_name="my.testing.Example",
         client=GLibClientUnix
     )
 
@@ -875,7 +908,6 @@ def _hello_fdtest_async(addr, n):
     proxy = message_bus.get_proxy(
         "my.testing.Example",
         "/my/testing/Example",
-        interface_name="my.testing.Example",
         client=GLibClientUnix
     )
 
