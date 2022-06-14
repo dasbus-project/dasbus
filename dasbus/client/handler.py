@@ -141,6 +141,12 @@ class GLibClient(object):
         connection.signal_unsubscribe(subscription_id)
 
     @classmethod
+    def is_timeout_error(cls, error):
+        """Is it a timeout error?"""
+        return isinstance(error, GLib.Error) \
+            and error.matches(Gio.io_error_quark(), Gio.IOErrorEnum.TIMED_OUT)
+
+    @classmethod
     def is_remote_error(cls, error):
         """Is it a remote DBus error?"""
         return isinstance(error, GLib.Error) \
@@ -559,22 +565,37 @@ class ClientObjectHandler(AbstractClientObjectHandler):
     def _handle_method_error(self, error):
         """Handle an error of a DBus call.
 
+        If the call returned a DBus error, it will be mapped
+        to a Python exception based on the rules defined in
+        the available error mapper. It should be a subclass
+        of DBusError.
+
         :param error: an exception raised during the call
+        :raise Exception: if the call unexpectedly failed
+        :raise TimeoutError: if the DBus call timed out
+        :raise DBusError: if the call returned a DBus error
         """
-        # Re-raise if it is not a remote DBus error.
-        if not self._client.is_remote_error(error):
-            raise error
+        if self._client.is_remote_error(error):
+            # Handle a remote DBus error.
+            name = self._client.get_remote_error_name(error)
+            cls = self._error_mapper.get_exception_type(name)
+            message = self._client.get_remote_error_message(error)
 
-        name = self._client.get_remote_error_name(error)
-        cls = self._error_mapper.get_exception_type(name)
-        message = self._client.get_remote_error_message(error)
+            # Create a new exception.
+            exception = cls(message)
+            exception.dbus_name = name
 
-        # Create a new exception.
-        exception = cls(message)
-        exception.dbus_name = name
+            # Raise a new instance of the exception class.
+            raise exception from None
 
-        # Raise a new instance of the exception class.
-        raise exception from None
+        if self._client.is_timeout_error(error):
+            # Handle a timeout error.
+            raise TimeoutError(
+                "The DBus call timeout was reached."
+            ) from None
+
+        # Or re-raise the original error.
+        raise error
 
     def _handle_method_result(self, result, fdlist=None):
         """Handle a result of a DBus call.

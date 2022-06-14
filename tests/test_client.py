@@ -30,7 +30,8 @@ from dasbus.typing import get_variant, get_variant_type, VariantType
 
 import gi
 gi.require_version("Gio", "2.0")
-from gi.repository import Gio
+gi.require_version("GLib", "2.0")
+from gi.repository import Gio, GLib
 
 
 class FakeException(Exception):
@@ -229,6 +230,21 @@ class DBusClientTestCase(unittest.TestCase):
             self.proxy.Method1()
 
         self.assertEqual(str(cm.exception), "My message.")
+
+        # Handle timeout exception.
+        self._set_reply(GLib.Error.new_literal(
+            Gio.io_error_quark(),
+            "Timeout was reached",
+            Gio.IOErrorEnum.TIMED_OUT
+        ))
+
+        with self.assertRaises(TimeoutError) as cm:
+            self.proxy.Method1()
+
+        self.assertEqual(
+            str(cm.exception),
+            "The DBus call timeout was reached."
+        )
 
         # Handle local exception.
         self._set_reply(Exception("My message."))
