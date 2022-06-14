@@ -158,17 +158,26 @@ class DBusTestCase(unittest.TestCase):
     TIMEOUT = 3
 
     def setUp(self):
-        self.bus = None
-        self.message_bus = None
         self.service = None
         self.clients = []
         self.maxDiff = None
         self.server_args = {}
         self.client_args = {}
 
+        # Start a testing DBus daemon.
+        self.bus = Gio.TestDBus()
+        self.bus.up()
+
+        # Create a connection to the testing bus.
+        self.message_bus = AddressedMessageBus(
+            self.bus.get_bus_address(),
+            error_mapper=error_mapper
+        )
+
     def tearDown(self):
         if self.message_bus:
             self.message_bus.disconnect()
+
         if self.bus:
             self.bus.down()
 
@@ -208,15 +217,6 @@ class DBusTestCase(unittest.TestCase):
 
 class DBusThreadedTestCase(DBusTestCase):
     """Test DBus support with a real DBus connection."""
-
-    def setUp(self):
-        super().setUp()
-        self.bus = Gio.TestDBus()
-        self.bus.up()
-        self.message_bus = AddressedMessageBus(
-            self.bus.get_bus_address(),
-            error_mapper=error_mapper
-        )
 
     def _add_client(self, client_test):
         thread = Thread(None, client_test)
@@ -744,16 +744,6 @@ class DBusForkedTestCase(DBusTestCase):
                 [sys.executable, "-u", "-c", cmd],
                 stdin=subprocess.PIPE))
 
-        self.bus = Gio.TestDBus()
-        self.bus.up()
-
-        busaddr = self.bus.get_bus_address()
-
-        self.message_bus = AddressedMessageBus(
-            busaddr,
-            error_mapper=error_mapper
-        )
-
         self.message_bus.publish_object(
             "/my/testing/Example",
             self.service,
@@ -764,19 +754,16 @@ class DBusForkedTestCase(DBusTestCase):
             "my.testing.Example"
         )
 
+        address = self.message_bus.address
+
         for client in proc:
-            client.stdin.write(bytes(busaddr + "\n", "utf-8"))
+            client.stdin.write(bytes(address + "\n", "utf-8"))
             client.stdin.close()
 
         self.assertTrue(self._run_service())
 
         for client in proc:
             client.wait(4)
-
-        self.message_bus.disconnect()
-        self.message_bus = None
-        self.bus.down()
-        self.bus = None
 
     def test_hello_fd(self):
         """Call a DBus method, passing and returning UnixFD handles"""
