@@ -56,6 +56,9 @@ __all__ = [
     "is_base_type",
     "get_type_arguments",
     "get_dbus_type",
+    "VariantUnpacking",
+    "VariantUnpacker",
+    "VariantUnwrapper",
 ]
 
 # Basic types.
@@ -446,85 +449,3 @@ class VariantUnwrapper(VariantUnpacking):
         Unpack only the topmost variant.
         """
         return variant.get_variant()
-
-
-class UnixFDSwap(VariantUnpacking):
-    """Class for swapping values of the UnixFD type."""
-
-    @classmethod
-    def apply(cls, variant, swap):
-        """Swap unix file descriptors with indices.
-
-        The provided function should swap a unix file
-        descriptor with an index into an array of unix
-        file descriptors or vice versa.
-
-        :param variant: a variant to modify
-        :param swap: a swapping function
-        :return: a modified variant
-        """
-        return cls._recreate_variant(variant, swap)
-
-    @classmethod
-    def _handle_variant(cls, variant, *extras):
-        """Handle a variant."""
-        return cls._recreate_variant(variant.get_variant(), *extras)
-
-    @classmethod
-    def _handle_value(cls, variant, *extras):
-        """Handle a basic value."""
-        type_string = variant.get_type_string()
-
-        # Handle the unix file descriptor.
-        if type_string == 'h':
-            # Get the swapping function.
-            swap, *_ = extras
-            # Swap the values.
-            return swap(variant.get_handle())
-
-        return variant.unpack()
-
-    @classmethod
-    def _recreate_variant(cls, variant, *extras):
-        """Create a variant with swapped values."""
-        type_string = variant.get_type_string()
-
-        # Do nothing if there is no unix file descriptor to handle.
-        if 'h' not in type_string and 'v' not in type_string:
-            return variant
-
-        # Get a new value of the variant.
-        value = cls._process_variant(variant, *extras)
-
-        # Create a new variant.
-        return get_variant(type_string, value)
-
-
-def variant_replace_handles_with_fdlist_indices(v, fdlist=None):
-    """Given a variant, return a new variant
-    with all 'h' handles replaced with FDlist indices,
-    adding extracted handles to the fdlist passed as an argument.
-
-    FIXME: This is a temporary method. Call UnixFDSwap instead.
-    """
-    indices = fdlist or []
-
-    def get_index(fd_handler):
-        indices.append(fd_handler)
-        return len(indices) - 1
-
-    return UnixFDSwap.apply(v, get_index), indices
-
-
-def variant_replace_fdlist_indices_with_handles(v, fdlist):
-    """Given a varaint and an fdlist, find any 'h' handle instances
-    and replace them with file descriptors that they represent.
-
-    FIXME: This is a temporary method. Call UnixFDSwap instead.
-    """
-    indices = fdlist
-
-    def get_handler(fd_index):
-        return indices[fd_index]
-
-    return UnixFDSwap.apply(v, get_handler)
