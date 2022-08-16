@@ -256,16 +256,21 @@ class DBusTypingTests(unittest.TestCase):
 
 class DBusTypingVariantTests(unittest.TestCase):
 
-    def _test_variant(self, type_hint, expected_string, value):
+    def _test_variant(self, type_hint, expected_string, value,
+                      native_value=None):
         """Create a variant."""
+        # The value is native by default.
+        if native_value is None:
+            native_value = value
+
         # Create a variant from a type hint.
         v1 = get_variant(type_hint, value)
         self.assertTrue(isinstance(v1, Variant))
         self.assertEqual(v1.format_string, expected_string)
 
         # Check unpacking.
-        self.assertEqual(v1.unpack(), value)
-        self.assertEqual(VariantUnpacker.apply(v1), value)
+        self.assertEqual(v1.unpack(), native_value)
+        self.assertEqual(VariantUnpacker.apply(v1), native_value)
 
         # Check unwrapping.
         self.assertEqual(unwrap_variant(v1), value)
@@ -275,9 +280,9 @@ class DBusTypingVariantTests(unittest.TestCase):
         v2 = Variant(expected_string, value)
         self.assertTrue(v2.equal(v1))
 
-        self.assertEqual(get_native(v1), value)
+        self.assertEqual(get_native(v1), native_value)
         self.assertEqual(get_native(v1), get_native(v2))
-        self.assertEqual(get_native(value), value)
+        self.assertEqual(get_native(value), native_value)
 
         # Create a variant from a type string.
         v3 = get_variant(expected_string, value)
@@ -336,6 +341,30 @@ class DBusTypingVariantTests(unittest.TestCase):
 
         self._test_variant(Dict[Str, Int], "a{si}", {"a": 1, "b": 2})
         self._test_variant(Dict[Int, Bool], "a{ib}", {1: True, 2: False})
+
+    def test_variant_variant(self):
+        """Test variants with variant types."""
+        variant = get_variant("i", 1)
+        self._test_variant(Variant, "v", variant, 1)
+
+        variant = get_variant("v", get_variant("i", 1))
+        self._test_variant(Variant, "v", variant, 1)
+
+        variant = get_variant("(b)", (False,))
+        self._test_variant(Variant, "v", variant, (False,))
+
+        variant = get_variant("(v)", (get_variant("b", False),))
+        self._test_variant(Variant, "v", variant, (False,))
+
+        variant = get_variant("ai", [1, 2, 3])
+        self._test_variant(Variant, "v", variant, [1, 2, 3])
+
+        variant = get_variant("av", [
+            get_variant("i", 1),
+            get_variant("i", 2),
+            get_variant("i", 3)
+        ])
+        self._test_variant(Variant, "v", variant, [1, 2, 3])
 
     def test_variant_alias(self):
         """Test variants with type aliases."""
