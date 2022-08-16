@@ -183,40 +183,7 @@ def unwrap_variant(variant):
     :param variant: a variant
     :return: a value
     """
-    type_string = variant.get_type_string()
-
-    # tuple - unwrap items
-    if type_string.startswith('('):
-        return tuple(
-            unwrap_variant(variant.get_child_value(i))
-            for i in range(variant.n_children())
-        )
-
-    # dictionary - unpack keys and unwrap values.
-    if type_string.startswith('a{'):
-        result = {}
-
-        for i in range(variant.n_children()):
-            entry = variant.get_child_value(i)
-            key = entry.get_child_value(0)
-            value = entry.get_child_value(1)
-            result[key.unpack()] = unwrap_variant(value)
-
-        return result
-
-    # array - unwrap values
-    if type_string.startswith('a'):
-        return list(
-            unwrap_variant(variant.get_child_value(i))
-            for i in range(variant.n_children())
-        )
-
-    # variant - unbox a variant
-    if type_string.startswith('v'):
-        return variant.get_variant()
-
-    # basic - unpack a value
-    return variant.unpack()
+    return VariantUnwrapper.apply(variant)
 
 
 def is_base_type(type_hint, base_type):
@@ -376,181 +343,186 @@ class DBusType(object):
                 "'{}'".format(get_type_name(key))
             )
 
-def dictionary_replace_handles_with_fdlist_indices(v, fdlist):
-    typestring = v.get_type_string()
-    newdict = {}
-    keytype=typestring[2]
-    valuetype=typestring[3:-1]
-    e = unwrap_variant(v)
-    for key, value in e.items():
-        #according to the spec, the key is a basic type.
-        #we have to handle the crazy case where somebody
-        #uses a file descriptor as a dictionary key
-        if keytype == 'h':
-            l = len(fdlist)
-            fdlist.append(key)
-            key = l
-        if valuetype == 'h':
-            l = len(fdlist)
-            fdlist.append(value)
-            value = l
-        elif valuetype == 'v':
-            value, fdlist = variant_replace_handles_with_fdlist_indices(
-                value, fdlist)
-        elif not DBusType._is_basic_type(valuetype):
-            value, fdlist = variant_replace_handles_with_fdlist_indices(
-                get_variant(valuetype, value), fdlist)
-            value = unwrap_variant(value)
-        newdict[key] = value
-    return get_variant(typestring, newdict), fdlist
 
-def array_replace_handles_with_fdlist_indices(e, typestring, fdlist):
-    if typestring[1] == '{':
-        nv, fdlist = variant_replace_handles_with_fdlist_indices(
-            get_variant(typestring, e), fdlist)
-        return unwrap_variant(nv), fdlist
-    else:
-        newlist = e.copy()
-        for j, f in enumerate(newlist):
-            if typestring[1] == 'v':
-                p = variant_replace_handles_with_fdlist_indices(
-                    f, fdlist)
-                newlist[j], fdlist = p  # pylint: disable=unnecessary-list-index-lookup
-            else:
-                nv = get_variant(typestring[1:], f)
-                p = variant_replace_handles_with_fdlist_indices(
-                    nv, fdlist)
-                nnv, fdlist = p
-                newlist[j] = unwrap_variant(nnv)
-        return newlist, fdlist
+class VariantUnpacking(object):
+    """Set of functions of unpacking a variant.
+
+    This class is doing the same as the unpack method
+    of the Variant class, but it allows to reuse the code
+    for other variant modifications.
+    """
+
+    @classmethod
+    def _process_variant(cls, variant, *extras):
+        """Process a variant."""
+        type_string = variant.get_type_string()
+
+        if type_string.startswith('('):
+            return cls._handle_tuple(variant, *extras)
+
+        if type_string.startswith('a{'):
+            return cls._handle_dictionary(variant, *extras)
+
+        if type_string.startswith('a'):
+            return cls._handle_array(variant, *extras)
+
+        if type_string.startswith('v'):
+            return cls._handle_variant(variant, *extras)
+
+        return cls._handle_value(variant, *extras)
+
+    @classmethod
+    def _handle_tuple(cls, variant, *extras):
+        """Handle a tuple."""
+        return tuple(
+            cls._process_variant(variant.get_child_value(i), *extras)
+            for i in range(variant.n_children())
+        )
+
+    @classmethod
+    def _handle_dictionary(cls, variant, *extras):
+        """Handle a dictionary."""
+        result = {}
+
+        for i in range(variant.n_children()):
+            entry = variant.get_child_value(i)
+            key = cls._process_variant(entry.get_child_value(0), *extras)
+            value = cls._process_variant(entry.get_child_value(1), *extras)
+            result[key] = value
+
+        return result
+
+    @classmethod
+    def _handle_array(cls, variant, *extras):
+        """Handle an array."""
+        return list(
+            cls._process_variant(variant.get_child_value(i), *extras)
+            for i in range(variant.n_children())
+        )
+
+    @classmethod
+    def _handle_variant(cls, variant, *extras):
+        """Handle a variant."""
+        return cls._process_variant(variant.get_variant(), *extras)
+
+    @classmethod
+    def _handle_value(cls, variant, *extras):
+        """Handle a basic value."""
+        return variant.unpack()
+
+
+class VariantUnpacker(VariantUnpacking):
+    """Class for unpacking variants."""
+
+    @classmethod
+    def apply(cls, variant):
+        """Unpack the specified variant.
+
+        :param variant: a variant to unpack
+        :return: an unpacked value
+        """
+        return cls._process_variant(variant)
+
+
+class VariantUnwrapper(VariantUnpacking):
+    """Class for unwrapping variants."""
+
+    @classmethod
+    def apply(cls, variant):
+        """Unwrap the specified variant.
+
+        :param variant: a variant to unwrap
+        :return: a unwrapped value
+        """
+        return cls._process_variant(variant)
+
+    @classmethod
+    def _handle_variant(cls, variant, *extras):
+        """Handle a variant.
+
+        Don't recursively unpack all variants.
+        Unpack only the topmost variant.
+        """
+        return variant.get_variant()
+
+
+class UnixFDSwap(VariantUnpacking):
+    """Class for swapping values of the UnixFD type."""
+
+    @classmethod
+    def apply(cls, variant, swap):
+        """Swap unix file descriptors with indices.
+
+        The provided function should swap a unix file
+        descriptor with an index into an array of unix
+        file descriptors or vice versa.
+
+        :param variant: a variant to modify
+        :param swap: a swapping function
+        :return: a modified variant
+        """
+        return cls._recreate_variant(variant, swap)
+
+    @classmethod
+    def _handle_variant(cls, variant, *extras):
+        """Handle a variant."""
+        return cls._recreate_variant(variant.get_variant(), *extras)
+
+    @classmethod
+    def _handle_value(cls, variant, *extras):
+        """Handle a basic value."""
+        type_string = variant.get_type_string()
+
+        # Handle the unix file descriptor.
+        if type_string == 'h':
+            # Get the swapping function.
+            swap, *_ = extras
+            # Swap the values.
+            return swap(variant.get_handle())
+
+        return variant.unpack()
+
+    @classmethod
+    def _recreate_variant(cls, variant, *extras):
+        """Create a variant with swapped values."""
+        type_string = variant.get_type_string()
+
+        # Do nothing if there is no unix file descriptor to handle.
+        if 'h' not in type_string and 'v' not in type_string:
+            return variant
+
+        # Get a new value of the variant.
+        value = cls._process_variant(variant, *extras)
+
+        # Create a new variant.
+        return get_variant(type_string, value)
 
 
 def variant_replace_handles_with_fdlist_indices(v, fdlist=None):
     """Given a variant, return a new variant
     with all 'h' handles replaced with FDlist indices,
-    adding extracted handles to the fdlist passed as an argument"""
-    if fdlist is None:
-        fdlist = []
+    adding extracted handles to the fdlist passed as an argument.
 
-    if v.get_type().is_basic():
-        if v.get_type_string() == 'h':
-            l = len(fdlist)
-            fd = unwrap_variant(v)
-            fdlist.append(fd)
-            return get_variant('h', l), fdlist
-        else:
-            return v, fdlist
+    FIXME: This is a temporary method. Call UnixFDSwap instead.
+    """
+    indices = fdlist or []
 
-    typestring = v.get_type_string()
+    def get_index(fd_handler):
+        indices.append(fd_handler)
+        return len(indices) - 1
 
-    if typestring.startswith('a'):
-        if typestring.startswith('a{'):
-            return dictionary_replace_handles_with_fdlist_indices(v, fdlist)
-        a, fdlist = array_replace_handles_with_fdlist_indices(
-            unwrap_variant(v), typestring, fdlist)
-        return get_variant(typestring, a), fdlist
+    return UnixFDSwap.apply(v, get_index), indices
 
-
-    typelist = v.split_signature(typestring)
-    unwrapped = list(unwrap_variant(v))
-    for i, e in enumerate(unwrapped):
-        if typelist[i] == 'h':
-            l = len(fdlist)
-            fdlist.append(e)
-            unwrapped[i] = l
-        elif typelist[i][0] == 'a':
-            unwrapped[i], fdlist = array_replace_handles_with_fdlist_indices(
-                e, typelist[i], fdlist)
-        elif typelist[i] == 'v':
-            unwrapped[i], fdlist = variant_replace_handles_with_fdlist_indices(
-                e, fdlist)
-        else:
-            nv = get_variant(typelist[i], e)
-            nnv, fdlist = variant_replace_handles_with_fdlist_indices(
-                nv, fdlist)
-            unwrapped[i] = unwrap_variant(nnv)
-    return get_variant(typestring, unwrapped), fdlist
-
-def dictionary_replace_fdlist_indices_with_handles(v, fdlist):
-    typestring = v.get_type_string()
-
-    newdict = {}
-    keytype=typestring[2]
-    valuetype=typestring[3:-1]
-    e = unwrap_variant(v)
-    for key, value in e.items():
-        #according to the spec, the key is a basic type.
-        #we have to handle the crazy case where somebody
-        #uses a file descriptor as a dictionary key
-        if keytype == 'h':
-            key = fdlist[key]
-        if valuetype == 'h':
-            value = fdlist[value]
-        elif valuetype == 'v':
-            value = variant_replace_fdlist_indices_with_handles(
-                value, fdlist)
-        elif not DBusType._is_basic_type(valuetype):
-            value = variant_replace_fdlist_indices_with_handles(
-                get_variant(valuetype, value), fdlist)
-            value = unwrap_variant(value)
-        newdict[key] = value
-
-    return get_variant(typestring, newdict)
-
-def array_replace_fdlist_indices_with_handles(e, typestring, fdlist):
-    if typestring[1] == '{':
-        nv = variant_replace_fdlist_indices_with_handles(
-            get_variant(typestring, e), fdlist)
-        return unwrap_variant(nv)
-    else:
-        newlist = e.copy()
-        for j, f in enumerate(newlist):
-            if typestring[1] == 'v':
-                p = variant_replace_fdlist_indices_with_handles(
-                    f, fdlist)
-                newlist[j] = p
-            else:
-                nv = get_variant(typestring[1:], f)
-                nnv = variant_replace_fdlist_indices_with_handles(
-                    nv, fdlist)
-                newlist[j] = unwrap_variant(nnv)
-        return newlist
 
 def variant_replace_fdlist_indices_with_handles(v, fdlist):
     """Given a varaint and an fdlist, find any 'h' handle instances
-    and replace them with file descriptors that they represent"""
+    and replace them with file descriptors that they represent.
 
-    if v.get_type().is_basic():
-        if v.get_type_string() == 'h':
-            idx = unwrap_variant(v)
-            return get_variant('h', fdlist[idx])
-        else:
-            return v
+    FIXME: This is a temporary method. Call UnixFDSwap instead.
+    """
+    indices = fdlist
 
-    typestring = v.get_type_string()
+    def get_handler(fd_index):
+        return indices[fd_index]
 
-    if typestring.startswith('a'):
-        if typestring.startswith('a{'):
-            return dictionary_replace_fdlist_indices_with_handles(v, fdlist)
-        return get_variant(typestring,
-                           array_replace_fdlist_indices_with_handles(
-                               unwrap_variant(v), typestring, fdlist))
-
-    typelist = v.split_signature(v.get_type_string())
-    unwrapped = list(unwrap_variant(v))
-    # pylint: disable=consider-using-enumerate
-    for i, e in enumerate(unwrapped):
-
-        if typelist[i] == 'h':
-            unwrapped[i] = fdlist[unwrapped[i]]
-        elif typelist[i][0] == 'a':
-            unwrapped[i] = array_replace_fdlist_indices_with_handles(
-                e, typelist[i], fdlist)
-        elif typelist[i] == 'v':
-            unwrapped[i] = variant_replace_fdlist_indices_with_handles(
-                e, fdlist)
-        else:
-            nv = get_variant(typelist[i], e)
-            nnv = variant_replace_fdlist_indices_with_handles(nv, fdlist)
-            unwrapped[i] = unwrap_variant(nnv)
-    return get_variant(v.get_type_string(), unwrapped)
+    return UnixFDSwap.apply(v, get_handler)
