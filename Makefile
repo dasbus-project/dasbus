@@ -38,7 +38,7 @@ clean:
 
 .PHONY: container-ci
 container-ci:
-	podman build --tag $(CI_CONTAINER_NAME) --file $(CI_CONTAINER_FILE)
+	podman build --pull-always --tag $(CI_CONTAINER_NAME) --file $(CI_CONTAINER_FILE)
 	podman run --volume .:/dasbus:Z --workdir /dasbus $(CI_CONTAINER_NAME) $(CI_CMD)
 
 .PHONY: ci
