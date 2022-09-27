@@ -478,10 +478,7 @@ class ClientObjectHandler(AbstractClientObjectHandler):
         """
         try:
             result = call(*args, **kwargs)
-            if type(result) == GLib.Variant:
-                return self._handle_method_result(result)
-
-            return self._handle_method_result(*result)
+            return self._handle_method_result(result)
         except Exception as error:  # pylint: disable=broad-except
             return self._handle_method_error(error)
 
@@ -520,23 +517,13 @@ class ClientObjectHandler(AbstractClientObjectHandler):
         # Or re-raise the original error.
         raise error
 
-    def _handle_method_result(self, result, fdlist=None):
+    def _handle_method_result(self, result):
         """Handle a result of a DBus call.
 
         :param result: a variant tuple
         """
         # Unwrap a variant tuple.
-        if fdlist is not None:
-            # pylint: disable=fixme,import-outside-toplevel
-            # FIXME: Move this code to the GLibClientUnix class.
-            from dasbus.unix import \
-                variant_replace_fdlist_indices_with_handles
-
-            values = unwrap_variant(
-                variant_replace_fdlist_indices_with_handles(
-                    result, fdlist.steal_fds()))
-        else:
-            values = unwrap_variant(result)
+        values = unwrap_variant(result)
 
         # Return None if there are no values.
         if not values:

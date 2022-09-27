@@ -119,6 +119,16 @@ class GLibClientUnix(GLibClient):
     """The low-level DBus client library based on GLib."""
 
     @classmethod
+    def _handle_unix_fd_list_result(cls, result, fd_list):
+        """Handle the output fd list."""
+        if not fd_list:
+            return result
+
+        return variant_replace_fdlist_indices_with_handles(
+            result, fd_list.steal_fds()
+        )
+
+    @classmethod
     def sync_call(cls, connection, service_name, object_path, interface_name,
                   method_name, parameters, reply_type, flags=DBUS_FLAG_NONE,
                   timeout=GLibClient.DBUS_TIMEOUT_NONE):
@@ -146,7 +156,8 @@ class GLibClientUnix(GLibClient):
             fds,
             None
         )
-        return ret
+
+        return cls._handle_unix_fd_list_result(*ret)
 
     @classmethod
     def async_call(cls, connection, service_name, object_path, interface_name,
@@ -185,7 +196,9 @@ class GLibClientUnix(GLibClient):
 
         # Call user's callback.
         callback(
-            lambda: source_object.call_with_unix_fd_list_finish(result_object),
+            lambda: cls._handle_unix_fd_list_result(
+                *source_object.call_with_unix_fd_list_finish(result_object)
+            ),
             *callback_args
         )
 
