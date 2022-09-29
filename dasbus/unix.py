@@ -33,34 +33,63 @@ __all__ = [
 ]
 
 
-def variant_replace_handles_with_fdlist_indices(v, fdlist=None):
-    """Given a variant, return a new variant
-    with all 'h' handles replaced with FDlist indices,
-    adding extracted handles to the fdlist passed as an argument.
+def acquire_fds(variant):
+    """Acquire Unix file descriptors contained in a variant.
 
-    FIXME: This is a temporary method. Call UnixFDSwap instead.
+    Return a variant with indexes into a list of Unix file descriptors
+    and the list of Unix file descriptors.
+
+    If the variant is None, or the variant doesn't contain any Unix
+    file descriptors, return None instead of the list.
+
+    :param variant: a variant with Unix file descriptors
+    :return: a variant with indexes and a list of Unix file descriptors
     """
-    indices = fdlist or []
+    if variant is None:
+        return None, None
 
-    def get_index(fd_handler):
-        indices.append(fd_handler)
-        return len(indices) - 1
+    fd_list = []
 
-    return UnixFDSwap.apply(v, get_index), indices
+    def _get_idx(fd):
+        fd_list.append(fd)
+        return len(fd_list) - 1
+
+    variant_without_fds = UnixFDSwap.apply(variant, _get_idx)
+
+    if not fd_list:
+        return variant, None
+
+    return variant_without_fds, Gio.UnixFDList.new_from_array(fd_list)
 
 
-def variant_replace_fdlist_indices_with_handles(v, fdlist):
-    """Given a varaint and an fdlist, find any 'h' handle instances
-    and replace them with file descriptors that they represent.
+def restore_fds(variant, fd_list: Gio.UnixFDList):
+    """Restore Unix file descriptors in a variant.
 
-    FIXME: This is a temporary method. Call UnixFDSwap instead.
+    If the variant is None, return None. Otherwise, return
+    a variant with Unix file descriptors.
+
+    :param variant: a variant with indexes into fd_list
+    :param fd_list: a list of Unix file descriptors
+    :return: a variant with Unix file descriptors
     """
-    indices = fdlist
+    if variant is None:
+        return None
 
-    def get_handler(fd_index):
-        return indices[fd_index]
+    if fd_list is None:
+        return variant
 
-    return UnixFDSwap.apply(v, get_handler)
+    fd_list = fd_list.steal_fds()
+
+    if not fd_list:
+        return variant
+
+    def _get_fd(index):
+        try:
+            return fd_list[index]
+        except IndexError:
+            return -1
+
+    return UnixFDSwap.apply(variant, _get_fd)
 
 
 class UnixFDSwap(VariantUnpacking):
@@ -119,16 +148,6 @@ class GLibClientUnix(GLibClient):
     """The low-level DBus client library based on GLib."""
 
     @classmethod
-    def _handle_unix_fd_list_result(cls, result, fd_list):
-        """Handle the output fd list."""
-        if not fd_list:
-            return result
-
-        return variant_replace_fdlist_indices_with_handles(
-            result, fd_list.steal_fds()
-        )
-
-    @classmethod
     def sync_call(cls, connection, service_name, object_path, interface_name,
                   method_name, parameters, reply_type, flags=DBUS_FLAG_NONE,
                   timeout=GLibClient.DBUS_TIMEOUT_NONE):
@@ -136,28 +155,25 @@ class GLibClientUnix(GLibClient):
 
         :return: a result of the DBus call
         """
-        params = parameters
-        fds = None
-        if parameters:
-            params, fdlist = variant_replace_handles_with_fdlist_indices(
-                parameters)
-            if fdlist:
-                fds = Gio.UnixFDList.new_from_array(fdlist)
+        # Process Unix file descriptors in parameters.
+        parameters, fd_list = acquire_fds(parameters)
 
-        ret = connection.call_with_unix_fd_list_sync(
+        # Call the DBus method.
+        result = connection.call_with_unix_fd_list_sync(
             service_name,
             object_path,
             interface_name,
             method_name,
-            params,
+            parameters,
             reply_type,
             flags,
             timeout,
-            fds,
+            fd_list,
             None
         )
 
-        return cls._handle_unix_fd_list_result(*ret)
+        # Restore Unix file descriptors in the result.
+        return restore_fds(*result)
 
     @classmethod
     def async_call(cls, connection, service_name, object_path, interface_name,
@@ -165,25 +181,20 @@ class GLibClientUnix(GLibClient):
                    callback_args=(), flags=DBUS_FLAG_NONE,
                    timeout=GLibClient.DBUS_TIMEOUT_NONE):
         """Asynchronously call a DBus method."""
-        params = parameters
-        fds = None
-        if parameters:
-            params, fdlist = variant_replace_handles_with_fdlist_indices(
-                parameters)
+        # Process Unix file descriptors in parameters.
+        parameters, fd_list = acquire_fds(parameters)
 
-            if fdlist:
-                fds = Gio.UnixFDList.new_from_array(fdlist)
-
+        # Call the DBus method.
         connection.call_with_unix_fd_list(
             service_name,
             object_path,
             interface_name,
             method_name,
-            params,
+            parameters,
             reply_type,
             flags,
             timeout,
-            fds,
+            fd_list,
             callback=cls._async_call_finish,
             user_data=(callback, callback_args)
         )
@@ -194,13 +205,16 @@ class GLibClientUnix(GLibClient):
         # Prepare the user's callback.
         callback, callback_args = user_data
 
+        def _finish_call():
+            # Retrieve the result of the call.
+            result = source_object.call_with_unix_fd_list_finish(
+                result_object
+            )
+            # Restore Unix file descriptors in the result.
+            return restore_fds(*result)
+
         # Call user's callback.
-        callback(
-            lambda: cls._handle_unix_fd_list_result(
-                *source_object.call_with_unix_fd_list_finish(result_object)
-            ),
-            *callback_args
-        )
+        callback(_finish_call, *callback_args)
 
 
 class GLibServerUnix(GLibServer):
@@ -210,35 +224,26 @@ class GLibServerUnix(GLibServer):
 
     @classmethod
     def set_call_reply(cls, invocation, out_type, out_value):
-        """Set the reply of the DBus call.
-
-        :param invocation: an invocation of a DBus call
-        :param out_type: a type of the reply
-        :param out_value: a value of the reply
-        """
+        """Set the reply of the DBus call."""
+        # Process Unix file descriptors in the reply.
         reply_value = cls._get_reply_value(out_type, out_value)
-        if reply_value is None:
-            invocation.return_value(reply_value)
-        else:
-            reply, fdlist = variant_replace_handles_with_fdlist_indices(
-                reply_value)
-            if len(fdlist) != 0:
-                invocation.return_value_with_unix_fd_list(
-                    reply, Gio.UnixFDList.new_from_array(fdlist))
-            else:
-                invocation.return_value(reply_value)
+        reply_args = acquire_fds(reply_value)
+
+        # Send the reply.
+        invocation.return_value_with_unix_fd_list(*reply_args)
 
     @classmethod
     def _object_callback(cls, connection, sender, object_path,
                          interface_name, method_name, parameters,
                          invocation, user_data):
+        """A method call closure of a DBus object."""
         # Prepare the user's callback.
         callback, callback_args = user_data
 
-        fdlist = invocation.get_message().get_unix_fd_list()
-        if fdlist is not None:
-            parameters = variant_replace_fdlist_indices_with_handles(
-                parameters, fdlist.peek_fds())
+        # Restore Unix file descriptors in parameters.
+        fd_list = invocation.get_message().get_unix_fd_list()
+        parameters = restore_fds(parameters, fd_list)
+
         # Call user's callback.
         callback(
             invocation,

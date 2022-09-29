@@ -24,20 +24,20 @@ import unittest
 
 from textwrap import dedent
 
-from dasbus.typing import UnixFD, Str, get_variant, unwrap_variant
+from dasbus.typing import UnixFD, Str, Variant, get_variant, unwrap_variant
 from dasbus.connection import AddressedMessageBus
 from dasbus.loop import EventLoop
 from dasbus.server.interface import dbus_interface
-from dasbus.unix import GLibClientUnix, GLibServerUnix, \
-    variant_replace_handles_with_fdlist_indices, \
-    variant_replace_fdlist_indices_with_handles
+from dasbus.unix import GLibClientUnix, GLibServerUnix, acquire_fds, \
+    restore_fds
 from dasbus.xml import XMLGenerator
 
 from tests.test_dbus import DBusTestCase, error_mapper
 
 import gi
+gi.require_version("Gio", "2.0")
 gi.require_version("GLib", "2.0")
-from gi.repository import GLib
+from gi.repository import Gio, GLib
 
 __all__ = [
     "UnixFDSwapTests",
@@ -81,21 +81,32 @@ class UnixExampleInterface(object):
 
 class UnixFDSwapTests(unittest.TestCase):
 
+    def _check_acquired_fds(self, variant):
+        """Check acquired Unix file descriptors."""
+        variant, fd_list = acquire_fds(variant)
+        assert variant is None or isinstance(variant, Variant)
+        assert fd_list is None or isinstance(fd_list, Gio.UnixFDList)
+        return variant, (fd_list.steal_fds() if fd_list else [])
+
+    def _check_restored_fds(self, variant, fd_list):
+        """Check restored Unix file descriptors."""
+        variant = restore_fds(variant, Gio.UnixFDList.new_from_array(fd_list))
+        assert variant is None or isinstance(variant, Variant)
+        return variant
+
     def test_handle(self):
         """Test handle replacement (with UnixFDList indices)"""
         # open some file descriptors to pass around
         r, w = os.pipe()
 
         simple_fd = get_variant("(h)", (r,))
-        replaced, fdlist = variant_replace_handles_with_fdlist_indices(
-            simple_fd)
+        replaced, fdlist = self._check_acquired_fds(simple_fd)
         self.assertEqual(len(fdlist), 1)
         self.assertEqual(unwrap_variant(replaced)[0], 0)
         self.assertEqual(fdlist[0], r)
 
         incoming_fd = get_variant("(h)", (0,))
-        restored = variant_replace_fdlist_indices_with_handles(
-            incoming_fd, [w])
+        restored = self._check_restored_fds(incoming_fd, [w])
         self.assertEqual(unwrap_variant(restored)[0], w)
 
         os.close(r)
@@ -106,8 +117,7 @@ class UnixFDSwapTests(unittest.TestCase):
         r, w = os.pipe()
 
         array_fd = get_variant("(ah)", ((r,w),))
-        replaced, fdlist = variant_replace_handles_with_fdlist_indices(
-            array_fd)
+        replaced, fdlist = self._check_acquired_fds(array_fd)
         self.assertEqual(len(fdlist), 2)
         self.assertEqual(unwrap_variant(replaced)[0][0], 0)
         self.assertEqual(unwrap_variant(replaced)[0][1], 1)
@@ -116,8 +126,7 @@ class UnixFDSwapTests(unittest.TestCase):
 
         array_fd = get_variant("(ah)", ((0, 1),))
         fdlist = [r, w]
-        replaced = variant_replace_fdlist_indices_with_handles(
-            array_fd, fdlist)
+        replaced = self._check_restored_fds(array_fd, fdlist)
         self.assertEqual(unwrap_variant(replaced)[0][0], r)
         self.assertEqual(unwrap_variant(replaced)[0][1], w)
 
@@ -129,8 +138,7 @@ class UnixFDSwapTests(unittest.TestCase):
         array_fd = get_variant("(av)",
                                ((get_variant('h', r),
                                  get_variant('h', w)),))
-        replaced, fdlist = variant_replace_handles_with_fdlist_indices(
-            array_fd)
+        replaced, fdlist = self._check_acquired_fds(array_fd)
         self.assertEqual(len(fdlist), 2)
         self.assertEqual(unwrap_variant(unwrap_variant(replaced)[0][0]), 0)
         self.assertEqual(unwrap_variant(unwrap_variant(replaced)[0][1]), 1)
@@ -141,8 +149,7 @@ class UnixFDSwapTests(unittest.TestCase):
                                ((get_variant('h', 0),
                                  get_variant('h', 1)),))
         fdlist = [r, w]
-        replaced = variant_replace_fdlist_indices_with_handles(
-            array_fd, fdlist)
+        replaced = self._check_restored_fds(array_fd, fdlist)
         self.assertEqual(unwrap_variant(unwrap_variant(replaced)[0][0]), r)
         self.assertEqual(unwrap_variant(unwrap_variant(replaced)[0][1]), w)
 
@@ -156,16 +163,14 @@ class UnixFDSwapTests(unittest.TestCase):
         r, w = os.pipe()
 
         structure_fd = get_variant("((h))", (((r,),)))
-        replaced, fdlist = variant_replace_handles_with_fdlist_indices(
-            structure_fd)
+        replaced, fdlist = self._check_acquired_fds(structure_fd)
         self.assertEqual(len(fdlist), 1)
         self.assertEqual(unwrap_variant(replaced)[0][0], 0)
         self.assertEqual(fdlist[0], r)
 
         structure_fd = get_variant("((h))", (((0,),)))
         fdlist = [r]
-        replaced = variant_replace_fdlist_indices_with_handles(
-            structure_fd, fdlist)
+        replaced = self._check_restored_fds(structure_fd, fdlist)
         self.assertEqual(unwrap_variant(replaced)[0][0], r)
 
         os.close(r)
@@ -174,16 +179,14 @@ class UnixFDSwapTests(unittest.TestCase):
         r, w = os.pipe()
 
         var_fd = get_variant("(v)", (get_variant(UnixFD, r),))
-        replaced, fdlist = variant_replace_handles_with_fdlist_indices(
-            var_fd)
+        replaced, fdlist = self._check_acquired_fds(var_fd)
         self.assertEqual(len(fdlist), 1)
         self.assertEqual(fdlist[0], r)
         self.assertEqual(unwrap_variant(unwrap_variant(replaced)[0]), 0)
 
         var_fd = get_variant("(v)", (get_variant(UnixFD, 0),))
         fdlist = [r]
-        replaced = variant_replace_fdlist_indices_with_handles(
-            var_fd, fdlist)
+        replaced = self._check_restored_fds(var_fd, fdlist)
         self.assertEqual(unwrap_variant(unwrap_variant(replaced)[0]), r)
 
         os.close(r)
@@ -196,16 +199,14 @@ class UnixFDSwapTests(unittest.TestCase):
         r, w = os.pipe()
 
         var_fd = get_variant("(a{sh})", ({"read":r, "write":w},))
-        replaced, fdlist = variant_replace_handles_with_fdlist_indices(
-            var_fd)
+        replaced, fdlist = self._check_acquired_fds(var_fd)
         self.assertEqual(len(fdlist), 2)
         self.assertEqual(fdlist[replaced[0]['read']], r)
         self.assertEqual(fdlist[replaced[0]['write']], w)
 
         var_fd = get_variant("(a{sh})", ({"read":0, "write":1},))
         fdlist = [r, w]
-        replaced = variant_replace_fdlist_indices_with_handles(
-            var_fd, fdlist)
+        replaced = self._check_restored_fds(var_fd, fdlist)
 
         self.assertEqual(replaced[0]['read'], r)
         self.assertEqual(replaced[0]['write'], w)
@@ -216,14 +217,14 @@ class UnixFDSwapTests(unittest.TestCase):
         r, w = os.pipe()
 
         var_fd = get_variant("a{sh}", {"read":r, "write":w})
-        replaced, fdlist = variant_replace_handles_with_fdlist_indices(var_fd)
+        replaced, fdlist = self._check_acquired_fds(var_fd)
         self.assertEqual(len(fdlist), 2)
         self.assertEqual(fdlist[replaced['read']], r)
         self.assertEqual(fdlist[replaced['write']], w)
 
         var_fd = get_variant("a{sh}", {"read":0, "write":1})
         fdlist = [r, w]
-        replaced = variant_replace_fdlist_indices_with_handles(var_fd, fdlist)
+        replaced = self._check_restored_fds(var_fd, fdlist)
 
         self.assertEqual(replaced['read'], r)
         self.assertEqual(replaced['write'], w)
@@ -238,8 +239,7 @@ class UnixFDSwapTests(unittest.TestCase):
         r, w = os.pipe()
 
         var_fd = get_variant("(a{hs})", ({r:"read", w:"write"},))
-        replaced, fdlist = variant_replace_handles_with_fdlist_indices(
-            var_fd)
+        replaced, fdlist = self._check_acquired_fds(var_fd)
         self.assertEqual(len(fdlist), 2)
 
         inv = {v: k for k, v in replaced[0].items()}
@@ -248,8 +248,7 @@ class UnixFDSwapTests(unittest.TestCase):
 
         var_fd = get_variant("(a{hs})", ({0:"read", 1:"write"},))
         fdlist = [r, w]
-        replaced = variant_replace_fdlist_indices_with_handles(
-            var_fd, fdlist)
+        replaced = self._check_restored_fds(var_fd, fdlist)
 
         inv = {v: k for k, v in replaced[0].items()}
         self.assertEqual(fdlist[0], inv['read'])
@@ -266,7 +265,7 @@ class UnixFDSwapTests(unittest.TestCase):
         var_fd = get_variant("a{sv}",
                              {"read":get_variant('h', r),
                               "write":get_variant('h', w)})
-        replaced, fdlist = variant_replace_handles_with_fdlist_indices(var_fd)
+        replaced, fdlist = self._check_acquired_fds(var_fd)
         self.assertEqual(len(fdlist), 2)
         self.assertEqual(fdlist[replaced['read']], r)
         self.assertEqual(fdlist[replaced['write']], w)
@@ -275,7 +274,7 @@ class UnixFDSwapTests(unittest.TestCase):
                              {"read":get_variant('h', 0),
                               "write":get_variant('h', 1)})
         fdlist = [r, w]
-        replaced = variant_replace_fdlist_indices_with_handles(var_fd, fdlist)
+        replaced = self._check_restored_fds(var_fd, fdlist)
 
         self.assertEqual(replaced['read'], r)
         self.assertEqual(replaced['write'], w)
@@ -288,7 +287,7 @@ class UnixFDSwapTests(unittest.TestCase):
         var_fd = get_variant("a{s(h)}",
                              {"read":get_variant('(h)', (r,)),
                               "write":get_variant('(h)', (w,))})
-        replaced, fdlist = variant_replace_handles_with_fdlist_indices(var_fd)
+        replaced, fdlist = self._check_acquired_fds(var_fd)
         self.assertEqual(len(fdlist), 2)
         self.assertEqual(fdlist[replaced['read'][0]], r)
         self.assertEqual(fdlist[replaced['write'][0]], w)
@@ -297,7 +296,7 @@ class UnixFDSwapTests(unittest.TestCase):
                              {"read":get_variant('(h)', (0,)),
                               "write":get_variant('(h)', (1,))})
         fdlist = [r, w]
-        replaced = variant_replace_fdlist_indices_with_handles(var_fd, fdlist)
+        replaced = self._check_restored_fds(var_fd, fdlist)
 
         self.assertEqual(replaced['read'][0], r)
         self.assertEqual(replaced['write'][0], w)
@@ -312,7 +311,7 @@ class UnixFDSwapTests(unittest.TestCase):
                                        "write":get_variant('h', w)}],
                               "not-fds": [{"one":get_variant('d', 1.0),
                                            "two":get_variant('d', 2.0)}]})
-        replaced, fdlist = variant_replace_handles_with_fdlist_indices(var_fd)
+        replaced, fdlist = self._check_acquired_fds(var_fd)
         self.assertEqual(len(fdlist), 2)
         self.assertEqual(fdlist[replaced['fds'][0]['read']], r)
         self.assertEqual(fdlist[replaced['fds'][0]['write']], w)
@@ -323,7 +322,7 @@ class UnixFDSwapTests(unittest.TestCase):
                               "not-fds": [{"one":get_variant('d', 1.0),
                                            "two":get_variant('d', 2.0)}]})
         fdlist = [r, w]
-        replaced = variant_replace_fdlist_indices_with_handles(var_fd, fdlist)
+        replaced = self._check_restored_fds(var_fd, fdlist)
 
         self.assertEqual(replaced['fds'][0]['read'], r)
         self.assertEqual(replaced['fds'][0]['write'], w)
@@ -336,22 +335,22 @@ class UnixFDSwapTests(unittest.TestCase):
         for variants that don't have any"""
         # now some controls
         int_fd = get_variant("(i)", (25,))
-        replaced, fdlist = variant_replace_handles_with_fdlist_indices(int_fd)
+        replaced, fdlist = self._check_acquired_fds(int_fd)
         self.assertEqual(len(fdlist), 0)
         self.assertEqual(unwrap_variant(replaced)[0], 25)
 
         int_fd = get_variant("(i)", (25,))
-        replaced = variant_replace_fdlist_indices_with_handles(int_fd, [])
+        replaced = self._check_restored_fds(int_fd, [])
         self.assertEqual(len(fdlist), 0)
         self.assertEqual(unwrap_variant(replaced)[0], 25)
 
         str_fd = get_variant("s", "teststr")
-        replaced, fdlist = variant_replace_handles_with_fdlist_indices(str_fd)
+        replaced, fdlist = self._check_acquired_fds(str_fd)
         self.assertEqual(len(fdlist), 0)
         self.assertEqual(unwrap_variant(replaced), "teststr")
 
         str_fd = get_variant("s", "teststr")
-        replaced = variant_replace_fdlist_indices_with_handles(str_fd, [])
+        replaced = self._check_restored_fds(str_fd, [])
         self.assertEqual(len(fdlist), 0)
         self.assertEqual(unwrap_variant(replaced), "teststr")
 
