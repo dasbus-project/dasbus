@@ -256,11 +256,13 @@ class DBusType(object):
     }
 
     # DBus representation of container types.
+    # pylint: disable=unhashable-member
     _container_type_mapping = {
         Tuple:      "(%s)",
         List:       "a%s",
         Dict:       "a{%s}",
     }
+    # pylint: enable=unhashable-member
 
     @staticmethod
     def get_dbus_representation(type_hint):
