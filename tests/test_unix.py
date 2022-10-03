@@ -24,7 +24,8 @@ import unittest
 
 from textwrap import dedent
 
-from dasbus.typing import UnixFD, Str, Variant, get_variant, unwrap_variant
+from dasbus.typing import get_variant, UnixFD, Str, Variant, Tuple, \
+    List, Dict, Int, Double, Bool
 from dasbus.connection import AddressedMessageBus
 from dasbus.loop import EventLoop
 from dasbus.server.interface import dbus_interface
@@ -80,279 +81,229 @@ class UnixExampleInterface(object):
 
 
 class UnixFDSwapTests(unittest.TestCase):
+    """Test swapping of Unix file descriptors."""
 
-    def _check_acquired_fds(self, variant):
-        """Check acquired Unix file descriptors."""
+    def setUp(self):
+        """Set up the test."""
+        self._r, self._w = os.pipe()
+
+    def tearDown(self):
+        """Tear down the test."""
+        os.close(self._r)
+        os.close(self._w)
+
+    def _swap_fds(self, in_variant, out_variant, fds=None):
+        """Swap Unix file descriptors in the input."""
+        variant, fd_list = self._acquire_fds(in_variant, out_variant, fds)
+        self._restore_fds(variant, fd_list, expected_variant=in_variant)
+
+    def _acquire_fds(self, variant, expected_variant, expected_fds):
+        """Acquire Unix file descriptors in the variant."""
         variant, fd_list = acquire_fds(variant)
-        assert variant is None or isinstance(variant, Variant)
-        assert fd_list is None or isinstance(fd_list, Gio.UnixFDList)
-        return variant, (fd_list.steal_fds() if fd_list else [])
 
-    def _check_restored_fds(self, variant, fd_list):
-        """Check restored Unix file descriptors."""
-        variant = restore_fds(variant, Gio.UnixFDList.new_from_array(fd_list))
-        assert variant is None or isinstance(variant, Variant)
-        return variant
+        # Check the list of acquired fds.
+        if expected_fds is None:
+            self.assertIsNone(fd_list)
+        else:
+            self.assertIsInstance(fd_list, Gio.UnixFDList)
+            self.assertEqual(fd_list.peek_fds(), expected_fds)
 
-    def test_handle(self):
-        """Test handle replacement (with UnixFDList indices)"""
-        # open some file descriptors to pass around
-        r, w = os.pipe()
+        # Check the variant without fds.
+        if expected_variant is None:
+            self.assertIsNone(variant)
+        else:
+            self.assertIsInstance(variant, Variant)
+            self.assertEqual(variant.unpack(), expected_variant.unpack())
+            self.assertTrue(variant.equal(expected_variant))
 
-        simple_fd = get_variant("(h)", (r,))
-        replaced, fdlist = self._check_acquired_fds(simple_fd)
-        self.assertEqual(len(fdlist), 1)
-        self.assertEqual(unwrap_variant(replaced)[0], 0)
-        self.assertEqual(fdlist[0], r)
+        return variant, fd_list
 
-        incoming_fd = get_variant("(h)", (0,))
-        restored = self._check_restored_fds(incoming_fd, [w])
-        self.assertEqual(unwrap_variant(restored)[0], w)
+    def _restore_fds(self, variant, fd_list, expected_variant):
+        """Restore Unix file descriptors in the variant."""
+        variant = restore_fds(variant, fd_list)
 
-        os.close(r)
-        os.close(w)
+        # Check the variant with fds.
+        if expected_variant is None:
+            self.assertIsNone(variant)
+        else:
+            self.assertIsInstance(variant, Variant)
+            self.assertEqual(variant.unpack(), expected_variant.unpack())
+            self.assertTrue(variant.equal(expected_variant))
 
-    def test_array_handles(self):
-        """Test handle replacement in arrays (with UnixFDList indices)"""
-        r, w = os.pipe()
+    def test_empty_fd_list(self):
+        """Restore a value if the fd list is empty."""
+        self._restore_fds(
+            variant=get_variant(Int, 0),
+            fd_list=Gio.UnixFDList(),
+            expected_variant=get_variant(Int, 0)
+        )
 
-        array_fd = get_variant("(ah)", ((r,w),))
-        replaced, fdlist = self._check_acquired_fds(array_fd)
-        self.assertEqual(len(fdlist), 2)
-        self.assertEqual(unwrap_variant(replaced)[0][0], 0)
-        self.assertEqual(unwrap_variant(replaced)[0][1], 1)
-        self.assertEqual(fdlist[0], r)
-        self.assertEqual(fdlist[1], w)
+    def test_invalid_index(self):
+        """Restore a value with an invalid index."""
+        self._restore_fds(
+            variant=get_variant(UnixFD, 2),
+            fd_list=Gio.UnixFDList.new_from_array([self._r, self._w]),
+            expected_variant=get_variant(UnixFD, -1)
+        )
 
-        array_fd = get_variant("(ah)", ((0, 1),))
-        fdlist = [r, w]
-        replaced = self._check_restored_fds(array_fd, fdlist)
-        self.assertEqual(unwrap_variant(replaced)[0][0], r)
-        self.assertEqual(unwrap_variant(replaced)[0][1], w)
+    def test_values_without_fds(self):
+        """Swap values without fds."""
+        self._swap_fds(
+            in_variant=None,
+            out_variant=None,
+        )
+        self._swap_fds(
+            in_variant=get_variant(Int, 0),
+            out_variant=get_variant(Int, 0),
+        )
+        self._swap_fds(
+            in_variant=get_variant(Str, "Hi!"),
+            out_variant=get_variant(Str, "Hi!"),
+        )
+        self._swap_fds(
+            in_variant=get_variant(Tuple[Double], (1.0, )),
+            out_variant=get_variant(Tuple[Double], (1.0, )),
+        )
+        self._swap_fds(
+            in_variant=get_variant(List[Bool], [False]),
+            out_variant=get_variant(List[Bool], [False]),
+        )
 
-        os.close(r)
-        os.close(w)
+    def test_value_with_fds(self):
+        """Swap a basic value with fds."""
+        self._swap_fds(
+            in_variant=get_variant(UnixFD, self._r),
+            out_variant=get_variant(UnixFD, 0),
+            fds=[self._r],
+        )
 
-        r, w = os.pipe()
+    def test_variant_with_fds(self):
+        """Swap a variant with fds."""
+        self._swap_fds(
+            in_variant=get_variant(Variant, get_variant(
+                UnixFD, self._r
+            )),
+            out_variant=get_variant(Variant, get_variant(
+                UnixFD, 0
+            )),
+            fds=[self._r],
+        )
 
-        array_fd = get_variant("(av)",
-                               ((get_variant('h', r),
-                                 get_variant('h', w)),))
-        replaced, fdlist = self._check_acquired_fds(array_fd)
-        self.assertEqual(len(fdlist), 2)
-        self.assertEqual(unwrap_variant(unwrap_variant(replaced)[0][0]), 0)
-        self.assertEqual(unwrap_variant(unwrap_variant(replaced)[0][1]), 1)
-        self.assertEqual(fdlist[0], r)
-        self.assertEqual(fdlist[1], w)
+    def test_tuple_with_fds(self):
+        """Swap a tuple with fds."""
+        self._swap_fds(
+            in_variant=get_variant(Tuple[UnixFD, UnixFD], (
+                self._r, self._w
+            )),
+            out_variant=get_variant(Tuple[UnixFD, UnixFD], (
+                0, 1
+            )),
+            fds=[self._r, self._w],
+        )
 
-        array_fd = get_variant("(av)",
-                               ((get_variant('h', 0),
-                                 get_variant('h', 1)),))
-        fdlist = [r, w]
-        replaced = self._check_restored_fds(array_fd, fdlist)
-        self.assertEqual(unwrap_variant(unwrap_variant(replaced)[0][0]), r)
-        self.assertEqual(unwrap_variant(unwrap_variant(replaced)[0][1]), w)
+    def test_variant_tuple_with_fds(self):
+        """Swap a tuple of variants with fds."""
+        self._swap_fds(
+            in_variant=get_variant(Tuple[Variant, Variant], (
+                get_variant(UnixFD, self._r),
+                get_variant(UnixFD, self._w),
+            )),
+            out_variant=get_variant(Tuple[Variant, Variant], (
+                get_variant(UnixFD, 0),
+                get_variant(UnixFD, 1),
+            )),
+            fds=[self._r, self._w],
+        )
 
-        os.close(r)
-        os.close(w)
+    def test_list_with_fds(self):
+        """Swap a list with fds."""
+        self._swap_fds(
+            in_variant=get_variant(List[UnixFD], [
+                self._r, self._w
+            ]),
+            out_variant=get_variant(List[UnixFD], [
+                0, 1
+            ]),
+            fds=[self._r, self._w],
+        )
 
-    def test_handle_nested(self):
-        """Test handle replacement in nested containers
-        (with UnixFDList indices)"""
+    def test_variant_list_with_fds(self):
+        """Swap a list of variants with fds."""
+        self._swap_fds(
+            in_variant=get_variant(List[Variant], [
+                get_variant(UnixFD, self._r),
+                get_variant(UnixFD, self._w)
+            ]),
+            out_variant=get_variant(List[Variant], [
+                get_variant(UnixFD, 0),
+                get_variant(UnixFD, 1)
+            ]),
+            fds=[self._r, self._w],
+        )
 
-        r, w = os.pipe()
+    def test_dictionary_with_fds_values(self):
+        """Swap a dictionary with fds values."""
+        self._swap_fds(
+            in_variant=get_variant(Dict[Str, UnixFD], {
+                "r": self._r, "w": self._w
+            }),
+            out_variant=get_variant(Dict[Str, UnixFD], {
+                "r": 0, "w": 1
+            }),
+            fds=[self._r, self._w]
+        )
 
-        structure_fd = get_variant("((h))", (((r,),)))
-        replaced, fdlist = self._check_acquired_fds(structure_fd)
-        self.assertEqual(len(fdlist), 1)
-        self.assertEqual(unwrap_variant(replaced)[0][0], 0)
-        self.assertEqual(fdlist[0], r)
+    def test_dictionary_with_fds_keys(self):
+        """Swap a dictionary with fds keys."""
+        self._swap_fds(
+            in_variant=get_variant(Dict[UnixFD, Str], {
+                self._r: "r", self._w: "w"
+            }),
+            out_variant=get_variant(Dict[UnixFD, Str], {
+                0: "r", 1: "w"
+            }),
+            fds=[self._r, self._w]
+        )
 
-        structure_fd = get_variant("((h))", (((0,),)))
-        fdlist = [r]
-        replaced = self._check_restored_fds(structure_fd, fdlist)
-        self.assertEqual(unwrap_variant(replaced)[0][0], r)
+    def test_variant_dictionary_with_fds(self):
+        """Swap a dictionary of variants with fds."""
+        self._swap_fds(
+            in_variant=get_variant(Dict[Str, Variant], {
+                "r": get_variant(UnixFD, self._r),
+                "w": get_variant(UnixFD, self._w)
+            }),
+            out_variant=get_variant(Dict[Str, Variant], {
+                "r": get_variant(UnixFD, 0),
+                "w": get_variant(UnixFD, 1)
+            }),
+            fds=[self._r, self._w]
+        )
 
-        os.close(r)
-        os.close(w)
+    def test_nested_variants_with_fds(self):
+        """Swap nested variants with fds."""
+        self._swap_fds(
+            in_variant=get_variant(Variant, get_variant(
+                Variant, get_variant(UnixFD, self._r)),
+            ),
+            out_variant=get_variant(Variant, get_variant(
+                Variant, get_variant(UnixFD, 0)),
+            ),
+            fds=[self._r],
+        )
 
-        r, w = os.pipe()
-
-        var_fd = get_variant("(v)", (get_variant(UnixFD, r),))
-        replaced, fdlist = self._check_acquired_fds(var_fd)
-        self.assertEqual(len(fdlist), 1)
-        self.assertEqual(fdlist[0], r)
-        self.assertEqual(unwrap_variant(unwrap_variant(replaced)[0]), 0)
-
-        var_fd = get_variant("(v)", (get_variant(UnixFD, 0),))
-        fdlist = [r]
-        replaced = self._check_restored_fds(var_fd, fdlist)
-        self.assertEqual(unwrap_variant(unwrap_variant(replaced)[0]), r)
-
-        os.close(r)
-        os.close(w)
-
-    def test_handle_dictionary(self):
-        """Test handle replacement in dictionaries
-        (with UnixFDList indices)"""
-
-        r, w = os.pipe()
-
-        var_fd = get_variant("(a{sh})", ({"read":r, "write":w},))
-        replaced, fdlist = self._check_acquired_fds(var_fd)
-        self.assertEqual(len(fdlist), 2)
-        self.assertEqual(fdlist[replaced[0]['read']], r)
-        self.assertEqual(fdlist[replaced[0]['write']], w)
-
-        var_fd = get_variant("(a{sh})", ({"read":0, "write":1},))
-        fdlist = [r, w]
-        replaced = self._check_restored_fds(var_fd, fdlist)
-
-        self.assertEqual(replaced[0]['read'], r)
-        self.assertEqual(replaced[0]['write'], w)
-
-        os.close(r)
-        os.close(w)
-
-        r, w = os.pipe()
-
-        var_fd = get_variant("a{sh}", {"read":r, "write":w})
-        replaced, fdlist = self._check_acquired_fds(var_fd)
-        self.assertEqual(len(fdlist), 2)
-        self.assertEqual(fdlist[replaced['read']], r)
-        self.assertEqual(fdlist[replaced['write']], w)
-
-        var_fd = get_variant("a{sh}", {"read":0, "write":1})
-        fdlist = [r, w]
-        replaced = self._check_restored_fds(var_fd, fdlist)
-
-        self.assertEqual(replaced['read'], r)
-        self.assertEqual(replaced['write'], w)
-
-        os.close(r)
-        os.close(w)
-
-    def test_handle_dictionary_reverse(self):
-        """Test handle replacement in inverted dictionaries
-        (with UnixFDList indices)"""
-
-        r, w = os.pipe()
-
-        var_fd = get_variant("(a{hs})", ({r:"read", w:"write"},))
-        replaced, fdlist = self._check_acquired_fds(var_fd)
-        self.assertEqual(len(fdlist), 2)
-
-        inv = {v: k for k, v in replaced[0].items()}
-        self.assertEqual(fdlist[inv['read']], r)
-        self.assertEqual(fdlist[inv['write']], w)
-
-        var_fd = get_variant("(a{hs})", ({0:"read", 1:"write"},))
-        fdlist = [r, w]
-        replaced = self._check_restored_fds(var_fd, fdlist)
-
-        inv = {v: k for k, v in replaced[0].items()}
-        self.assertEqual(fdlist[0], inv['read'])
-        self.assertEqual(fdlist[1], inv['write'])
-
-        os.close(r)
-        os.close(w)
-
-    def test_handle_complex_dictionary(self):
-        """Test handle replacement in weirder dictionaries
-        (with UnixFDList indices)"""
-        r, w = os.pipe()
-
-        var_fd = get_variant("a{sv}",
-                             {"read":get_variant('h', r),
-                              "write":get_variant('h', w)})
-        replaced, fdlist = self._check_acquired_fds(var_fd)
-        self.assertEqual(len(fdlist), 2)
-        self.assertEqual(fdlist[replaced['read']], r)
-        self.assertEqual(fdlist[replaced['write']], w)
-
-        var_fd = get_variant("a{sv}",
-                             {"read":get_variant('h', 0),
-                              "write":get_variant('h', 1)})
-        fdlist = [r, w]
-        replaced = self._check_restored_fds(var_fd, fdlist)
-
-        self.assertEqual(replaced['read'], r)
-        self.assertEqual(replaced['write'], w)
-
-        os.close(r)
-        os.close(w)
-
-        r, w = os.pipe()
-
-        var_fd = get_variant("a{s(h)}",
-                             {"read":get_variant('(h)', (r,)),
-                              "write":get_variant('(h)', (w,))})
-        replaced, fdlist = self._check_acquired_fds(var_fd)
-        self.assertEqual(len(fdlist), 2)
-        self.assertEqual(fdlist[replaced['read'][0]], r)
-        self.assertEqual(fdlist[replaced['write'][0]], w)
-
-        var_fd = get_variant("a{s(h)}",
-                             {"read":get_variant('(h)', (0,)),
-                              "write":get_variant('(h)', (1,))})
-        fdlist = [r, w]
-        replaced = self._check_restored_fds(var_fd, fdlist)
-
-        self.assertEqual(replaced['read'][0], r)
-        self.assertEqual(replaced['write'][0], w)
-
-        os.close(r)
-        os.close(w)
-
-        r, w = os.pipe()
-
-        var_fd = get_variant("a{saa{sv}}",
-                             {"fds": [{"read":get_variant('h', r),
-                                       "write":get_variant('h', w)}],
-                              "not-fds": [{"one":get_variant('d', 1.0),
-                                           "two":get_variant('d', 2.0)}]})
-        replaced, fdlist = self._check_acquired_fds(var_fd)
-        self.assertEqual(len(fdlist), 2)
-        self.assertEqual(fdlist[replaced['fds'][0]['read']], r)
-        self.assertEqual(fdlist[replaced['fds'][0]['write']], w)
-
-        var_fd = get_variant("a{saa{sv}}",
-                             {"fds": [{"read":get_variant('h', 0),
-                                       "write":get_variant('h', 1)}],
-                              "not-fds": [{"one":get_variant('d', 1.0),
-                                           "two":get_variant('d', 2.0)}]})
-        fdlist = [r, w]
-        replaced = self._check_restored_fds(var_fd, fdlist)
-
-        self.assertEqual(replaced['fds'][0]['read'], r)
-        self.assertEqual(replaced['fds'][0]['write'], w)
-
-        os.close(r)
-        os.close(w)
-
-    def test_handle_null_replacement(self):
-        """Test handle replacement (with UnixFDList indices)
-        for variants that don't have any"""
-        # now some controls
-        int_fd = get_variant("(i)", (25,))
-        replaced, fdlist = self._check_acquired_fds(int_fd)
-        self.assertEqual(len(fdlist), 0)
-        self.assertEqual(unwrap_variant(replaced)[0], 25)
-
-        int_fd = get_variant("(i)", (25,))
-        replaced = self._check_restored_fds(int_fd, [])
-        self.assertEqual(len(fdlist), 0)
-        self.assertEqual(unwrap_variant(replaced)[0], 25)
-
-        str_fd = get_variant("s", "teststr")
-        replaced, fdlist = self._check_acquired_fds(str_fd)
-        self.assertEqual(len(fdlist), 0)
-        self.assertEqual(unwrap_variant(replaced), "teststr")
-
-        str_fd = get_variant("s", "teststr")
-        replaced = self._check_restored_fds(str_fd, [])
-        self.assertEqual(len(fdlist), 0)
-        self.assertEqual(unwrap_variant(replaced), "teststr")
+    def test_nested_containers_with_fds(self):
+        """Swap nested containers with fds."""
+        self._swap_fds(
+            in_variant=get_variant(
+                Tuple[List[UnixFD], Dict[Str, Variant]],
+                ([self._r], {"w": get_variant(UnixFD, self._w)})
+            ),
+            out_variant=get_variant(
+                Tuple[List[UnixFD], Dict[Str, Variant]],
+                ([0], {"w": get_variant(UnixFD, 1)})
+            ),
+            fds=[self._r, self._w],
+        )
 
 
 class DBusForkedTestCase(DBusTestCase):
