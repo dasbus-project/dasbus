@@ -17,47 +17,49 @@
 # USA
 #
 import os
-import subprocess
-import sys
 import tempfile
 import unittest
+import unittest.mock
 
-from textwrap import dedent
-
+from dasbus.connection import AddressedMessageBus
 from dasbus.typing import get_variant, UnixFD, Str, Variant, Tuple, \
     List, Dict, Int, Double, Bool
-from dasbus.connection import AddressedMessageBus
-from dasbus.loop import EventLoop
 from dasbus.server.interface import dbus_interface
 from dasbus.unix import GLibClientUnix, GLibServerUnix, acquire_fds, \
     restore_fds
 from dasbus.xml import XMLGenerator
 
-from tests.test_dbus import DBusTestCase, error_mapper
+from tests.lib_dbus import run_loop, DBusSpawnedTestCase
+from tests.test_dbus import DBusExampleTestCase, error_mapper
 
 import gi
 gi.require_version("Gio", "2.0")
 gi.require_version("GLib", "2.0")
-from gi.repository import Gio, GLib
+from gi.repository import Gio
 
 __all__ = [
     "UnixFDSwapTests",
-    "DBusForkedTestCase",
+    "DBusSpawnedTestCase",
 ]
 
 
-def read_name(fd):
-    """Read a name from the given file descriptor."""
-    with open(os.dup(fd), "rb", closefd=True) as ifile:
-        name = ifile.read().decode("utf-8")
-
-    return name
+def mocked(callback):
+    """Wrap the local callback in a mock object."""
+    return unittest.mock.Mock(side_effect=callback)
 
 
-def write_hello(pattern, name):
-    """Write a greeting to the given file descriptor."""
-    with tempfile.TemporaryFile(mode="wb", buffering=0, prefix=name) as o:
-        o.write(pattern.format(name).encode("utf-8"))
+def read_string(fd):
+    """Read a value from the given file descriptor."""
+    with open(os.dup(fd), "rb", closefd=True) as i:
+        value = i.read().decode("utf-8")
+
+    return value
+
+
+def write_string(value):
+    """Write a value to the given file descriptor."""
+    with tempfile.TemporaryFile(mode="wb", buffering=0) as o:
+        o.write(value.encode("utf-8"))
         o.seek(0)
         out = os.dup(o.fileno())
 
@@ -68,16 +70,22 @@ def write_hello(pattern, name):
 class UnixExampleInterface(object):
     """A DBus interface with UnixFD types."""
 
-    def __init__(self):
-        self._names = []
+    def Hello(self, name_fd: UnixFD) -> Str:
+        name = read_string(name_fd)
+        return "Hello, {0}!".format(name)
 
-    def HelloFD(self, name_fd: UnixFD) -> UnixFD:
-        name = read_name(name_fd)
-        self._names.append(name)
-        return write_hello("Hello, {0}!", name)
+    def Goodbye(self, name: Str) -> UnixFD:
+        return write_string("Goodbye, {0}!".format(name))
 
-    def GoodbyeFD(self, name: Str) -> UnixFD:
-        return write_hello("Goodbye, {0}!", name)
+
+class UnixMessageBus(AddressedMessageBus):
+    """A message bus connection with the UnixFD support."""
+
+    def publish_object(self, *args, **kwargs):
+        return super().publish_object(*args, **kwargs, server=GLibServerUnix)
+
+    def get_proxy(self, *args, **kwargs):
+        return super().get_proxy(*args, **kwargs, client=GLibClientUnix)
 
 
 class UnixFDSwapTests(unittest.TestCase):
@@ -306,34 +314,49 @@ class UnixFDSwapTests(unittest.TestCase):
         )
 
 
-class DBusForkedTestCase(DBusTestCase):
-    """Test DBus support with a real DBus connection."""
+class DBusUnixCompatibilityTestCase(DBusExampleTestCase):
+    """Test the Unix support compatibility with a real DBus connection."""
 
-    def setUp(self):
-        super().setUp()
-        self.server_args = {"server": GLibServerUnix}
-        self.client_args = {"client": GLibClientUnix}
+    def _get_message_bus(self, bus_address):
+        """Get a message bus."""
+        return UnixMessageBus(bus_address, error_mapper)
+
+
+class DBusUnixExampleTestCase(DBusSpawnedTestCase):
+    """Test Unix support with a real DBus connection."""
+
+    def _get_service(self):
+        """Get the example service."""
+        return UnixExampleInterface()
+
+    @classmethod
+    def _get_message_bus(cls, bus_address):
+        """Get a message bus."""
+        return UnixMessageBus(bus_address)
+
+    @classmethod
+    def _get_proxy(cls, bus_address, **proxy_args):
+        """Get a proxy of the example service."""
+        message_bus = cls._get_message_bus(bus_address)
+        return cls._get_service_proxy(message_bus, **proxy_args)
 
     def test_xml_specification(self):
         """Test the generated specification."""
-        self._set_service(UnixExampleInterface())
-
         expected_xml = '''
         <node>
           <!--Specifies UnixExampleInterface-->
           <interface name="my.testing.UnixExample">
-            <method name="GoodbyeFD">
+            <method name="Goodbye">
               <arg direction="in" name="name" type="s"></arg>
               <arg direction="out" name="return" type="h"></arg>
             </method>
-            <method name="HelloFD">
+            <method name="Hello">
               <arg direction="in" name="name_fd" type="h"></arg>
-              <arg direction="out" name="return" type="h"></arg>
+              <arg direction="out" name="return" type="s"></arg>
             </method>
           </interface>
         </node>
         '''
-
         generated_xml = self.service.__dbus_xml__
 
         self.assertEqual(
@@ -341,202 +364,61 @@ class DBusForkedTestCase(DBusTestCase):
             XMLGenerator.prettify_xml(generated_xml)
         )
 
-    def _add_client(self, test_name, test_string):
-        self.clients.append([test_name, test_string])
-
-    def _run_test(self):
-        proc = []
-        for func, name in self.clients:
-            cmd = dedent(f"""
-            from tests.test_unix import {func}
-            import sys
-            addr=sys.stdin.readline()
-            exit({func}(addr, "{name}"))
-            """)
-
-            # pylint: disable=R1732
-            proc.append(subprocess.Popen(
-                [sys.executable, "-u", "-c", cmd],
-                stdin=subprocess.PIPE))
-
-        self.message_bus.publish_object(
-            "/my/testing/Example",
-            self.service,
-            **self.server_args
-        )
-
-        self.message_bus.register_service(
-            "my.testing.Example"
-        )
-
-        address = self.message_bus.address
-
-        for client in proc:
-            client.stdin.write(bytes(address + "\n", "utf-8"))
-            client.stdin.close()
-
-        self.assertTrue(self._run_service())
-
-        for client in proc:
-            client.wait(4)
-
-    def test_hello_fd(self):
-        """Call a DBus method, passing and returning UnixFD handles"""
-        self._set_service(UnixExampleInterface())
-        self.assertEqual(self.service._names, [])
-        self.assertEqual(self.clients, [])
-
-        test1 = ("_hello_fdtest", "FooFD")
-        test2 = ("_hello_fdtest", "BarFD")
-        test3 = ("_hello_fdtest_async", "FooAsyncFD")
-        test4 = ("_hello_fdtest_async", "BarAsyncFD")
-
-        self._add_client(*test1)
-        self._add_client(*test2)
-        self._add_client(*test3)
-        self._add_client(*test4)
+    def test_sync_calls(self):
+        """Test DBus sync calls with fds."""
+        self._add_client(self._call_hello_sync)
+        self._add_client(self._call_goodbye_sync)
         self._run_test()
 
-        self.assertEqual(
-            sorted(self.service._names),
-            ["BarAsyncFD", "BarFD", "FooAsyncFD", "FooFD"]
-        )
+    @classmethod
+    def _call_hello_sync(cls, bus_address):
+        """Say sync hello to Foo."""
+        proxy = cls._get_proxy(bus_address)
+        fd = write_string("Foo")
+        greeting = proxy.Hello(fd)
+        assert greeting == "Hello, Foo!", greeting
 
-    def test_goodbye_fd(self):
-        """Test that a valid UnixFD can be
-        returned when not also passing one."""
-        self._set_service(UnixExampleInterface())
-        self.assertEqual(self.service._names, [])
+    @classmethod
+    def _call_goodbye_sync(cls, bus_address):
+        """Say sync goodbye to Bar."""
+        proxy = cls._get_proxy(bus_address)
+        fd = proxy.Goodbye("Bar")
+        greeting = read_string(fd)
+        assert greeting == "Goodbye, Bar!", greeting
 
-        tests = [
-            ("_goodbye_fd_test", 'FooFD'),
-            ("_goodbye_fd_test", 'BarFD'),
-            ("_goodbye_fd_test_async", 'AsyncFooFD'),
-            ("_goodbye_fd_test_async", 'AsyncBarFD')
-        ]
-
-        for test in tests:
-            self._add_client(*test)
-
+    def test_async_calls(self):
+        """Test DBus async calls with fds."""
+        self._add_client(self._call_hello_async)
+        self._add_client(self._call_goodbye_async)
         self._run_test()
 
+    @classmethod
+    def _call_hello_async(cls, bus_address):
+        """Say async hello to Foo."""
+        proxy = cls._get_proxy(bus_address)
 
-def _goodbye_fd_test(addr, n):
-    message_bus = AddressedMessageBus(
-        addr,
-        error_mapper=error_mapper
-    )
-    proxy = message_bus.get_proxy(
-        "my.testing.Example",
-        "/my/testing/Example",
-        client=GLibClientUnix
-    )
+        @mocked
+        def callback(call):
+            greeting = call()
+            assert greeting == "Hello, Foo!", greeting
 
-    fd = proxy.GoodbyeFD(n)
-    with open(os.dup(fd), "rb", closefd=True) as rfd:
-        buf = rfd.read()
+        fd = write_string("Foo")
+        proxy.Hello(fd, callback=callback)
+        run_loop()
 
-        a = 'Goodbye, {0}!'.format(n)
-        b = buf.decode(encoding='utf-8')
-        return a == b
+        callback.assert_called_once()
 
+    @classmethod
+    def _call_goodbye_async(cls, bus_address):
+        """Say async goodbye to Bar."""
+        proxy = cls._get_proxy(bus_address)
 
-def _goodbye_fd_test_async(addr, n):
-    result = [False]
-    message_bus = AddressedMessageBus(
-        addr,
-        error_mapper=error_mapper
-    )
-    proxy = message_bus.get_proxy(
-        "my.testing.Example",
-        "/my/testing/Example",
-        client=GLibClientUnix
-    )
+        @mocked
+        def callback(call):
+            greeting = read_string(call())
+            assert greeting == "Goodbye, Bar!", greeting
 
-    def complete(fd_getter):
-        fd = fd_getter()
-        with open(os.dup(fd), 'rb', closefd=True) as rfd:
-            buf = rfd.read()
+        proxy.Goodbye("Bar", callback=callback)
+        run_loop()
 
-            a = 'Goodbye, {0}!'.format(n)
-            b = buf.decode(encoding='utf-8')
-
-            result[0] = a == b
-
-    proxy.GoodbyeFD(n, callback=complete)
-    loop = EventLoop()
-    GLib.timeout_add_seconds(3, lambda x: loop.quit(), loop)
-    loop.run()
-    return result
-
-
-def _hello_fdtest(addr, n):
-    message_bus = AddressedMessageBus(
-        addr,
-        error_mapper=error_mapper
-    )
-    proxy = message_bus.get_proxy(
-        "my.testing.Example",
-        "/my/testing/Example",
-        client=GLibClientUnix
-    )
-
-    with tempfile.TemporaryFile(mode="wb",
-                                buffering=0,
-                                prefix=n) as otmp:
-        otmp.write(n.encode("utf-8"))
-        otmp.seek(0)
-
-        # closefd=False here because passing a
-        # file descriptor to dbus closes it
-        with open(os.dup(otmp.fileno()), "rb", closefd=False) as o:
-            i = proxy.HelloFD(UnixFD(o.fileno()))
-
-            with open(os.dup(i), "rb", closefd=True) as ifile:
-                buf = ifile.read()
-                # can't use an assert here, because we're in
-                # another address space, so return a boolean to get
-                # communicated back to the server
-                a = "Hello, {0}!".format(n)
-                b = buf.decode("utf-8")
-                return a == b
-
-
-def _hello_fdtest_async(addr, n):
-    result = [False]
-    message_bus = AddressedMessageBus(
-        addr,
-        error_mapper=error_mapper
-    )
-    proxy = message_bus.get_proxy(
-        "my.testing.Example",
-        "/my/testing/Example",
-        client=GLibClientUnix
-    )
-
-    def callback(fd_getter):
-        fd = fd_getter()
-        with open(os.dup(fd), "rb", closefd=True) as ifile:
-            buf = ifile.read()
-            # can't use an assert here, because we're in
-            # another address space, so return a boolean to get
-            # communicated back to the server
-            r = "Hello, {0}!".format(n) == buf.decode("utf-8")
-            result[0] = r
-
-    with tempfile.TemporaryFile(mode="wb",
-                                buffering=0,
-                                prefix=n) as otmp:
-        otmp.write(n.encode("utf-8"))
-        otmp.seek(0)
-
-        # closefd=False here because passing a
-        # file descriptor to dbus closes it
-        with open(os.dup(otmp.fileno()), "rb", closefd=False) as o:
-            proxy.HelloFD(UnixFD(o.fileno()), callback=callback)
-            loop = EventLoop()
-
-            GLib.timeout_add_seconds(3, lambda x: loop.quit(), loop)
-
-            loop.run()
-            return result[0]
+        callback.assert_called_once()
