@@ -18,6 +18,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
 #
+import logging
+
 from dasbus.constants import DBUS_FLAG_NONE
 from dasbus.typing import VariantUnpacking, get_variant
 from dasbus.client.handler import GLibClient
@@ -26,6 +28,8 @@ from dasbus.server.handler import GLibServer
 import gi
 gi.require_version("Gio", "2.0")
 from gi.repository import Gio
+
+log = logging.getLogger(__name__)
 
 __all__ = [
     "GLibClientUnix",
@@ -221,6 +225,31 @@ class GLibServerUnix(GLibServer):
     """The low-level DBus server library based on GLib.
 
     Adds Unix FD Support to base class"""
+
+    @classmethod
+    def emit_signal(cls, connection, object_path, interface_name,
+                    signal_name, parameters, destination=None):
+        """Emit a DBus signal.
+
+        GLib doesn't seem to support Unix file descriptors in signals.
+        Swap Unix file descriptors with indexes into a list of Unix file
+        descriptors, but emit just the indexes. Log a warning to inform
+        users about the limited support.
+        """
+        # Process Unix file descriptors in parameters.
+        parameters, fd_list = acquire_fds(parameters)
+
+        if fd_list:
+            log.warning("Unix file descriptors in signals are unsupported.")
+
+        # Emit the signal without Unix file descriptors.
+        connection.emit_signal(
+            destination,
+            object_path,
+            interface_name,
+            signal_name,
+            parameters
+        )
 
     @classmethod
     def set_call_reply(cls, invocation, out_type, out_value):
