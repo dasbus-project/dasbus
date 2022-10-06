@@ -70,6 +70,17 @@ def write_string(value):
 class UnixExampleInterface(object):
     """A DBus interface with UnixFD types."""
 
+    def __init__(self):
+        self._pipes = []
+
+    @property
+    def Pipes(self) -> List[UnixFD]:
+        return self._pipes
+
+    @Pipes.setter
+    def Pipes(self, pipes: List[UnixFD]):
+        self._pipes = pipes
+
     def Hello(self, name_fd: UnixFD) -> Str:
         name = read_string(name_fd)
         return "Hello, {0}!".format(name)
@@ -354,6 +365,7 @@ class DBusUnixExampleTestCase(DBusSpawnedTestCase):
               <arg direction="in" name="name_fd" type="h"></arg>
               <arg direction="out" name="return" type="s"></arg>
             </method>
+            <property access="readwrite" name="Pipes" type="ah"></property>
           </interface>
         </node>
         '''
@@ -422,3 +434,26 @@ class DBusUnixExampleTestCase(DBusSpawnedTestCase):
         run_loop()
 
         callback.assert_called_once()
+
+    def test_properties(self):
+        """Test DBus properties with fds."""
+        self._add_client(self._set_pipes)
+        self._add_client(self._get_pipes)
+        self._run_test()
+
+    @classmethod
+    def _set_pipes(cls, bus_address):
+        proxy = cls._get_proxy(bus_address)
+        pipes = list(map(write_string, ["1", "2", "3"]))
+        proxy.Pipes = pipes
+
+    @classmethod
+    def _get_pipes(cls, bus_address):
+        proxy = cls._get_proxy(bus_address)
+        pipes = []
+
+        while not pipes:
+            pipes = proxy.Pipes
+
+        values = list(map(read_string, pipes))
+        assert values == ["1", "2", "3"]
