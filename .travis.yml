@@ -4,15 +4,20 @@ services: docker
 sudo: required
 
 env:
-  - DOCKER_FILE=".travis/Dockerfile.fedora-rawhide"
-  - DOCKER_FILE=".travis/Dockerfile.centos-stream-8"
-  - DOCKER_FILE=".travis/Dockerfile.centos-stream-9"
-  - DOCKER_FILE=".travis/Dockerfile.debian-latest"
-  - DOCKER_FILE=".travis/Dockerfile.ubuntu-devel"
+  - IMAGE=python TAG=3.11-rc
+  - IMAGE=python TAG=3.10
+  - IMAGE=python TAG=3.9
+  - IMAGE=python TAG=3.8
+  - IMAGE=python TAG=3.7
+  - IMAGE=fedora TAG=rawhide
+  - IMAGE=centos TAG=stream9
+  - IMAGE=centos TAG=stream8
+  - IMAGE=debian TAG=latest
+  - IMAGE=ubuntu TAG=devel
 
 before_install:
   # Create a docker image called "myimage".
-  - docker build -t myimage -f "$DOCKER_FILE" .
+  - docker build -t myimage -f ".travis/Dockerfile.${IMAGE}" --build-arg TAG="${TAG}" .
 
 install:
   # Install CI dependencies.

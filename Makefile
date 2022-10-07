@@ -15,16 +15,17 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
 #
-PKGNAME=dasbus
-VERSION=$(shell awk '/Version:/ { print $$2 }' python-$(PKGNAME).spec)
-TAG=v$(VERSION)
-PYTHON?=python3
-COVERAGE?=coverage3
+PKGNAME = dasbus
+VERSION = $(shell awk '/Version:/ { print $$2 }' python-$(PKGNAME).spec)
+TAG = v$(VERSION)
+PYTHON ?= python3
+COVERAGE ?= coverage3
 
 # Container-related
-CI_CONTAINER_NAME=dasbus-ci
-CI_CONTAINER_FILE?=.travis/Dockerfile.fedora-rawhide
-CI_CMD?=make ci
+CI_NAME = $(PKGNAME)-ci
+CI_IMAGE ?= fedora
+CI_TAG ?= latest
+CI_CMD ?= make ci
 
 # Arguments used for setup.py call for creating archive
 BUILD_ARGS ?= sdist bdist_wheel
@@ -38,11 +39,21 @@ clean:
 
 .PHONY: container-ci
 container-ci:
-	podman build --pull-always --tag $(CI_CONTAINER_NAME) --file $(CI_CONTAINER_FILE)
-	podman run --volume .:/dasbus:Z --workdir /dasbus $(CI_CONTAINER_NAME) $(CI_CMD)
+	podman build \
+		--file ".travis/Dockerfile.$(CI_IMAGE)" \
+		--build-arg TAG=$(CI_TAG) \
+		--tag $(CI_NAME) \
+		--pull-always
+
+	podman run \
+		--volume .:/dasbus:Z \
+		--workdir /dasbus \
+		$(CI_NAME) $(CI_CMD)
 
 .PHONY: ci
 ci:
+	@echo "*** Running CI with $(PYTHON) ***"
+	$(PYTHON) --version
 	$(MAKE) check
 	$(MAKE) test
 	$(MAKE) docs
@@ -50,6 +61,7 @@ ci:
 .PHONY: check
 check:
 	@echo "*** Running pylint ***"
+	$(PYTHON) -m pylint --version
 	$(PYTHON) -m pylint $(CHECK_ARGS) dasbus/ tests/
 
 .PHONY: test
