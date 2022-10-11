@@ -1,0 +1,20 @@
+ARG TAG=latest
+FROM debian:${TAG}
+ENV LANG=C.utf8
+
+RUN cat /etc/os-release
+
+RUN apt-get update && \
+    apt-get install -y \
+    make \
+    python3 \
+    python3-pip \
+    python3-gi \
+    dbus-daemon \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install \
+    sphinx \
+    sphinx_rtd_theme \
+    coverage \
+    pylint

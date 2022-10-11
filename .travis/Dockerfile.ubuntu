@@ -1,5 +1,11 @@
-FROM debian:latest
+ARG TAG=devel
+FROM ubuntu:${TAG}
 ENV LANG=C.utf8
+
+# Disable interaction with tzdata.
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN cat /etc/os-release
 
 RUN apt-get update && \
     apt-get install -y \

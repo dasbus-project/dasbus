@@ -1,16 +1,17 @@
-FROM registry.fedoraproject.org/fedora:rawhide
+ARG TAG=stream9
+FROM quay.io/centos/centos:${TAG}
 ENV LANG=C.utf8
 
-RUN dnf -y update; \
-    dnf -y install \
-    gcc \
+RUN cat /etc/os-release
+
+RUN yum -y update && \
+    yum -y install \
     make \
     python3 \
     python3-pip \
-    python3-wheel \
     python3-gobject-base \
-    dbus-daemon; \
-    dnf clean all
+    dbus-daemon \
+    && yum clean all
 
 RUN pip3 install \
     sphinx \
