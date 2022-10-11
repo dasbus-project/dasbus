@@ -24,7 +24,7 @@ import unittest.mock
 from dasbus.connection import AddressedMessageBus
 from dasbus.typing import get_variant, UnixFD, Str, Variant, Tuple, \
     List, Dict, Int, Double, Bool
-from dasbus.server.interface import dbus_interface
+from dasbus.server.interface import dbus_interface, dbus_signal
 from dasbus.unix import GLibClientUnix, GLibServerUnix, acquire_fds, \
     restore_fds
 from dasbus.xml import XMLGenerator
@@ -87,6 +87,13 @@ class UnixExampleInterface(object):
 
     def Goodbye(self, name: Str) -> UnixFD:
         return write_string("Goodbye, {0}!".format(name))
+
+    @dbus_signal
+    def Signal(self, name: Str, name_fd: UnixFD):
+        pass
+
+    def Trigger(self, name: Str, name_fd: UnixFD):
+        self.Signal(name, name_fd)
 
 
 class UnixMessageBus(AddressedMessageBus):
@@ -366,6 +373,14 @@ class DBusUnixExampleTestCase(DBusSpawnedTestCase):
               <arg direction="out" name="return" type="s"></arg>
             </method>
             <property access="readwrite" name="Pipes" type="ah"></property>
+            <signal name="Signal">
+                <arg direction="out" name="name" type="s"></arg>
+                <arg direction="out" name="name_fd" type="h"></arg>
+            </signal>
+            <method name="Trigger">
+                <arg direction="in" name="name" type="s"></arg>
+                <arg direction="in" name="name_fd" type="h"></arg>
+            </method>
           </interface>
         </node>
         '''
@@ -457,3 +472,34 @@ class DBusUnixExampleTestCase(DBusSpawnedTestCase):
 
         values = list(map(read_string, pipes))
         assert values == ["1", "2", "3"]
+
+    def test_signals(self):
+        """Test DBus signals with fds."""
+        event = self.context.Event()
+        self._add_client(self._trigger_signal, event)
+        self._add_client(self._watch_signal, event)
+        self._run_test()
+
+    @classmethod
+    def _trigger_signal(cls, bus_address, event):
+        event.wait()
+        proxy = cls._get_proxy(bus_address)
+        proxy.Trigger("Foo", write_string("Foo"))
+
+    @classmethod
+    def _watch_signal(cls, bus_address, event):
+        proxy = cls._get_proxy(bus_address)
+
+        @mocked
+        def callback(name, name_fd):
+            # GLib doesn't support fds in signals, so we
+            # are not able to restore fds in this case.
+            # Because of that, name_fd is just an index.
+            assert name == "Foo"
+            assert name_fd == 0
+
+        proxy.Signal.connect(callback)
+        event.set()
+        run_loop()
+
+        callback.assert_called_once()
