@@ -5,10 +5,11 @@ Version:        1.6
 Release:        1%{?dist}
 Summary:        DBus library in Python 3
 
-License:        LGPLv2+
+License:        LGPL-2.1-or-later
 URL:            https://pypi.python.org/pypi/dasbus
 %if %{defined suse_version}
 Source0:        %{srcname}-%{version}.tar.gz
+Group:          Development/Libraries/Python
 %else
 Source0:        %{pypi_source}
 %endif
@@ -27,6 +28,8 @@ Summary:        %{summary}
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
 %if %{defined suse_version}
+BuildRequires:  fdupes
+BuildRequires:  python-rpm-macros
 Requires:       python3-gobject
 %else
 Requires:       python3-gobject-base
@@ -43,6 +46,9 @@ Requires:       python3-gobject-base
 
 %install
 %py3_install
+%if %{defined suse_version}
+%python_expand %fdupes %{buildroot}%{python3_sitelib}
+%endif
 
 %files -n python3-%{srcname}
 %license LICENSE
