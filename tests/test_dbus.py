@@ -16,61 +16,24 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
 #
-import unittest
 from unittest import mock
 from unittest.mock import Mock
 
 from dasbus.client.proxy import disconnect_proxy
 from dasbus.connection import AddressedMessageBus
 from dasbus.error import ErrorMapper, get_error_decorator
-from dasbus.loop import EventLoop
 from dasbus.server.interface import dbus_interface, dbus_signal, \
     accepts_additional_arguments, returns_multiple_arguments
 from dasbus.typing import get_variant, Str, Int, Dict, Variant, List, \
     Tuple, Bool
 from dasbus.xml import XMLGenerator
-from threading import Thread, Event
+from threading import Event
 
-import gi
-gi.require_version("Gio", "2.0")
-gi.require_version("GLib", "2.0")
-from gi.repository import Gio, GLib
+from tests.lib_dbus import DBusThreadedTestCase
 
 # Define the error mapper and decorator.
 error_mapper = ErrorMapper()
 dbus_error = get_error_decorator(error_mapper)
-
-
-class run_in_glib(object):
-    """Run the test methods in GLib.
-
-    :param timeout: Timeout in seconds when the loop will be killed.
-    """
-
-    def __init__(self, timeout):
-        self._timeout = timeout
-        self._result = None
-
-    def __call__(self, func):
-
-        def kill_loop(loop):
-            loop.quit()
-            return False
-
-        def run_in_loop(*args, **kwargs):
-            self._result = func(*args, **kwargs)
-
-        def create_loop(*args, **kwargs):
-            loop = EventLoop()
-
-            GLib.idle_add(run_in_loop, *args, **kwargs)
-            GLib.timeout_add_seconds(self._timeout, kill_loop, loop)
-
-            loop.run()
-
-            return self._result
-
-        return create_loop
 
 
 @dbus_error("my.testing.Error")
@@ -143,76 +106,21 @@ class ExampleInterface(object):
         return 0, False, "zero"
 
 
-class DBusTestCase(unittest.TestCase):
+class DBusExampleTestCase(DBusThreadedTestCase):
     """Test DBus support with a real DBus connection."""
 
-    TIMEOUT = 3
+    def _get_service(self):
+        """Get the example service."""
+        return ExampleInterface()
 
-    def setUp(self):
-        self.service = None
-        self.clients = []
-        self.maxDiff = None
-        self.server_args = {}
-        self.client_args = {}
+    @classmethod
+    def _get_message_bus(cls, bus_address):
+        """Get a message bus."""
+        return AddressedMessageBus(bus_address, error_mapper)
 
-        # Start a testing DBus daemon.
-        self.bus = Gio.TestDBus()
-        self.bus.up()
-
-        # Create a connection to the testing bus.
-        self.message_bus = AddressedMessageBus(
-            self.bus.get_bus_address(),
-            error_mapper=error_mapper
-        )
-
-    def tearDown(self):
-        if self.message_bus:
-            self.message_bus.disconnect()
-
-        if self.bus:
-            self.bus.down()
-
-    def _set_service(self, service):
-        self.service = service
-
-    def _get_proxy(self, interface_name=None):
-        return self.message_bus.get_proxy(
-            "my.testing.Example",
-            "/my/testing/Example",
-            interface_name=interface_name,
-            **self.client_args
-        )
-
-    def _run_test(self):
-        self.message_bus.publish_object(
-            "/my/testing/Example",
-            self.service
-        )
-
-        self.message_bus.register_service(
-            "my.testing.Example"
-        )
-
-        for client in self.clients:
-            client.start()
-
-        self.assertTrue(self._run_service())
-
-        for client in self.clients:
-            client.join()
-
-    @run_in_glib(TIMEOUT)
-    def _run_service(self):
-        return True
-
-
-class DBusThreadedTestCase(DBusTestCase):
-    """Test DBus support with a real DBus connection."""
-
-    def _add_client(self, client_test):
-        thread = Thread(None, client_test)
-        thread.daemon = True
-        self.clients.append(thread)
+    def _get_proxy(self, **proxy_args):
+        """Get a proxy of the example service."""
+        return self._get_service_proxy(self.message_bus, **proxy_args)
 
     def test_message_bus(self):
         """Test the message bus."""
@@ -222,8 +130,6 @@ class DBusThreadedTestCase(DBusTestCase):
 
     def test_xml_specification(self):
         """Test the generated specification."""
-        self._set_service(ExampleInterface())
-
         expected_xml = '''
         <node>
           <!--Specifies ExampleInterface-->
@@ -265,7 +171,6 @@ class DBusThreadedTestCase(DBusTestCase):
 
     def test_knock(self):
         """Call a simple DBus method."""
-        self._set_service(ExampleInterface())
         self.assertEqual(self.service._knocked, False)
 
         def test():
@@ -279,8 +184,6 @@ class DBusThreadedTestCase(DBusTestCase):
 
     def test_hello(self):
         """Call a DBus method."""
-        self._set_service(ExampleInterface())
-        self.assertEqual(self.service._names, [])
 
         def test1():
             proxy = self._get_proxy()
@@ -298,8 +201,6 @@ class DBusThreadedTestCase(DBusTestCase):
 
     def test_timeout(self):
         """Call a DBus method with a timeout."""
-        self._set_service(ExampleInterface())
-        self.assertEqual(self.service._names, [])
 
         def test1():
             proxy = self._get_proxy()
@@ -319,7 +220,6 @@ class DBusThreadedTestCase(DBusTestCase):
 
     def test_name(self):
         """Use a DBus read-only property."""
-        self._set_service(ExampleInterface())
 
         def test1():
             proxy = self._get_proxy()
@@ -348,8 +248,6 @@ class DBusThreadedTestCase(DBusTestCase):
 
     def test_secret(self):
         """Use a DBus write-only property."""
-        self._set_service(ExampleInterface())
-        self.assertEqual(self.service._secrets, [])
 
         def test1():
             proxy = self._get_proxy()
@@ -381,8 +279,6 @@ class DBusThreadedTestCase(DBusTestCase):
 
     def test_value(self):
         """Use a DBus read-write property."""
-        self._set_service(ExampleInterface())
-        self.assertEqual(self.service._values, [0])
 
         def test1():
             proxy = self._get_proxy()
@@ -413,7 +309,6 @@ class DBusThreadedTestCase(DBusTestCase):
 
     def test_knocked(self):
         """Use a simple DBus signal."""
-        self._set_service(ExampleInterface())
         event = Event()
         knocked = Mock()
 
@@ -444,7 +339,6 @@ class DBusThreadedTestCase(DBusTestCase):
 
     def test_visited(self):
         """Use a DBus signal."""
-        self._set_service(ExampleInterface())
         event = Event()
         visited = Mock()
 
@@ -473,7 +367,6 @@ class DBusThreadedTestCase(DBusTestCase):
 
     def test_unsubscribed(self):
         """Use an unsubscribed DBus signal."""
-        self._set_service(ExampleInterface())
         event = Event()
         knocked = Mock()
 
@@ -501,8 +394,6 @@ class DBusThreadedTestCase(DBusTestCase):
 
     def test_asynchronous(self):
         """Call a DBus method asynchronously."""
-        self._set_service(ExampleInterface())
-        self.assertEqual(self.service._names, [])
         returned = Mock()
 
         def callback(call, number):
@@ -525,8 +416,6 @@ class DBusThreadedTestCase(DBusTestCase):
 
     def test_error(self):
         """Handle a DBus error."""
-        self._set_service(ExampleInterface())
-        self.assertEqual(self.service._names, [])
         raised = Mock()
 
         def callback(call, number):
@@ -565,7 +454,6 @@ class DBusThreadedTestCase(DBusTestCase):
 
     def test_properties_changed(self):
         """Test the PropertiesChanged signal."""
-        self._set_service(ExampleInterface())
         event = Event()
         callback = Mock()
 
@@ -591,7 +479,6 @@ class DBusThreadedTestCase(DBusTestCase):
 
     def test_interface(self):
         """Use a specific DBus interface."""
-        self._set_service(ExampleInterface())
 
         def test_1():
             proxy = self._get_proxy(interface_name="my.testing.Example")
@@ -613,7 +500,6 @@ class DBusThreadedTestCase(DBusTestCase):
 
     def test_additional_arguments(self):
         """Call a DBus method."""
-        self._set_service(ExampleInterface())
 
         def test1():
             proxy = self._get_proxy()
@@ -635,7 +521,6 @@ class DBusThreadedTestCase(DBusTestCase):
 
     def test_multiple_output_arguments(self):
         """Call a DBus method with multiple output arguments."""
-        self._set_service(ExampleInterface())
 
         def test1():
             proxy = self._get_proxy()
