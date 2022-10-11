@@ -27,8 +27,6 @@ from dasbus.signal import Signal
 from dasbus.server.interface import get_xml, are_additional_arguments_supported
 from dasbus.specification import DBusSpecification, DBusSpecificationError
 from dasbus.typing import get_variant, unwrap_variant, is_tuple_of_one
-from dasbus.typing import variant_replace_fdlist_indices_with_handles
-from dasbus.typing import variant_replace_handles_with_fdlist_indices
 
 import gi
 gi.require_version("Gio", "2.0")
@@ -38,7 +36,6 @@ log = logging.getLogger(__name__)
 
 __all__ = [
     "GLibServer",
-    "GLibServerUnix",
     "AbstractServerObjectHandler",
     "ServerObjectHandler"
 ]
@@ -163,51 +160,6 @@ class GLibServer(object):
             out_value = (out_value, )
 
         return get_variant(out_type, out_value)
-
-class GLibServerUnix(GLibServer):
-    """The low-level DBus server library based on GLib.
-
-    Adds Unix FD Support to base class"""
-
-    @classmethod
-    def set_call_reply(cls, invocation, out_type, out_value):
-        """Set the reply of the DBus call.
-
-        :param invocation: an invocation of a DBus call
-        :param out_type: a type of the reply
-        :param out_value: a value of the reply
-        """
-        reply_value = cls._get_reply_value(out_type, out_value)
-        if reply_value is None:
-            invocation.return_value(reply_value)
-        else:
-            reply, fdlist = variant_replace_handles_with_fdlist_indices(
-                reply_value)
-            if len(fdlist) != 0:
-                invocation.return_value_with_unix_fd_list(
-                    reply, Gio.UnixFDList.new_from_array(fdlist))
-            else:
-                invocation.return_value(reply_value)
-
-    @classmethod
-    def _object_callback(cls, connection, sender, object_path,
-                         interface_name, method_name, parameters,
-                         invocation, user_data):
-        # Prepare the user's callback.
-        callback, callback_args = user_data
-
-        fdlist = invocation.get_message().get_unix_fd_list()
-        if fdlist is not None:
-            parameters = variant_replace_fdlist_indices_with_handles(
-                parameters, fdlist.peek_fds())
-        # Call user's callback.
-        callback(
-            invocation,
-            interface_name,
-            method_name,
-            parameters,
-            *callback_args
-        )
 
 
 class AbstractServerObjectHandler(metaclass=ABCMeta):
