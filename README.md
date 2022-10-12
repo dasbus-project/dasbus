@@ -102,15 +102,30 @@ proxy.NotificationClosed.connect(callback)
 loop.run()
 ```
 
-Run the service org.example.HelloWorld.
+Asynchronously fetch a list of network devices.
 
 ```python
 from dasbus.loop import EventLoop
 loop = EventLoop()
 
-from dasbus.connection import SessionMessageBus
-bus = SessionMessageBus()
+from dasbus.connection import SystemMessageBus
+bus = SystemMessageBus()
 
+proxy = bus.get_proxy(
+    "org.freedesktop.NetworkManager",
+    "/org/freedesktop/NetworkManager"
+)
+
+def callback(call):
+    print(call())
+
+proxy.GetDevices(callback=callback)
+loop.run()
+```
+
+Define the org.example.HelloWorld service.
+
+```python
 class HelloWorld(object):
     __dbus_xml__ = """
     <node>
@@ -125,62 +140,9 @@ class HelloWorld(object):
 
     def Hello(self, name):
         return "Hello {}!".format(name)
-
-bus.publish_object("/org/example/HelloWorld", HelloWorld())
-bus.register_service("org.example.HelloWorld")
-loop.run()
 ```
 
-
-## Features
-
-Use constants to define DBus services and objects.
-
-```python
-from dasbus.connection import SystemMessageBus
-from dasbus.identifier import DBusServiceIdentifier
-
-NETWORK_MANAGER = DBusServiceIdentifier(
-    namespace=("org", "freedesktop", "NetworkManager"),
-    message_bus=SystemMessageBus()
-)
-
-proxy = NETWORK_MANAGER.get_proxy()
-print(proxy.NetworkingEnabled)
-```
-
-Use exceptions to propagate and handle DBus errors. Create an error mapper and a decorator for
-mapping Python exception classes to DBus error names. The message bus will use the given error
-mapper to transform Python exceptions to DBus errors and back.
-
-```python
-from dasbus.error import ErrorMapper, DBusError, get_error_decorator
-error_mapper = ErrorMapper()
-dbus_error = get_error_decorator(error_mapper)
-
-from dasbus.connection import SessionMessageBus
-bus = SessionMessageBus(error_mapper=error_mapper)
-
-@dbus_error("org.freedesktop.DBus.Error.InvalidArgs")
-class InvalidArgs(DBusError):
-    pass
-```
-
-Call DBus methods asynchronously.
-
-```python
-from dasbus.loop import EventLoop
-loop = EventLoop()
-
-def callback(call):
-    print(call())
-
-proxy = NETWORK_MANAGER.get_proxy()
-proxy.GetDevices(callback=callback)
-loop.run()
-```
-
-Generate XML specifications from Python classes.
+Define the org.example.HelloWorld service with an automatically generated XML specification.
 
 ```python
 from dasbus.server.interface import dbus_interface
@@ -195,70 +157,20 @@ class HelloWorld(object):
 print(HelloWorld.__dbus_xml__)
 ```
 
-Represent DBus structures by Python objects.
-
-```python
-from dasbus.structure import DBusData
-from dasbus.typing import Str, get_variant
-
-class UserData(DBusData):
-    def __init__(self):
-        self._name = ""
-
-    @property
-    def name(self) -> Str:
-        return self._name
-
-    @name.setter
-    def name(self, name):
-        self._name = name
-
-data = UserData()
-data.name = "Alice"
-
-print(UserData.to_structure(data))
-print(UserData.from_structure({
-    "name": get_variant(Str, "Bob")
-}))
-```
-
-Create Python objects that can be published on DBus.
-
-```python
-from dasbus.server.interface import dbus_interface
-from dasbus.server.template import InterfaceTemplate
-from dasbus.server.publishable import Publishable
-from dasbus.typing import Str
-
-@dbus_interface("org.example.Chat")
-class ChatInterface(InterfaceTemplate):
-
-    def Send(self, message: Str):
-        return self.implementation.send()
-
-class Chat(Publishable):
-
-    def for_publication(self):
-        return ChatInterface(self)
-
-    def send(self, message):
-        print(message) 
-
-```
-
-Use DBus containers to publish dynamically created Python objects.
+Publish the org.example.HelloWorld service on the session message bus.
 
 ```python
 from dasbus.connection import SessionMessageBus
-from dasbus.server.container import DBusContainer
+bus = SessionMessageBus()
+bus.publish_object("/org/example/HelloWorld", HelloWorld())
+bus.register_service("org.example.HelloWorld")
 
-container = DBusContainer(
-    namespace=("org", "example", "Chat"),
-    message_bus=SessionMessageBus()
-)
-
-print(container.to_object_path(Chat()))
+from dasbus.loop import EventLoop
+loop = EventLoop()
+loop.run()
 ```
+
+See more examples in the [documentation](https://dasbus.readthedocs.io/en/latest/examples.html).
 
 ## Inspiration
 
