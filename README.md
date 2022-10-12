@@ -123,6 +123,28 @@ proxy.GetDevices(callback=callback)
 loop.run()
 ```
 
+Inhibit the system suspend and hibernation.
+
+```python
+import os
+from dasbus.connection import SystemMessageBus
+from dasbus.unix import GLibClientUnix
+bus = SystemMessageBus()
+
+proxy = bus.get_proxy(
+    "org.freedesktop.login1",
+    "/org/freedesktop/login1",
+    client=GLibClientUnix
+)
+
+fd = proxy.Inhibit(
+    "sleep", "my-example", "Running an example", "block"
+)
+
+proxy.ListInhibitors()
+os.close(fd)
+```
+
 Define the org.example.HelloWorld service.
 
 ```python

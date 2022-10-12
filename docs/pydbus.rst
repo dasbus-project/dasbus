@@ -11,6 +11,8 @@ What is new
 
 - Support for asynchronous DBus calls: DBus methods can be called asynchronously.
 
+- Support for Unix file descriptors: It is possible to send or receive Unix file descriptors.
+
 - Mapping DBus errors to exceptions: Use Python exceptions to propagate and handle DBus errors.
   Define your own rules for mapping errors to exceptions and back. See the
   :class:`ErrorMapper <dasbus.error.ErrorMapper>` class

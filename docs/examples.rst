@@ -131,6 +131,50 @@ Publish the org.example.HelloWorld service on the session message bus.
     loop = EventLoop()
     loop.run()
 
+Support for Unix file descriptors
+---------------------------------
+
+The support for Unix file descriptors is disabled by default. It needs to be explicitly enabled
+when you create a DBus proxy or publish a DBus object that could send or receive Unix file
+descriptors.
+
+.. warning::
+
+    This functionality is supported only on UNIX.
+
+Send and receive Unix file descriptors with a DBus proxy.
+
+.. code-block:: python
+
+    import os
+    from dasbus.connection import SystemMessageBus
+    from dasbus.unix import GLibClientUnix
+    bus = SystemMessageBus()
+
+    proxy = bus.get_proxy(
+        "org.freedesktop.login1",
+        "/org/freedesktop/login1",
+        client=GLibClientUnix
+    )
+
+    fd = proxy.Inhibit(
+        "sleep", "my-example", "Running an example", "block"
+    )
+
+    proxy.ListInhibitors()
+    os.close(fd)
+
+Allow to send and receive Unix file descriptors within the /org/example/HelloWorld DBus object.
+
+.. code-block:: python
+
+    from dasbus.unix import GLibServerUnix
+    bus.publish_object(
+        "/org/example/HelloWorld",
+        HelloWorld(),
+        server=GLibServerUnix
+    )
+
 Management of DBus names and paths
 ----------------------------------
 
