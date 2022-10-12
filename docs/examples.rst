@@ -63,15 +63,30 @@ Handle a closed notification.
     proxy.NotificationClosed.connect(callback)
     loop.run()
 
-Run the service org.example.HelloWorld.
+Asynchronously fetch a list of network devices.
 
 .. code-block:: python
 
     from dasbus.loop import EventLoop
     loop = EventLoop()
 
-    from dasbus.connection import SessionMessageBus
-    bus = SessionMessageBus()
+    from dasbus.connection import SystemMessageBus
+    bus = SystemMessageBus()
+
+    proxy = bus.get_proxy(
+        "org.freedesktop.NetworkManager",
+        "/org/freedesktop/NetworkManager"
+    )
+
+    def callback(call):
+        print(call())
+
+    proxy.GetDevices(callback=callback)
+    loop.run()
+
+Define the org.example.HelloWorld service.
+
+.. code-block:: python
 
     class HelloWorld(object):
         __dbus_xml__ = """
@@ -88,73 +103,7 @@ Run the service org.example.HelloWorld.
         def Hello(self, name):
             return "Hello {}!".format(name)
 
-    bus.publish_object("/org/example/HelloWorld", HelloWorld())
-    bus.register_service("org.example.HelloWorld")
-    loop.run()
-
-
-Features
---------
-
-Use constants to define DBus services and objects.
-
-.. code-block:: python
-
-    from dasbus.connection import SystemMessageBus
-    from dasbus.identifier import DBusServiceIdentifier
-
-    NETWORK_MANAGER = DBusServiceIdentifier(
-        namespace=("org", "freedesktop", "NetworkManager"),
-        message_bus=SystemMessageBus()
-    )
-
-    proxy = NETWORK_MANAGER.get_proxy()
-    print(proxy.NetworkingEnabled)
-
-
-Use exceptions to propagate and handle DBus errors. Create an error mapper and a decorator for
-mapping Python exception classes to DBus error names. The message bus will use the given error
-mapper to transform Python exceptions to DBus errors and back.
-
-.. code-block:: python
-
-    from dasbus.error import ErrorMapper, DBusError, get_error_decorator
-    error_mapper = ErrorMapper()
-    dbus_error = get_error_decorator(error_mapper)
-
-    from dasbus.connection import SessionMessageBus
-    bus = SessionMessageBus(error_mapper=error_mapper)
-
-    @dbus_error("org.freedesktop.DBus.Error.InvalidArgs")
-    class InvalidArgs(DBusError):
-        pass
-
-Call DBus methods with a timeout (specified in milliseconds).
-
-.. code-block:: python
-
-    proxy = NETWORK_MANAGER.get_proxy()
-
-    try:
-        proxy.CheckConnectivity(timeout=3)
-    except TimeoutError:
-        print("The call timed out!")
-
-Call DBus methods asynchronously.
-
-.. code-block:: python
-
-    from dasbus.loop import EventLoop
-    loop = EventLoop()
-
-    def callback(call):
-        print(call())
-
-    proxy = NETWORK_MANAGER.get_proxy()
-    proxy.GetDevices(callback=callback)
-    loop.run()
-
-Generate XML specifications from Python classes.
+Define the org.example.HelloWorld service with an automatically generated XML specification.
 
 .. code-block:: python
 
@@ -169,7 +118,112 @@ Generate XML specifications from Python classes.
 
     print(HelloWorld.__dbus_xml__)
 
-Represent DBus structures by Python objects.
+Publish the org.example.HelloWorld service on the session message bus.
+
+.. code-block:: python
+
+    from dasbus.connection import SessionMessageBus
+    bus = SessionMessageBus()
+    bus.publish_object("/org/example/HelloWorld", HelloWorld())
+    bus.register_service("org.example.HelloWorld")
+
+    from dasbus.loop import EventLoop
+    loop = EventLoop()
+    loop.run()
+
+Management of DBus names and paths
+----------------------------------
+
+Use constants to define DBus services and objects.
+
+.. code-block:: python
+
+    from dasbus.connection import SystemMessageBus
+    from dasbus.identifier import DBusServiceIdentifier, DBusObjectIdentifier
+
+    NETWORK_MANAGER_NAMESPACE = (
+        "org", "freedesktop", "NetworkManager"
+    )
+
+    NETWORK_MANAGER = DBusServiceIdentifier(
+        namespace=NETWORK_MANAGER_NAMESPACE,
+        message_bus=SystemMessageBus()
+    )
+
+    NETWORK_MANAGER_SETTINGS = DBusObjectIdentifier(
+        namespace=NETWORK_MANAGER_NAMESPACE,
+        basename="Settings"
+    )
+
+Create a proxy of the org.freedesktop.NetworkManager service.
+
+.. code-block:: python
+
+    proxy = NETWORK_MANAGER.get_proxy()
+    print(proxy.NetworkingEnabled)
+
+Create a proxy of the /org/freedesktop/NetworkManager/Settings object.
+
+.. code-block:: python
+
+    proxy = NETWORK_MANAGER.get_proxy(NETWORK_MANAGER_SETTINGS)
+    print(proxy.Hostname)
+
+See `a complete example <https://github.com/rhinstaller/dasbus/tree/master/examples/05_chat>`__.
+
+Error handling
+--------------
+
+Use exceptions to propagate and handle DBus errors. Create an error mapper and a decorator for
+mapping Python exception classes to DBus error names.
+
+.. code-block:: python
+
+    from dasbus.error import ErrorMapper, DBusError, get_error_decorator
+    error_mapper = ErrorMapper()
+    dbus_error = get_error_decorator(error_mapper)
+
+Use the decorator to register Python exceptions that represent DBus errors. These exceptions
+can be raised by DBus services and caught by DBus clients in the try-except block.
+
+.. code-block:: python
+
+    @dbus_error("org.freedesktop.DBus.Error.InvalidArgs")
+    class InvalidArgs(DBusError):
+        pass
+
+The message bus will use the specified error mapper to automatically transform Python exceptions
+to DBus errors and back.
+
+.. code-block:: python
+
+    from dasbus.connection import SessionMessageBus
+    bus = SessionMessageBus(error_mapper=error_mapper)
+
+See `a complete example <https://github.com/rhinstaller/dasbus/tree/master/examples/04_register>`__.
+
+Timeout for a DBus call
+-----------------------
+
+Call DBus methods with a timeout (specified in milliseconds).
+
+.. code-block:: python
+
+    proxy = NETWORK_MANAGER.get_proxy()
+
+    try:
+        proxy.CheckConnectivity(timeout=3)
+    except TimeoutError:
+        print("The call timed out!")
+
+
+Support for DBus structures
+---------------------------
+
+Represent DBus structures by Python objects. A DBus structure is a dictionary of attributes that
+maps attribute names to variants with attribute values. Use Python objects to define such
+structures. They can be easily converted to a dictionary, send via DBus and converted back to
+an object.
 
 .. code-block:: python
 
@@ -196,7 +250,13 @@ Represent DBus structures by Python objects.
         "name": get_variant(Str, "Bob")
     }))
 
-Create Python objects that can be published on DBus.
+See `a complete example <https://github.com/rhinstaller/dasbus/tree/master/examples/04_register>`__.
+
+Management of dynamic DBus objects
+----------------------------------
+
+Create Python objects that can be automatically published on DBus. These objects are usually
+managed by DBus containers and published on demand.
 
 .. code-block:: python
 
@@ -219,7 +279,10 @@ Create Python objects that can be published on DBus.
         def send(self, message):
             print(message)
 
-Use DBus containers to publish dynamically created Python objects.
+Use DBus containers to automatically publish dynamically created Python objects. A DBus container
+converts publishable Python objects into DBus paths and back. It generates unique DBus paths in
+the specified namespace and assigns them to objects. Each object is published when its DBus path
+is requested for the first time.
 
 .. code-block:: python
 
@@ -232,3 +295,5 @@ Use DBus containers to publish dynamically created Python objects.
     )
 
     print(container.to_object_path(Chat()))
+
+See `a complete example <https://github.com/rhinstaller/dasbus/tree/master/examples/05_chat>`__.
