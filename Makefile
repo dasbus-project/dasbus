@@ -35,7 +35,7 @@ CHECK_ARGS ?=
 
 .PHONY: clean
 clean:
-	git clean -fdx
+	git clean -idx
 
 .PHONY: container-ci
 container-ci:
