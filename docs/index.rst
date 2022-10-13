@@ -10,8 +10,8 @@ of this effort.
 Requirements
 ____________
 
-* Python 3.6+
-* PyGObject 3
+- Python 3.6+
+- PyGObject 3
 
 You can install `PyGObject <https://pygobject.readthedocs.io>`_ provided by your system or use
 PyPI. The system package is usually called ``python3-gi``, ``python3-gobject`` or ``pygobject3``.
@@ -51,6 +51,6 @@ Or install the RPM package on Fedora 31+.
 Indices and tables
 ==================
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+- :ref:`genindex`
+- :ref:`modindex`
+- :ref:`search`
