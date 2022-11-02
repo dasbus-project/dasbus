@@ -16,34 +16,37 @@ a result of this effort.
 * Python 3.6+
 * PyGObject 3
 
-You can install [PyGObject](https://pygobject.readthedocs.io) provided by your system or use PyPI.
-The system package is usually called `python3-gi`, `python3-gobject` or `pygobject3`. See the
-[instructions](https://pygobject.readthedocs.io/en/latest/getting_started.html) for your platform
-(only for PyGObject, you don't need cairo or GTK).
+You can install [PyGObject](https://pygobject.readthedocs.io) provided by your operating system
+or use PyPI. The system package is usually called `python3-gi`, `python3-gobject` or `pygobject3`.
+See the [instructions](https://pygobject.readthedocs.io/en/latest/getting_started.html) for
+your platform (only for PyGObject, you don't need cairo or GTK).
 
 The library is known to work with Python 3.8, PyGObject 3.34 and GLib 2.63, but these are not the
 required minimal versions.
 
 ## Installation
 
-Install the package from [PyPI](https://pypi.org/project/dasbus/). Follow the instructions above
-to install the required dependencies.
+Install the package from [PyPI](https://pypi.org/project/dasbus/) or install the package
+provided by your operating system if available.
+
+### Install from PyPI
+
+Follow the instructions above to install the requirements before you install `dasbus` with `pip`.
+The required dependencies has to be installed manually in this case.
 
 ```
 pip3 install dasbus
 ```
 
-Or install the RPM package on Fedora 31+.
+### Install the system package
 
-```
-sudo dnf install python3-dasbus
-```
+Follow the instructions for your operating system to install the `python-dasbus` package.
+The required dependencies should be installed automatically by the system package manager.
 
-Or install the DEB package on Ubuntu 22.04+ and Debian 11+.
-
-```
-sudo apt install python3-dasbus
-```
+* [Arch Linux](https://dasbus.readthedocs.io/en/latest/#install-on-arch-linux)
+* [Debian / Ubuntu](https://dasbus.readthedocs.io/en/latest/#install-on-debian-ubuntu)
+* [Fedora / CentOS / RHEL](https://dasbus.readthedocs.io/en/latest/#install-on-fedora-centos-rhel)
+* [openSUSE](https://dasbus.readthedocs.io/en/latest/#install-on-opensuse)
 
 ## Examples
 
