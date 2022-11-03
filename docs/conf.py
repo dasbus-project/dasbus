@@ -37,8 +37,18 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
+    'sphinxcontrib.apidoc',
     'sphinx_rtd_theme',
 ]
+
+# The path to a Python module to automatically document.
+apidoc_module_dir = '../dasbus'
+
+# Put documentation for each module on its own page.
+apidoc_separate_modules = True
+
+# Don't generate the api/modules.rst file.
+apidoc_toc_file = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
