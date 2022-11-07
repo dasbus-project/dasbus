@@ -33,3 +33,24 @@ readme = "README.md"
 "Homepage" = "https://github.com/rhinstaller/dasbus"
 "Bug Tracker" = "https://github.com/rhinstaller/dasbus/issues"
 "Documentation" = "https://dasbus.readthedocs.io"
+
+# Coverage configuration
+[tool.coverage.run]
+branch = true
+parallel = true
+source = [
+  "src",
+  "tests",
+]
+concurrency = [
+  "multiprocessing",
+  "thread",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "raise AssertionError",
+  "raise NotImplementedError",
+  "@abstractmethod",
+]

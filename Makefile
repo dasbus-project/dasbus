@@ -64,7 +64,7 @@ check:
 .PHONY: test
 test:
 	@echo "*** Running unittests with $(COVERAGE) ***"
-	PYTHONPATH=src $(COVERAGE) run --rcfile=.coveragerc -m unittest discover -v
+	PYTHONPATH=src $(COVERAGE) run -m unittest discover -v
 	$(COVERAGE) combine
 	$(COVERAGE) report -m --include="src/*" | tee coverage-report.log
 
