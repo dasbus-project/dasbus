@@ -1,0 +1,35 @@
+# Python package build system requirements and information. See:
+# https://pip.pypa.io/en/stable/reference/build-system/pyproject-toml/
+
+# Build configuration
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# Project configuration
+[project]
+name = "dasbus"
+version = "1.7"
+description = "DBus library in Python 3"
+requires-python = ">=3.6"
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)",
+  "Operating System :: OS Independent",
+  "Intended Audience :: Developers",
+  "Development Status :: 5 - Production/Stable",
+]
+keywords = [
+  "dbus",
+  "glib",
+  "library"
+]
+authors = [
+  {name="Vendula Poncova", email="vponcova@redhat.com"},
+]
+readme = "README.md"
+
+[project.urls]
+"Homepage" = "https://github.com/rhinstaller/dasbus"
+"Bug Tracker" = "https://github.com/rhinstaller/dasbus/issues"
+"Documentation" = "https://dasbus.readthedocs.io"

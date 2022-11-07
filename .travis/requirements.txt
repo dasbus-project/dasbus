@@ -8,3 +8,6 @@ sphinxcontrib-apidoc
 # Testing requirements
 coverage
 pylint
+
+# Build requirements
+build

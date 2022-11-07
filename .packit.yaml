@@ -6,9 +6,14 @@ downstream_package_name: python-dasbus
 specfile_path: python-dasbus.spec
 upstream_tag_template: "v{version}"
 
+srpm_build_deps:
+  - make
+  - python3
+  - python3-build
+
 actions:
   create-archive:
-    - "make BUILD_ARGS=sdist archive"
+    - 'make archive'
     - 'bash -c "cp dist/*.tar.gz ."'
     - 'bash -c "ls *.tar.gz"'
 

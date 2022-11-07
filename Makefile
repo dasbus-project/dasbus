@@ -27,9 +27,6 @@ CI_IMAGE ?= fedora
 CI_TAG ?= latest
 CI_CMD ?= make ci
 
-# Arguments used for setup.py call for creating archive
-BUILD_ARGS ?= sdist bdist_wheel
-
 # Arguments used by pylint for checking the code.
 CHECK_ARGS ?=
 
@@ -89,7 +86,7 @@ commit:
 	(head -n $$cl python-${PKGNAME}.spec ; echo "$$DATELINE" ; make --quiet changelog 2>/dev/null ; echo ""; cat speclog) > python-${PKGNAME}.spec.new ; \
 	mv python-${PKGNAME}.spec.new python-${PKGNAME}.spec ; rm -f speclog ; \
 	sed -i "s/Version:\( *\)$(VERSION)/Version:\1$$NEWVERSION/" python-${PKGNAME}.spec ; \
-	sed -i "s/version=\"$(VERSION)\"/version=\"$$NEWVERSION\"/" setup.py ; \
+	sed -i "s/version = \"$(VERSION)\"/version = \"$$NEWVERSION\"/" pyproject.toml ; \
 	git add python-${PKGNAME}.spec setup.py ; \
 	git commit -m "New release: $$NEWVERSION"
 
@@ -104,7 +101,8 @@ push:
 
 .PHONY: archive
 archive:
-	$(PYTHON) setup.py ${BUILD_ARGS}
+	@echo "*** Building the distribution archive ***"
+	$(PYTHON) -m build
 	@echo "The archive is in dist/$(PKGNAME)-$(VERSION).tar.gz"
 
 .PHONY: upload
