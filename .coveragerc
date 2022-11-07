@@ -1,6 +1,6 @@
 [run]
 source =
-    dasbus/
+    src/
     tests/
 
 concurrency =

@@ -30,7 +30,8 @@ setup(
     long_description_content_type="text/markdown",
     keywords='dbus glib library',
     url="https://github.com/rhinstaller/dasbus",
-    packages=find_packages(include=['dasbus', 'dasbus.*']),
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",

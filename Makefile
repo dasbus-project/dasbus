@@ -62,14 +62,14 @@ ci:
 check:
 	@echo "*** Running pylint ***"
 	$(PYTHON) -m pylint --version
-	$(PYTHON) -m pylint $(CHECK_ARGS) dasbus/ tests/
+	$(PYTHON) -m pylint $(CHECK_ARGS) src/ tests/
 
 .PHONY: test
 test:
 	@echo "*** Running unittests with $(COVERAGE) ***"
-	PYTHONPATH=. $(COVERAGE) run --rcfile=.coveragerc -m unittest discover -v -s tests/
+	PYTHONPATH=src $(COVERAGE) run --rcfile=.coveragerc -m unittest discover -v
 	$(COVERAGE) combine
-	$(COVERAGE) report -m --include="dasbus/*" | tee coverage-report.log
+	$(COVERAGE) report -m --include="src/*" | tee coverage-report.log
 
 .PHONY: docs
 docs:

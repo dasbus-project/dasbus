@@ -15,7 +15,7 @@ import os
 import sys
 import sphinx_rtd_theme
 
-sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('../src'))
 
 # -- Project information -----------------------------------------------------
 
@@ -42,7 +42,7 @@ extensions = [
 ]
 
 # The path to a Python module to automatically document.
-apidoc_module_dir = '../dasbus'
+apidoc_module_dir = '../src/dasbus'
 
 # Put documentation for each module on its own page.
 apidoc_separate_modules = True
