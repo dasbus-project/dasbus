@@ -8,6 +8,7 @@ sphinxcontrib-apidoc
 # Testing requirements
 coverage
 pylint
+pytest
 
 # Build requirements
 build

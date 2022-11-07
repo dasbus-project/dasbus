@@ -54,3 +54,14 @@ exclude_lines = [
   "raise NotImplementedError",
   "@abstractmethod",
 ]
+
+# Pytest configuration
+[tool.pytest.ini_options]
+testpaths = [
+  "tests"
+]
+python_files = [
+  "tests/*.py"
+]
+addopts = "-vv"
+log_level = "NOTSET"

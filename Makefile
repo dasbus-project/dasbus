@@ -63,8 +63,8 @@ check:
 
 .PHONY: test
 test:
-	@echo "*** Running unittests with $(COVERAGE) ***"
-	PYTHONPATH=src $(COVERAGE) run -m unittest discover -v
+	@echo "*** Running pytest with $(COVERAGE) ***"
+	PYTHONPATH=src $(COVERAGE) run -m pytest
 	$(COVERAGE) combine
 	$(COVERAGE) report -m --include="src/*" | tee coverage-report.log
 
