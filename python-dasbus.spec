@@ -1,7 +1,7 @@
 %global srcname dasbus
 
 Name:           python-%{srcname}
-Version:        1.6
+Version:        1.7
 Release:        1%{?dist}
 Summary:        DBus library in Python 3
 
@@ -57,6 +57,69 @@ Requires:       python3-gobject-base
 %{python3_sitelib}/%{srcname}/
 
 %changelog
+* Mon Nov 07 2022 Vendula Poncova <vponcova@redhat.com> - 1.7-1
+- CI: Use dnf instead of yum to install CentOS packages (vponcova)
+- Documentation: Improve the installation instruction (vponcova)
+- Remove untracked files from the git repository interactively (vponcova)
+- UnixFD: Document the support for Unix file descriptors (vponcova)
+- Documentation: Clean up examples in the documentation (vponcova)
+- Documentation: Simplify the README.md file (vponcova)
+- Documentation: Fix bullet point lists (vponcova)
+- Documentation: Simplify the hostname example (vponcova)
+- CI: Run tests for all supported Python version (vponcova)
+- UnixFD: Handle DBus signals with Unix file descriptors (vponcova)
+- UnixFD: Add tests for DBus properties with Unix file descriptors (vponcova)
+- UnixFD: Clean up tests of DBus calls with Unix file descriptors (vponcova)
+- UnixFD: Clean up tests for swapping Unix file descriptors (vponcova)
+- UnixFD: Clean up `GLibClientUnix` and `GLibServerUnix` (vponcova)
+- UnixFD: Process results of client calls in the low-level library (vponcova)
+- UnixFD: Move the support for Unix file descriptors to dasbus.unix (vponcova)
+- CI: Always pull the latest container image (vponcova)
+- CI: Disable the unhashable-member warning (vponcova)
+- Revert "Don't use pylint from pip on Fedora Rawhide" (vponcova)
+- UnixFD: Move the unit tests to a new file (vponcova)
+- UnixFD: Manage the testing bus on set up and tear down (vponcova)
+- UnixFD: Don't add arguments to the DBusTestCase.setUp method (vponcova)
+- UnixFD: Create a new testing DBus interface (vponcova)
+- UnixFD: Fix the indentation in unit tests (vponcova)
+- Add unit tests for variants with variant types (vponcova)
+- Simplify the code for replacing values of the UnixFD type (vponcova)
+- Add classes for unpacking and unwrapping a variant (vponcova)
+- Don't use pylint from pip on Fedora Rawhide (vponcova)
+- UnixFD: Rename a parameter to server_arguments (vponcova)
+- UnixFD: Revert a change in GLibClient._async_call_finish (vponcova)
+- Raise TimeoutError if a DBus call times out (vponcova)
+- Fix pylint tests in CentOS Stream 8 (vponcova)
+- Fix the ENV instruction in Dockerfiles (vponcova)
+- Fix pylint issues (vponcova)
+- run forked tests using subprocess, instead of multiprocessing (wdouglass)
+- use mutable list for return value in fd_test_async make fd getters more explicit (wdouglass)
+- Add test case for method call only returning fd (jlyda)
+- Always use call_with_unix_fd_list* to properly handle returned fds (jlyda)
+- fix some lint discovered errors (wdouglass)
+- seperate unixfd functionality, to better support systems that don't have them (wdouglass)
+- Remove note in documentation about unsupported Unix file descriptors (wdouglass)
+- Add a test for UnixFD transfer (wdouglass)
+- Allow UnixFDs to be replaced and passed into Gio (wdouglass)
+- Fix rpm lint warnings for OpenSUSE 15.3 (christopher.m.cantalupo)
+- Extend the .coveragerc file (vponcova)
+- Disable builds for Fedora ELN on commits (vponcova)
+- Test Debian with Travis (vponcova)
+- Test Ubuntu with Travis (vponcova)
+- Test CentOS Stream 9 with Travis (vponcova)
+- Use CentOS Stream 8 for testing (vponcova)
+- add remove dbus object function on bus and update tests (matthewcaswell)
+- properly measure coverage across multiprocess test cases (wdouglass)
+- Move handle typing tests into a new class (and a new file) (wdouglass)
+- Add another test for a crazy data type, fix a bug discovered via the test (wdouglass)
+- Add functions for generating/consuming fdlists with variants (wdouglass)
+- Provide a language argument for the code blocks (seahawk1986)
+- Change the type of 'h' glib objects from 'File' to 'UnixFD' (wdouglass)
+- Allow to run tests in a container (vponcova)
+- Add C0209 to the ignore list for pylint (tjoslin)
+- Use the latest distro in Travis CI (vponcova)
+- Always update the container (vponcova)
+- Document limitations of the DBus specification generator (vponcova)
 * Mon May 31 2021 Vendula Poncova <vponcova@redhat.com> - 1.6-1
 - Add support for SUSE packaging in spec file (christopher.m.cantalupo)
 - Allow to generate multiple output arguments (vponcova)
