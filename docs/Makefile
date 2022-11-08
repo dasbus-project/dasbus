@@ -12,11 +12,7 @@ BUILDDIR      = _build
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-# Generate the API documentation.
-api:
-	sphinx-apidoc-3 --separate -o api ../dasbus
-
-.PHONY: help api Makefile
+.PHONY: help Makefile
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).

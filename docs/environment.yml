@@ -8,3 +8,5 @@ channels:
 dependencies:
   - python=3
   - pygobject
+  - docutils<0.17
+  - sphinxcontrib-apidoc

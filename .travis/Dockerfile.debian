@@ -16,5 +16,6 @@ RUN apt-get update && \
 RUN pip3 install \
     sphinx \
     sphinx_rtd_theme \
+    sphinxcontrib-apidoc \
     coverage \
     pylint

@@ -84,7 +84,7 @@ Install the system package on openSUSE Tumbleweed or openSUSE Leap 15.2+.
 
    Development and testing <development>
    Dasbus vs pydbus <pydbus>
-   Public API <api/dasbus>
+   API reference <api/dasbus>
    Examples <examples>
 
 Indices and tables
