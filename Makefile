@@ -68,6 +68,12 @@ test:
 	$(COVERAGE) combine
 	$(COVERAGE) report -m --include="src/*" | tee coverage-report.log
 
+.PHONY: test-install
+test-install:
+	@echo "*** Running tests for the installed package ***"
+	$(PYTHON) -c "import dasbus"
+	$(PYTHON) -m pytest
+
 .PHONY: docs
 docs:
 	$(MAKE) -C docs html text
@@ -104,6 +110,11 @@ archive:
 	@echo "*** Building the distribution archive ***"
 	$(PYTHON) -m build
 	@echo "The archive is in dist/$(PKGNAME)-$(VERSION).tar.gz"
+
+.PHONY: install
+install: archive
+	@echo "*** Installing the $(PKGNAME)-$(VERSION) package ***"
+	$(PYTHON) -m pip install dist/$(PKGNAME)-$(VERSION)-py3-none-any.whl
 
 .PHONY: upload
 upload:
