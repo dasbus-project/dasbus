@@ -1,0 +1,10 @@
+# Package list of build and test pip requirements
+
+# Documentation requirements
+sphinx
+sphinx_rtd_theme
+sphinxcontrib-apidoc
+
+# Testing requirements
+coverage
+pylint

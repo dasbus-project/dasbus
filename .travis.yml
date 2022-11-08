@@ -17,7 +17,7 @@ env:
 
 before_install:
   # Create a docker image called "myimage".
-  - docker build -t myimage -f ".travis/Dockerfile.${IMAGE}" --build-arg TAG="${TAG}" .
+  - docker build -t myimage -f ".travis/Dockerfile.${IMAGE}" --build-arg TAG="${TAG}" ".travis"
 
 install:
   # Install CI dependencies.

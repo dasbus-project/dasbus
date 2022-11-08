@@ -15,9 +15,7 @@ RUN dnf -y update && \
     dbus-daemon \
     && dnf clean all
 
-RUN pip3 install \
-    sphinx \
-    sphinx_rtd_theme \
-    sphinxcontrib-apidoc \
-    coverage \
-    pylint
+COPY requirements.txt .
+
+RUN pip3 install -U pip && \
+    pip3 install -U -r requirements.txt

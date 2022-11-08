@@ -16,9 +16,7 @@ RUN apt-get update && \
     dbus-daemon \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install \
-    sphinx \
-    sphinx_rtd_theme \
-    sphinxcontrib-apidoc \
-    coverage \
-    pylint
+COPY requirements.txt .
+
+RUN pip3 install -U pip && \
+    pip3 install -U -r requirements.txt
