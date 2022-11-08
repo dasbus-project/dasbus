@@ -1,35 +1,33 @@
-specfile_path: python-dasbus.spec
+# See the documentation for more information:
+# https://packit.dev/docs/configuration/
+
+upstream_package_name: dasbus
 downstream_package_name: python-dasbus
+specfile_path: python-dasbus.spec
+upstream_tag_template: "v{version}"
+
 actions:
-  get-current-version:
-    - "python3 ./setup.py --version"
   create-archive:
     - "make BUILD_ARGS=sdist archive"
     - 'bash -c "cp dist/*.tar.gz ."'
     - 'bash -c "ls *.tar.gz"'
+
 jobs:
+  - job: tests
+    trigger: pull_request
+    targets:
+      - fedora-rawhide
+
   - job: copr_build
     trigger: pull_request
-    metadata:
-      targets:
-      - fedora-all
+    targets:
+      - fedora-rawhide
 
   - job: copr_build
     trigger: commit
-    metadata:
-      targets:
-        - fedora-rawhide
-      branch: master
-      owner: "@rhinstaller"
-      project: Anaconda
-      preserve_project: True
-
-  - job: copr_build
-    trigger: commit
-    metadata:
-      targets:
-        - fedora-latest
-      branch: master
-      owner: "@rhinstaller"
-      project: Anaconda-devel
-      preserve_project: True
+    targets:
+      - fedora-rawhide
+    branch: master
+    owner: "@rhinstaller"
+    project: Anaconda
+    preserve_project: True
