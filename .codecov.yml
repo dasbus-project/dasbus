@@ -8,7 +8,7 @@ coverage:
       # Show a strict status for the code.
       default:
         paths:
-          - "dasbus/"
+          - "src/"
     patch:
       # Show an informational status for the patch.
       default:

@@ -27,9 +27,6 @@ CI_IMAGE ?= fedora
 CI_TAG ?= latest
 CI_CMD ?= make ci
 
-# Arguments used for setup.py call for creating archive
-BUILD_ARGS ?= sdist bdist_wheel
-
 # Arguments used by pylint for checking the code.
 CHECK_ARGS ?=
 
@@ -62,14 +59,20 @@ ci:
 check:
 	@echo "*** Running pylint ***"
 	$(PYTHON) -m pylint --version
-	$(PYTHON) -m pylint $(CHECK_ARGS) dasbus/ tests/
+	$(PYTHON) -m pylint $(CHECK_ARGS) src/ tests/
 
 .PHONY: test
 test:
-	@echo "*** Running unittests with $(COVERAGE) ***"
-	PYTHONPATH=. $(COVERAGE) run --rcfile=.coveragerc -m unittest discover -v -s tests/
+	@echo "*** Running pytest with $(COVERAGE) ***"
+	PYTHONPATH=src $(COVERAGE) run -m pytest
 	$(COVERAGE) combine
-	$(COVERAGE) report -m --include="dasbus/*" | tee coverage-report.log
+	$(COVERAGE) report -m --include="src/*" | tee coverage-report.log
+
+.PHONY: test-install
+test-install:
+	@echo "*** Running tests for the installed package ***"
+	$(PYTHON) -c "import dasbus"
+	$(PYTHON) -m pytest
 
 .PHONY: docs
 docs:
@@ -89,7 +92,7 @@ commit:
 	(head -n $$cl python-${PKGNAME}.spec ; echo "$$DATELINE" ; make --quiet changelog 2>/dev/null ; echo ""; cat speclog) > python-${PKGNAME}.spec.new ; \
 	mv python-${PKGNAME}.spec.new python-${PKGNAME}.spec ; rm -f speclog ; \
 	sed -i "s/Version:\( *\)$(VERSION)/Version:\1$$NEWVERSION/" python-${PKGNAME}.spec ; \
-	sed -i "s/version=\"$(VERSION)\"/version=\"$$NEWVERSION\"/" setup.py ; \
+	sed -i "s/version = \"$(VERSION)\"/version = \"$$NEWVERSION\"/" pyproject.toml ; \
 	git add python-${PKGNAME}.spec setup.py ; \
 	git commit -m "New release: $$NEWVERSION"
 
@@ -104,8 +107,14 @@ push:
 
 .PHONY: archive
 archive:
-	$(PYTHON) setup.py ${BUILD_ARGS}
+	@echo "*** Building the distribution archive ***"
+	$(PYTHON) -m build
 	@echo "The archive is in dist/$(PKGNAME)-$(VERSION).tar.gz"
+
+.PHONY: install
+install: archive
+	@echo "*** Installing the $(PKGNAME)-$(VERSION) package ***"
+	$(PYTHON) -m pip install dist/$(PKGNAME)-$(VERSION)-py3-none-any.whl
 
 .PHONY: upload
 upload:

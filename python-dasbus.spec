@@ -26,7 +26,6 @@ to use and extend.}
 %package -n python3-%{srcname}
 Summary:        %{summary}
 BuildRequires:  python3-devel
-BuildRequires:  python3-setuptools
 %if %{defined suse_version}
 BuildRequires:  fdupes
 BuildRequires:  python-rpm-macros
@@ -41,20 +40,22 @@ Requires:       python3-gobject-base
 %prep
 %autosetup -n %{srcname}-%{version}
 
+%generate_buildrequires
+%pyproject_buildrequires
+
 %build
-%py3_build
+%pyproject_wheel
 
 %install
-%py3_install
+%pyproject_install
 %if %{defined suse_version}
 %python_expand %fdupes %{buildroot}%{python3_sitelib}
 %endif
 
-%files -n python3-%{srcname}
-%license LICENSE
+%pyproject_save_files %{srcname}
+
+%files -n python3-%{srcname} -f %{pyproject_files}
 %doc README.md
-%{python3_sitelib}/%{srcname}-*.egg-info/
-%{python3_sitelib}/%{srcname}/
 
 %changelog
 * Mon Nov 07 2022 Vendula Poncova <vponcova@redhat.com> - 1.7-1
