@@ -84,6 +84,10 @@ Asynchronously fetch a list of network devices.
     proxy.GetDevices(callback=callback)
     loop.run()
 
+
+Run a DBus service
+------------------
+
 Define the org.example.HelloWorld service.
 
 .. code-block:: python
@@ -118,21 +122,28 @@ Define the org.example.HelloWorld service with an automatically generated XML sp
 
     print(HelloWorld.__dbus_xml__)
 
-Publish the org.example.HelloWorld service on the session message bus.
+Publish the org.example.HelloWorld service on the session message bus. The service will
+be unregistered automatically via the bus context manager.
 
 .. code-block:: python
 
     from dasbus.connection import SessionMessageBus
-    bus = SessionMessageBus()
-    bus.publish_object("/org/example/HelloWorld", HelloWorld())
-    bus.register_service("org.example.HelloWorld")
+    with SessionMessageBus() as bus:
+
+        bus.publish_object("/org/example/HelloWorld", HelloWorld())
+        bus.register_service("org.example.HelloWorld")
+
+Start the event loop to process incoming D-Bus calls.
+
+.. code-block:: python
 
     from dasbus.loop import EventLoop
     loop = EventLoop()
     loop.run()
 
-Support for Unix file descriptors
----------------------------------
+
+Use Unix file descriptors
+-------------------------
 
 The support for Unix file descriptors is disabled by default. It needs to be explicitly enabled
 when you create a DBus proxy or publish a DBus object that could send or receive Unix file
@@ -175,8 +186,8 @@ Allow to send and receive Unix file descriptors within the /org/example/HelloWor
         server=GLibServerUnix
     )
 
-Management of DBus names and paths
-----------------------------------
+Manage DBus names
+-----------------
 
 Use constants to define DBus services and objects.
 
@@ -215,8 +226,8 @@ Create a proxy of the /org/freedesktop/NetworkManager/Settings object.
 
 See `a complete example <https://github.com/rhinstaller/dasbus/tree/master/examples/05_chat>`__.
 
-Error handling
---------------
+Handle DBus errors
+------------------
 
 Use exceptions to propagate and handle DBus errors. Create an error mapper and a decorator for
 mapping Python exception classes to DBus error names.
@@ -246,8 +257,8 @@ to DBus errors and back.
 
 See `a complete example <https://github.com/rhinstaller/dasbus/tree/master/examples/04_register>`__.
 
-Timeout for a DBus call
------------------------
+Call methods with timeout
+-------------------------
 
 Call DBus methods with a timeout (specified in milliseconds).
 
@@ -261,8 +272,8 @@ Call DBus methods with a timeout (specified in milliseconds).
         print("The call timed out!")
 
 
-Support for DBus structures
----------------------------
+Handle DBus structures
+----------------------
 
 Represent DBus structures by Python objects. A DBus structure is a dictionary of attributes that
 maps attribute names to variants with attribute values. Use Python objects to define such
@@ -296,8 +307,8 @@ an object.
 
 See `a complete example <https://github.com/rhinstaller/dasbus/tree/master/examples/04_register>`__.
 
-Management of dynamic DBus objects
-----------------------------------
+Manage groups of DBus objects
+-----------------------------
 
 Create Python objects that can be automatically published on DBus. These objects are usually
 managed by DBus containers and published on demand.
