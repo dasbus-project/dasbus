@@ -1,6 +1,6 @@
 ARG TAG=devel
 FROM ubuntu:${TAG}
-ENV LANG=C.utf8
+ENV LC_CTYPE=C.UTF-8
 
 # Disable interaction with tzdata.
 ENV DEBIAN_FRONTEND=noninteractive
@@ -16,6 +16,11 @@ RUN apt-get update && \
     python3-gi \
     dbus-daemon \
     && rm -rf /var/lib/apt/lists/*
+
+# Don't use the externally managed environment.
+RUN python3 -m venv --system-site-packages /opt/venv
+ENV VIRTUAL_ENV="/opt/venv"
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 COPY requirements.txt .
 

@@ -1,6 +1,6 @@
 ARG TAG=latest
 FROM python:${TAG}
-ENV LANG=C.utf8
+ENV LC_CTYPE=C.UTF-8
 
 RUN cat /etc/os-release
 
