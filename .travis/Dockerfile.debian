@@ -14,6 +14,11 @@ RUN apt-get update && \
     dbus-daemon \
     && rm -rf /var/lib/apt/lists/*
 
+# Don't use the externally managed environment.
+RUN python3 -m venv --system-site-packages /opt/venv
+ENV VIRTUAL_ENV="/opt/venv"
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
 COPY requirements.txt .
 
 RUN pip3 install -U pip && \
