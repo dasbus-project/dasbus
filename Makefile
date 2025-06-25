@@ -26,6 +26,8 @@ CI_NAME = $(PKGNAME)-ci
 CI_IMAGE ?= fedora
 CI_TAG ?= latest
 CI_CMD ?= make ci
+BUILD_IMAGE ?= fedora
+BUILD_TAG ?= rawhide
 
 # Arguments used by pylint for checking the code.
 CHECK_ARGS ?=
@@ -119,3 +121,21 @@ install: archive
 .PHONY: upload
 upload:
 	$(PYTHON) -m twine upload dist/*
+
+.PHONY: srpm
+srpm: archive
+	rpmbuild --define "_sourcedir ./dist/" --define "_srcrpmdir ./build/" -bs ./python-dasbus.spec
+
+.PHONY: rpm
+rpm: srpm
+	rpmbuild --rebuild --define "_rpmdir ./build/" ./build/python-dasbus-*.src.rpm
+
+# Build rpm file in the temporary container.
+# By default build on Fedora Rawhide but could be changed with BUILD_IMAGE and BUILD_TAG variables
+# example:
+# BUILD_TAG=41 make container-rpm
+.PHONY: container-rpm
+container-rpm:
+	podman run -it --rm -v .:/dasbus:z -w /dasbus --pull=newer $(BUILD_IMAGE):$(BUILD_TAG) \
+	  sh -c "dnf install -y rpmbuild python3-devel python3-hatchling python3-build make && \
+	  make rpm"
