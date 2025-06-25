@@ -41,14 +41,11 @@ Follow the instructions above to install the requirements before you install ``d
 Install on Arch Linux
 ^^^^^^^^^^^^^^^^^^^^^
 
-Build and install the community package from the `Arch User Repository <https://aur.archlinux.org/>`_.
-Follow the `guidelines <https://wiki.archlinux.org/title/Arch_User_Repository>`_.
+Install the system package.
 
 ::
 
-    git clone https://aur.archlinux.org/python-dasbus.git
-    cd python-dasbus
-    makepkg -si
+    sudo pacman -S python-dasbus
 
 Install on Debian / Ubuntu
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
