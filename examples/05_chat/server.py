@@ -85,7 +85,10 @@ if __name__ == "__main__":
     print(XMLGenerator.prettify_xml(ChatInterface.__dbus_xml__))
     print(XMLGenerator.prettify_xml(RoomInterface.__dbus_xml__))
 
-    try:
+    # Use the message bus as context manager to automatically
+    # unregister the DBus service and objects at the end.
+    with SESSION_BUS:
+
         # Create the chat.
         chat = Chat()
 
@@ -98,6 +101,3 @@ if __name__ == "__main__":
         # Start the event loop.
         loop = EventLoop()
         loop.run()
-    finally:
-        # Unregister the DBus service and objects.
-        SESSION_BUS.disconnect()

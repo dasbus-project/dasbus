@@ -60,7 +60,10 @@ if __name__ == "__main__":
     # Print the generated XML specification.
     print(XMLGenerator.prettify_xml(RegisterInterface.__dbus_xml__))
 
-    try:
+    # Use the message bus as context manager to automatically
+    # unregister the DBus service and objects at the end.
+    with SESSION_BUS:
+
         # Create the register.
         register = Register()
 
@@ -78,6 +81,3 @@ if __name__ == "__main__":
         # Start the event loop.
         loop = EventLoop()
         loop.run()
-    finally:
-        # Unregister the DBus service and objects.
-        SESSION_BUS.disconnect()

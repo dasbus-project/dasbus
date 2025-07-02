@@ -144,6 +144,14 @@ class AbstractMessageBus(metaclass=ABCMeta):
         """Disconnect from DBus."""
         pass
 
+    def __enter__(self):
+        """Connect to DBus as a context manager."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Disconnect from DBus as a context manager."""
+        self.disconnect()
+
 
 class MessageBus(AbstractMessageBus):
     """Representation of a message bus based on D-Bus."""
